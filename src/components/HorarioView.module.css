@@ -246,3 +246,18 @@
   padding: 9px 16px; cursor: pointer; transition: all 0.15s;
 }
 .deleteBtn:hover { background: rgba(224,112,112,0.2); }
+
+@media (max-width: 900px) {
+  .wrap { padding: 18px 14px; }
+  .title { font-size: 24px; }
+  .legendRow { padding: 9px 10px; }
+  .grid { min-width: 520px; }
+  .diaHeader { font-size: 11px; }
+  .modalOverlay { padding: 10px; }
+  .modal { border-radius: 12px; max-height: 95vh; }
+  .modalHeader { padding: 14px; }
+  .modalBody { padding: 14px; gap: 12px; }
+  .modalFooter { padding: 12px 14px; }
+  .edificioGrid { grid-template-columns: repeat(2, 1fr); }
+  .deleteHint { right: 10px; bottom: 10px; }
+}

@@ -11,3 +11,16 @@
   background: var(--bg);
   position: relative;
 }
+
+@media (max-width: 900px) {
+  .layout {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .main {
+    overflow: visible;
+  }
+}

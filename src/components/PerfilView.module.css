@@ -184,3 +184,15 @@
   font-family: var(--font-display); font-size: 20px; font-weight: 400;
   color: var(--accent);
 }
+
+@media (max-width: 900px) {
+  .wrap { padding: 18px 14px; }
+  .card { padding: 18px 14px 16px; border-radius: 14px; }
+  .formGrid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
+  .avatarSection { gap: 12px; margin-bottom: 14px; }
+  .avatar, .avatarImg, .avatarInitial { width: 64px; height: 64px; }
+  .avatarInitial { font-size: 24px; }
+  .cursandoHeader { padding: 12px 14px; }
+  .cursandoBadge { font-size: 10px; }
+  .cursandoItemBar { height: 42px; }
+}

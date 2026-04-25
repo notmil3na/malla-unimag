@@ -79,3 +79,14 @@
   border-radius: 4px;
   padding: 2px 5px;
 }
+
+@media (max-width: 900px) {
+  .card:hover {
+    transform: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  }
+
+  .card.selected {
+    transform: none;
+  }
+}

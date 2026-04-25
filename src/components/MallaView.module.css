@@ -284,3 +284,39 @@
 .prereqStatus {
   font-size: 10px; color: var(--text-muted);
 }
+
+@media (max-width: 900px) {
+  .wrap {
+    padding: 18px 14px;
+  }
+
+  .title {
+    font-size: calc(24px * var(--fs, 1));
+  }
+
+  .stats {
+    gap: 12px;
+  }
+
+  .legend {
+    padding: 9px 10px;
+  }
+
+  .legendItems {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .semestre {
+    min-width: 165px;
+  }
+
+  .detailPanel {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    width: auto;
+    max-height: 72vh;
+    overflow-y: auto;
+  }
+}

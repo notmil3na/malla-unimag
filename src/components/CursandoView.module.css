@@ -214,3 +214,17 @@
   font-weight: 700; background: var(--surface2);
   border-top: 1px solid var(--border); color: var(--text);
 }
+
+@media (max-width: 900px) {
+  .wrap { padding: 18px 14px; }
+  .title { font-size: 24px; }
+  .header { margin-bottom: 14px; }
+  .ponderadoBanner { padding: 12px 14px; margin-bottom: 14px; }
+  .ponderadoVal { font-size: 30px; }
+  .ponderadoMax { font-size: 14px; }
+  .ponderadoEquiv { font-size: 11px; margin-left: 0; }
+  .cardBody { padding: 12px; }
+  .textInput { min-width: 0; width: 100%; }
+  .notaInput, .pesoInput { width: 82px; }
+  .table th, .table td { padding: 10px 8px; font-size: 12px; }
+}

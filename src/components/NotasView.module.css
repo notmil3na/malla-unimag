@@ -233,3 +233,20 @@
   text-align: center; padding: 60px 20px;
   color: var(--text-muted); font-size: 14px; line-height: 2;
 }
+
+@media (max-width: 900px) {
+  .wrap { padding: 18px 14px; }
+  .title { font-size: 24px; }
+  .headerActions { width: 100%; }
+  .viewToggle { width: 100%; }
+  .toggleBtn { flex: 1; }
+  .saveBtn { width: 100%; }
+  .globalBanner { padding: 12px 14px; margin-bottom: 14px; }
+  .globalVal { font-size: 28px; }
+  .semHeader { padding: 10px 12px; }
+  .materiaBody { padding: 10px 12px; }
+  .resumenRow { flex-direction: column; }
+  .resumenRight { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+  .resumenTotal { padding: 12px 14px; }
+  .resumenTotalVal { font-size: 26px; }
+}

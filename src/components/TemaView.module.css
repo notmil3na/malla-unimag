@@ -145,3 +145,17 @@
 }
 .btn:hover { opacity: 0.85; transform: translateY(-1px); }
 .btnSaved { background: #6ec88a !important; }
+
+@media (max-width: 900px) {
+  .wrap { padding: 18px 14px; max-width: 100%; }
+  .title { font-size: 24px; }
+  .section { margin-bottom: 22px; }
+  .modeRow { flex-direction: column; }
+  .appThemeGrid { grid-template-columns: repeat(2, 1fr); }
+  .fontGrid { grid-template-columns: 1fr; }
+  .colorInputWrap { flex-wrap: wrap; }
+  .fontScaleRow { flex-wrap: wrap; }
+  .fontBtn { flex: 1; min-width: 120px; }
+  .previewCard { width: calc(50% - 6px); min-width: 130px; }
+  .btn { width: 100%; }
+}

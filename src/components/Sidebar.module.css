@@ -118,3 +118,35 @@
   transition: all 0.15s; margin-top: 12px; width: 100%;
 }
 .logout:hover { border-color: #e07070; color: #e07070; background: rgba(224,112,112,0.05); }
+
+@media (max-width: 900px) {
+  .sidebar {
+    width: 100%;
+    min-width: 0;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 12px 12px;
+    gap: 10px;
+  }
+
+  .brandRow { margin-bottom: 0; }
+  .themeIndicator { margin-bottom: 0; }
+  .profile { margin-bottom: 0; }
+
+  .nav {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 2px;
+  }
+
+  .navBtn {
+    width: auto;
+    min-width: max-content;
+    padding: 9px 11px;
+  }
+
+  .logout {
+    margin-top: 0;
+  }
+}
