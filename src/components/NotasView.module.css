@@ -1,0 +1,235 @@
+/* ── Layout ───────────────────────────────────────── */
+.wrap { padding: 28px 32px; min-height: 100%; }
+
+.header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  flex-wrap: wrap; gap: 14px;
+  margin-bottom: 20px;
+}
+
+.title { font-family: var(--font-display); font-size: 26px; font-weight: 400; color: var(--text); }
+.subtitle { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+
+.headerActions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* View toggle */
+.viewToggle {
+  display: flex;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 9px; padding: 3px; gap: 3px;
+}
+.toggleBtn {
+  background: transparent; border: none; border-radius: 6px;
+  color: var(--text-muted); font-family: var(--font-body); font-size: 12px; font-weight: 500;
+  padding: 7px 14px; cursor: pointer; transition: all 0.15s;
+}
+.toggleBtn:hover { color: var(--text); }
+.toggleActive { background: var(--surface) !important; color: var(--accent) !important; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+
+/* Save button */
+.saveBtn {
+  background: var(--accent); color: #0e0e14;
+  border: none; border-radius: 9px;
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  padding: 9px 20px; cursor: pointer; transition: all 0.2s;
+}
+.saveBtn:hover { opacity: 0.85; transform: translateY(-1px); }
+.saveBtnDone { background: #6ec88a !important; }
+
+/* ── Global banner ────────────────────────────────── */
+.globalBanner {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface); border: 1px solid; border-radius: 14px;
+  padding: 16px 22px; margin-bottom: 24px;
+}
+.globalLabel { font-size: 14px; font-weight: 600; color: var(--text); }
+.globalSub   { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+.globalVal   { font-family: var(--font-display); font-size: 36px; font-weight: 400; }
+
+/* ── Semester card ────────────────────────────────── */
+.semCard {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; margin-bottom: 18px; overflow: hidden;
+}
+
+.semHeader {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.semTitle { display: flex; align-items: baseline; gap: 10px; }
+.semNum   { font-family: var(--font-display); font-size: 18px; color: var(--text); }
+.semCreditos { font-size: 12px; color: var(--text-muted); }
+
+.semPond { display: flex; flex-direction: column; align-items: flex-end; }
+.semPondLabel { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.semPondVal   { font-family: var(--font-display); font-size: 24px; font-weight: 400; }
+
+.materiasList { display: flex; flex-direction: column; }
+
+.semFooter {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--surface2);
+  font-size: 12px; color: var(--text-muted);
+}
+.semFooterResult { font-size: 16px; margin-left: 4px; }
+
+/* ── Materia row ──────────────────────────────────── */
+.materiaRow {
+  display: flex; align-items: stretch;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.materiaRow:last-child { border-bottom: none; }
+.materiaRow:hover { background: var(--surface2); }
+.materiaFailed { background: rgba(224,112,112,0.04); }
+
+.materiaBar { width: 4px; flex-shrink: 0; }
+
+.materiaBody { flex: 1; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+
+.materiaTop {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+}
+
+.materiaId {
+  font-size: 11px; font-weight: 700; color: var(--accent);
+  letter-spacing: 0.05em; margin-right: 6px;
+}
+.materiaNombre { font-size: 14px; font-weight: 500; color: var(--text); }
+.materiaCreditos { font-size: 11px; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
+
+/* ── Field groups ─────────────────────────────────── */
+.cursandoFields,
+.aprobadaFields {
+  display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: flex-end;
+}
+
+.fieldGroup { display: flex; flex-direction: column; gap: 5px; min-width: 120px; }
+
+.fieldGroup label {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--text-muted);
+}
+
+.textInput {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text);
+  font-family: var(--font-body); font-size: 13px;
+  padding: 8px 12px; outline: none; width: 100%;
+  transition: border-color 0.2s;
+}
+.textInput:focus { border-color: var(--accent); }
+
+.gradeInput {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text);
+  font-family: var(--font-display); font-size: 16px;
+  padding: 8px 12px; outline: none; width: 100px;
+  transition: border-color 0.2s; text-align: center;
+}
+.gradeInput:focus { border-color: var(--accent); }
+
+.gradeWrap { display: flex; align-items: center; gap: 8px; }
+
+.gradeBadge {
+  font-size: 11px; font-weight: 700; padding: 3px 8px;
+  border-radius: 5px; white-space: nowrap;
+}
+.gradeBadgePass { background: rgba(110,200,138,0.15); color: #6ec88a; }
+.gradeBadgeFail { background: rgba(224,112,112,0.15); color: #e07070; }
+
+/* ── Repetición ───────────────────────────────────── */
+.repeticionSection {
+  width: 100%;
+  border: 1px solid rgba(224,112,112,0.25);
+  border-radius: 10px; padding: 12px 14px;
+  background: rgba(224,112,112,0.04);
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+.repeticionHeader { display: flex; align-items: center; justify-content: space-between; }
+.repeticionLabel { font-size: 11px; font-weight: 600; color: #e07070; text-transform: uppercase; letter-spacing: 0.06em; }
+
+.addBtn {
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 7px; color: var(--accent);
+  font-family: var(--font-body); font-size: 11px; font-weight: 600;
+  padding: 5px 10px; cursor: pointer; transition: all 0.15s;
+}
+.addBtn:hover { background: var(--surface2); }
+
+.intentoRow { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+
+.removeBtn {
+  background: transparent; border: 1px solid transparent;
+  color: var(--text-muted); font-size: 13px; cursor: pointer;
+  padding: 4px 6px; border-radius: 5px; transition: all 0.15s;
+  margin-bottom: 2px;
+}
+.removeBtn:hover { color: #e07070; background: rgba(224,112,112,0.08); }
+
+/* ── Resumen global ───────────────────────────────── */
+.resumenWrap { display: flex; flex-direction: column; gap: 14px; }
+
+.resumenRow {
+  display: flex; gap: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden;
+}
+
+.resumenLeft { flex: 1; padding: 16px 20px; }
+
+.resumenSem {
+  font-family: var(--font-display); font-size: 16px; color: var(--text);
+  display: block; margin-bottom: 12px;
+}
+
+.resumenMaterias { display: flex; flex-direction: column; gap: 6px; }
+
+.resumenMateria {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px;
+}
+
+.resumenDot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.resumenNombre { flex: 1; color: var(--text); }
+.resumenCred { font-size: 11px; color: var(--text-muted); }
+
+.resumenNota {
+  font-family: var(--font-display); font-size: 14px; min-width: 40px; text-align: right;
+}
+.resumenPass { color: #6ec88a; }
+.resumenFail { color: #e07070; }
+.resumenRetake { font-size: 12px; color: #6ec88a; }
+.resumenSinNota { font-size: 12px; color: var(--border); }
+
+.resumenRight {
+  width: 110px; flex-shrink: 0;
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 16px;
+  background: var(--surface2);
+}
+
+.resumenPondLabel { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.resumenPondVal   { font-family: var(--font-display); font-size: 26px; font-weight: 400; }
+.resumenPondCred  { font-size: 11px; color: var(--text-muted); }
+
+.resumenTotal {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface); border: 2px solid;
+  border-radius: 14px; padding: 18px 24px;
+  font-size: 15px; font-weight: 600; color: var(--text);
+}
+.resumenTotalVal { font-family: var(--font-display); font-size: 32px; font-weight: 400; }
+
+/* ── Empty state ──────────────────────────────────── */
+.emptyState {
+  text-align: center; padding: 60px 20px;
+  color: var(--text-muted); font-size: 14px; line-height: 2;
+}

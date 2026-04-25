@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300&family=Syne:wght@400;500;600;700&family=Outfit:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Josefin+Sans:ital,wght@0,300;0,400;0,600;1,300&family=Lora:ital,wght@0,400;0,500;1,400&family=Raleway:wght@300;400;500;600&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Dark theme (default) ─────────────────────────── */
+:root, [data-theme="dark"] {
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+
+  --bg:       #0e0e14;
+  --surface:  #16161f;
+  --surface2: #1e1e2a;
+  --border:   #2a2a3a;
+  --text:     #f0eee8;
+  --text-muted: #7a7a9a;
+
+  --accent:     #c8a96e;
+  --accent2:    #8b6f3a;
+  --accent-rgb: 200,169,110;
+
+  color-scheme: dark;
+}
+
+/* ── Light theme ──────────────────────────────────── */
+[data-theme="light"] {
+  --bg:       #f5f4f0;
+  --surface:  #ffffff;
+  --surface2: #eeecea;
+  --border:   #d8d4cc;
+  --text:     #1a1a24;
+  --text-muted: #6a6a7a;
+
+  color-scheme: light;
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  transition: background 0.3s, color 0.3s;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }

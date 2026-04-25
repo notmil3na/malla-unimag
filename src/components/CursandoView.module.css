@@ -1,0 +1,216 @@
+/* ── Layout ───────────────────────────────────────── */
+.wrap { padding: 28px 32px; min-height: 100%; }
+
+.header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 14px; margin-bottom: 22px; flex-wrap: wrap;
+}
+.title { font-family: var(--font-display); font-size: 26px; font-weight: 400; color: var(--text); }
+.subtitle { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+
+.saveBtn {
+  background: var(--accent); color: #0e0e14;
+  border: none; border-radius: 9px;
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  padding: 9px 20px; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+}
+.saveBtn:hover { opacity: 0.85; transform: translateY(-1px); }
+.saveBtnDone { background: #6ec88a !important; }
+
+/* ── Ponderado banner ─────────────────────────────── */
+.ponderadoBanner {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  background: var(--surface); border: 1px solid;
+  border-radius: 14px; padding: 16px 22px; margin-bottom: 24px; gap: 12px;
+}
+.ponderadoLabel { font-size: 14px; font-weight: 600; color: var(--text); }
+.ponderadoFormula { font-size: 11px; color: var(--text-muted); margin-top: 3px; font-family: monospace; }
+.ponderadoRight { display: flex; align-items: baseline; gap: 6px; }
+.ponderadoVal { font-family: var(--font-display); font-size: 40px; font-weight: 400; line-height: 1; }
+.ponderadoMax { font-size: 18px; color: var(--text-muted); }
+.ponderadoEquiv { font-size: 13px; color: var(--text-muted); margin-left: 4px; }
+
+/* ── Empty state ──────────────────────────────────── */
+.emptyState {
+  text-align: center; padding: 48px 20px;
+  color: var(--text-muted); line-height: 2;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.emptyIcon { display: block; font-size: 32px; margin-bottom: 12px; }
+
+/* ── Cards list ───────────────────────────────────── */
+.cardsList { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
+
+/* ── Materia card ─────────────────────────────────── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  overflow: hidden; transition: border-color 0.2s;
+}
+.card:hover { border-color: var(--card-color); }
+.cardFailed { border-color: rgba(224,112,112,0.3) !important; }
+
+.cardHeader {
+  display: flex; align-items: stretch; cursor: pointer;
+  transition: background 0.15s;
+}
+.cardHeader:hover { background: var(--surface2); }
+
+.cardColorBar { width: 4px; flex-shrink: 0; background: var(--card-color); }
+
+.cardMeta { flex: 1; padding: 14px 16px; }
+.cardTop { display: flex; gap: 8px; align-items: center; margin-bottom: 3px; }
+.cardId { font-size: 11px; font-weight: 700; color: var(--card-color); letter-spacing: 0.05em; }
+.cardCreditos { font-size: 11px; color: var(--text-muted); }
+.cardNombre { font-size: 14px; font-weight: 500; color: var(--text); }
+.cardSub { font-size: 12px; color: var(--text-muted); margin-top: 4px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+.cardRight {
+  display: flex; flex-direction: column; align-items: flex-end; justify-content: center;
+  padding: 12px 16px; gap: 4px; flex-shrink: 0;
+}
+.notaDisplay { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.notaNum { font-family: var(--font-display); font-size: 26px; font-weight: 400; line-height: 1; }
+.notaMax { font-size: 11px; color: var(--text-muted); }
+.notaStatus { font-size: 11px; color: var(--text-muted); }
+.notaEmpty { font-size: 12px; color: var(--border); }
+.expandIcon { font-size: 10px; color: var(--text-muted); margin-top: 6px; }
+
+/* ── Card body ────────────────────────────────────── */
+.cardBody {
+  border-top: 1px solid var(--border);
+  padding: 18px 20px;
+  display: flex; flex-direction: column; gap: 18px;
+  background: var(--surface2);
+}
+
+.infoRow { display: flex; gap: 14px; flex-wrap: wrap; }
+
+/* ── Cortes section ───────────────────────────────── */
+.cortesSection { display: flex; flex-direction: column; gap: 10px; }
+
+.sectionHeader { display: flex; align-items: center; justify-content: space-between; }
+.sectionLabel {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted);
+}
+.sectionLabelRed {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: #e07070;
+}
+
+.corteRow {
+  display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap;
+  padding: 10px 12px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.corteLabel { font-size: 12px; font-weight: 600; color: var(--text-muted); min-width: 56px; margin-bottom: 2px; }
+
+.corteInputs { display: flex; gap: 10px; flex-wrap: wrap; flex: 1; align-items: flex-end; }
+
+/* ── Nota final row ───────────────────────────────── */
+.notaFinalRow {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 14px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; border-left: 3px solid var(--accent);
+}
+.notaFinalLabel { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.notaFinalVal { font-family: var(--font-display); font-size: 22px; font-weight: 400; }
+.notaFinalSub { font-size: 13px; color: var(--text-muted); }
+.notaFinalEquiv { font-size: 12px; color: var(--text-muted); }
+.notaFinalBadge {
+  padding: 3px 10px; border-radius: 6px;
+  font-size: 12px; font-weight: 600; margin-left: auto;
+}
+
+/* ── Repeticion section ───────────────────────────── */
+.repSection {
+  border: 1px solid rgba(224,112,112,0.25); border-radius: 10px;
+  padding: 14px; background: rgba(224,112,112,0.03);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.repEmpty { font-size: 12px; color: var(--text-muted); }
+.repRow {
+  display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap;
+  padding: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+}
+.repBadge { font-size: 12px; font-weight: 600; padding: 6px 0; }
+
+/* ── Shared inputs ────────────────────────────────── */
+.inputGroup { display: flex; flex-direction: column; gap: 5px; }
+.inputGroup label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); }
+
+.textInput {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text);
+  font-family: var(--font-body); font-size: 13px;
+  padding: 8px 12px; outline: none; min-width: 160px;
+  transition: border-color 0.2s;
+}
+.textInput:focus { border-color: var(--accent); }
+
+.notaInput {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text);
+  font-family: var(--font-display); font-size: 16px;
+  padding: 8px 10px; outline: none; width: 90px; text-align: center;
+  transition: border-color 0.2s;
+}
+.notaInput:focus { border-color: var(--accent); }
+
+.pesoInput {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text-muted);
+  font-family: var(--font-body); font-size: 12px;
+  padding: 8px 8px; outline: none; width: 60px; text-align: center;
+}
+.pesoInput:focus { border-color: var(--accent); }
+
+.equivBadge { font-size: 13px; font-weight: 600; padding: 8px 0; }
+
+.addBtn {
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 7px; color: var(--accent);
+  font-family: var(--font-body); font-size: 11px; font-weight: 600;
+  padding: 5px 10px; cursor: pointer; transition: all 0.15s;
+}
+.addBtn:hover { background: var(--surface); border-color: var(--accent); }
+
+.removeBtn {
+  background: transparent; border: 1px solid transparent;
+  color: var(--text-muted); font-size: 12px; cursor: pointer;
+  padding: 6px 8px; border-radius: 5px; transition: all 0.15s; margin-bottom: 2px;
+}
+.removeBtn:hover { color: #e07070; background: rgba(224,112,112,0.08); }
+
+/* ── Resumen table ────────────────────────────────── */
+.resumenTable {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden;
+}
+.resumenTitle {
+  padding: 14px 20px; border-bottom: 1px solid var(--border);
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted);
+}
+.tableWrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; }
+.table th {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--text-muted);
+  padding: 10px 16px; text-align: left;
+  border-bottom: 1px solid var(--border); background: var(--surface2);
+}
+.table td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.table tr:last-child td { border-bottom: none; }
+.tableCenter { text-align: center; }
+.tableId { font-size: 11px; font-weight: 700; color: var(--accent); margin-right: 8px; }
+.tableNombre { font-size: 13px; color: var(--text); }
+.tableBadge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 5px; }
+.tableNone { color: var(--border); }
+.tableTotal td {
+  font-weight: 700; background: var(--surface2);
+  border-top: 1px solid var(--border); color: var(--text);
+}
