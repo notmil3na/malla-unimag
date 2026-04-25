@@ -6,6 +6,7 @@ import TemaView from "../components/TemaView";
 import NotasView from "../components/NotasView";
 import CursandoView from "../components/CursandoView";
 import HorarioView from "../components/HorarioView";
+import SocialView from "../components/SocialView";
 import { getMallaByCareer } from "../data/malla.js";
 import { supabase } from "../supabase";
 import styles from "./Dashboard.module.css";
@@ -122,6 +123,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
     { id: "cursando", label: "Semestre",     icon: "◉" },
     { id: "horario",  label: "Horario",      icon: "📅" },
     { id: "notas",    label: "Notas",        icon: "◑" },
+    { id: "social",   label: "Amigos",       icon: "👥" },
     { id: "perfil",   label: "Mi Perfil",    icon: "◎" },
     { id: "tema",     label: "Personalizar", icon: "◈" },
   ];
@@ -171,6 +173,9 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
         )}
         {tab === "notas" && (
           <NotasView malla={malla} notas={notas} onSave={saveNotas} user={user} />
+        )}
+        {tab === "social" && (
+          <SocialView user={user} />
         )}
         {tab === "perfil" && (
           <PerfilView
