@@ -3,7 +3,7 @@ import { CORTES, corteForSemester } from "../App";
 import styles from "./PerfilView.module.css";
 
 const UNIVERSITIES = {
-  "Universidad del Magdalena": ["Ingeniería de Sistemas"],
+  "Universidad del Magdalena": ["Ingeniería de Sistemas", "Hotelería y Turismo"],
 };
 
 export default function PerfilView({ user, onUpdate, onMallaReset, malla }) {

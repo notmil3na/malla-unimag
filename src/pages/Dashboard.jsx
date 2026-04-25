@@ -6,7 +6,7 @@ import TemaView from "../components/TemaView";
 import NotasView from "../components/NotasView";
 import CursandoView from "../components/CursandoView";
 import HorarioView from "../components/HorarioView";
-import { MALLA } from "../data/malla.js";
+import { getMallaByCareer } from "../data/malla.js";
 import { supabase } from "../supabase";
 import styles from "./Dashboard.module.css";
 
@@ -69,7 +69,8 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
   const [tab, setTab]   = useState("malla");
   const [loaded, setLoaded] = useState(false);
 
-  const defaultMalla = autoApply(MALLA, user.semester || 1);
+  const baseMalla = getMallaByCareer(user.career);
+  const defaultMalla = autoApply(baseMalla, user.semester || 1);
 
   const [malla,        setMalla]        = useState(defaultMalla);
   const [notas,        setNotas]        = useState({});
@@ -112,7 +113,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
   };
 
   const handleMallaReset = (newSemester) => {
-    const reset = autoApply(MALLA, newSemester);
+    const reset = autoApply(baseMalla, newSemester);
     saveMalla(reset);
   };
 

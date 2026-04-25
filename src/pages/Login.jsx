@@ -10,7 +10,7 @@ const DEFAULT_THEME_COLORS = {
 };
 
 const UNIVERSITIES = {
-  "Universidad del Magdalena": ["Ingeniería de Sistemas"],
+  "Universidad del Magdalena": ["Ingeniería de Sistemas", "Hotelería y Turismo"],
 };
 
 export default function Login({ onLogin }) {
