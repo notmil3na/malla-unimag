@@ -1,4 +1,4 @@
-# 🎓 MallaPro — Tu Plan de Estudios Visual
+# 🎓 MiMalla — Tu Plan de Estudios Visual
 
 Aplicación web para visualizar tu malla curricular universitaria con soporte para estados de materias, prerequisitos, perfil de usuario y personalización visual completa.
 

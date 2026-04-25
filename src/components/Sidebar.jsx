@@ -17,7 +17,7 @@ export default function Sidebar({ user, tabs, activeTab, onTabChange, onLogout, 
       <div className={styles.brandRow}>
         <div className={styles.brand}>
           <span className={styles.brandIcon}>✦</span>
-          <span className={styles.brandText}>Malla<em>Pro</em></span>
+          <span className={styles.brandText}>MiMalla</span>
         </div>
         <button className={styles.modeToggle} onClick={toggleMode} title={mode === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
           {mode === "dark" ? "☀️" : "🌙"}
