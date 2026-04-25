@@ -23,6 +23,24 @@ function autoApply(malla, currentSemester) {
   }));
 }
 
+function mergeMallaWithBase(baseMalla, savedMalla) {
+  if (!savedMalla) return baseMalla;
+
+  const savedById = new Map(
+    savedMalla.flatMap((sem) => sem.materias).map((m) => [m.id, m])
+  );
+
+  return baseMalla.map((sem) => ({
+    ...sem,
+    materias: sem.materias.map((baseMat) => {
+      const savedMat = savedById.get(baseMat.id);
+      return savedMat
+        ? { ...baseMat, estado: savedMat.estado ?? baseMat.estado }
+        : baseMat;
+    }),
+  }));
+}
+
 // ── Supabase helpers ───────────────────────────────
 async function loadUserData(username) {
   const { data } = await supabase
@@ -63,7 +81,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
     async function load() {
       const data = await loadUserData(user.username);
       if (data) {
-        if (data.malla)    setMalla(data.malla);
+        if (data.malla)    setMalla(mergeMallaWithBase(defaultMalla, data.malla));
         if (data.notas)    setNotas(data.notas);
         if (data.cursando) setCursandoData(data.cursando);
         if (data.horario)  setHorarioData(data.horario);
