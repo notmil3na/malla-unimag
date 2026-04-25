@@ -103,7 +103,7 @@ export default function Login({ onLogin }) {
           <span className={styles.logoIcon}>✦</span>
           <h1 className={styles.logoText}>Mi<em>Malla</em></h1>
         </div>
-        <p className={styles.sub}>Tu plan de estudios, visualizado.</p>
+        <p className={styles.sub}>Mi plan de estudio {"<3"}.</p>
 
         <div className={styles.tabs}>
           <button className={`${styles.tabBtn} ${tab === "login" ? styles.tabActive : ""}`}

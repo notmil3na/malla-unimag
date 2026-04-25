@@ -63,7 +63,7 @@ export const MALLA = [
       { id: "ISW1", nombre: "Ingeniería de Software",            creditos: 4, estado: "faltante", prereqs: ["PWB1", "BDA1"] },
       { id: "COM1", nombre: "Compiladores",                      creditos: 4, estado: "faltante", prereqs: ["EDA2"] },
       { id: "IEC1", nombre: "Ingeniería Económica",              creditos: 3, estado: "faltante", prereqs: [] },
-      { id: "PDP1", nombre: "Proyecto de Diseño y Prototipado",  creditos: 2, estado: "faltante", prereqs: ["ISW1"] },
+      { id: "PDP1", nombre: "Proyecto de Diseño y Prototipado",  creditos: 2, estado: "faltante", prereqs: ["PWB1"] },
     ],
   },
   {
