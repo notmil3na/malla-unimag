@@ -74,6 +74,19 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
     faltantes: allMaterias.filter((m) => m.estado === "faltante").length,
   };
   const progress = Math.round((stats.aprobadas / stats.total) * 100);
+  const semesterStart = new Date("2026-02-14T00:00:00");
+  const semesterEnd = new Date("2026-06-24T23:59:59");
+  const today = new Date();
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const totalSemesterDays = Math.ceil((semesterEnd - semesterStart) / msPerDay);
+  const elapsedDays = Math.max(0, Math.ceil((today - semesterStart) / msPerDay));
+  const remainingDays = Math.max(0, Math.ceil((semesterEnd - today) / msPerDay));
+  const semesterProgress = Math.min(100, Math.max(0, Math.round((elapsedDays / totalSemesterDays) * 100)));
+  const semesterStatus = today < semesterStart
+    ? "Aun no inicia"
+    : today > semesterEnd
+      ? "Semestre finalizado"
+      : "Semestre en curso";
 
   return (
     <div className={styles.wrap} style={{ "--fs": fs }}>
@@ -105,6 +118,27 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
         </div>
         <div className={styles.progressBar}>
           <div className={styles.progressFill} style={{ width: `${progress}%`, background: colors.aprobada || "#6ec88a" }} />
+        </div>
+      </div>
+
+      <div className={styles.semesterWidget}>
+        <div className={styles.semesterWidgetTop}>
+          <div>
+            <p className={styles.semesterWidgetLabel}>Cuenta regresiva del semestre</p>
+            <p className={styles.semesterWidgetRange}>14 feb 2026 - 24 jun 2026</p>
+          </div>
+          <span className={styles.semesterWidgetStatus}>{semesterStatus}</span>
+        </div>
+        <div className={styles.semesterWidgetMain}>
+          <span className={styles.semesterWidgetDays}>{remainingDays}</span>
+          <span className={styles.semesterWidgetText}>dias para terminar</span>
+        </div>
+        <div className={styles.progressBar}>
+          <div className={styles.progressFill} style={{ width: `${semesterProgress}%`, background: "var(--accent)" }} />
+        </div>
+        <div className={styles.progressInfo}>
+          <span>{semesterProgress}% del semestre transcurrido</span>
+          <span>{Math.max(0, totalSemesterDays - elapsedDays)} dias restantes</span>
         </div>
       </div>
 

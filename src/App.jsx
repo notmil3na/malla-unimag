@@ -57,7 +57,7 @@ export function generateCortes(from = "2023-2", to = "2028-1") {
   return cortes;
 }
 
-export const CORTES = generateCortes("2023-2", "2028-1");
+export const CORTES = generateCortes("2022-1", "2028-1");
 
 export function corteForSemester(ingresoCorte, semNum) {
   const idx = CORTES.indexOf(ingresoCorte);

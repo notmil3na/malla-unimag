@@ -62,6 +62,64 @@
   transition: width 0.6s ease;
 }
 
+.semesterWidget {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, transparent), var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.semesterWidgetTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.semesterWidgetLabel {
+  font-size: calc(12px * var(--fs, 1));
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.semesterWidgetRange {
+  font-size: calc(11px * var(--fs, 1));
+  color: var(--text);
+  margin: 2px 0 0;
+}
+
+.semesterWidgetStatus {
+  font-size: calc(10px * var(--fs, 1));
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, var(--border));
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-radius: 999px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.semesterWidgetMain {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.semesterWidgetDays {
+  font-family: var(--font-display);
+  font-size: calc(34px * var(--fs, 1));
+  color: var(--text);
+  line-height: 1;
+}
+
+.semesterWidgetText {
+  font-size: calc(13px * var(--fs, 1));
+  color: var(--text-muted);
+}
+
 .legend {
   display: flex; align-items: center; justify-content: space-between;
   flex-wrap: wrap; gap: 12px;
