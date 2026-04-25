@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MALLA, ESTADOS } from "../data/malla.js";
 import MateriaCard from "./MateriaCard";
 import styles from "./MallaView.module.css";
@@ -23,6 +23,10 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
   );
   const [selected, setSelected]       = useState(null);
   const [highlighted, setHighlighted] = useState([]);
+
+  useEffect(() => {
+    if (initialMalla) setMalla(initialMalla);
+  }, [initialMalla]);
 
   const colors = user.themeColors || {};
   const br     = user.borderRadius ?? 12;
@@ -53,18 +57,19 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
     setHighlighted(prereqTree);
   };
 
-  const handleEstadoChange = (semIdx, matIdx, newEstado) => {
-    const updated = malla.map((s, si) =>
-      si !== semIdx ? s : {
-        ...s,
-        materias: s.materias.map((m, mi) =>
-          mi !== matIdx ? m : { ...m, estado: newEstado }
-        ),
-      }
-    );
+  const handleEstadoChange = (materiaId, newEstado) => {
+    const updated = malla.map((s) => ({
+      ...s,
+      materias: s.materias.map((m) =>
+        m.id === materiaId ? { ...m, estado: newEstado } : m
+      ),
+    }));
     setMalla(updated);
     onSave(updated);
-    if (selected) setSelected(updated[semIdx].materias[matIdx]);
+    if (selected) {
+      const updatedSelected = updated.flatMap((s) => s.materias).find((m) => m.id === selected.id);
+      if (updatedSelected) setSelected(updatedSelected);
+    }
   };
 
   const stats = {
@@ -178,7 +183,7 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
                   borderRadius={br}
                   fontScale={fs}
                   onClick={() => handleSelect(mat)}
-                  onEstadoChange={(e) => handleEstadoChange(si, mi, e)}
+                  onEstadoChange={(e) => handleEstadoChange(mat.id, e)}
                   allMaterias={allMaterias}
                 />
               ))}
@@ -210,9 +215,7 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
                     className={`${styles.estadoBtn} ${selected.estado === k ? styles.estadoBtnActive : ""}`}
                     style={selected.estado === k ? { background: getColor(k), color: "#0e0e14" } : {}}
                     onClick={() => {
-                      const si = malla.findIndex((s) => s.materias.find((m) => m.id === selected.id));
-                      const mi = malla[si].materias.findIndex((m) => m.id === selected.id);
-                      handleEstadoChange(si, mi, k);
+                      handleEstadoChange(selected.id, k);
                     }}
                   >
                     {v.emoji} {v.label}
