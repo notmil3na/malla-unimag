@@ -27,7 +27,7 @@ export default function TemaView({ user, onUpdate }) {
   const [colors, setColors]             = useState(user.themeColors || MALLA_PRESETS[0].colors);
   const [borderRadius, setBorderRadius] = useState(user.borderRadius ?? 12);
   const [fontScale, setFontScale]       = useState(user.fontScale ?? 1);
-  const [appMode, setAppMode]           = useState(user.appMode || "dark");
+  const [appMode, setAppMode]           = useState(user.appMode || "light");
   const [appTheme, setAppTheme]         = useState(user.appTheme || "ambar");
   const [fontBody, setFontBody]         = useState(user.fontBody || "DM Sans");
   const [saved, setSaved]               = useState(false);

@@ -70,7 +70,7 @@ export function corteForSemester(ingresoCorte, semNum) {
 export function applyTheme(themeKey, mode, fontBody) {
   const t = APP_THEMES[themeKey] || APP_THEMES.ambar;
   const root = document.documentElement;
-  root.setAttribute("data-theme", mode || "dark");
+  root.setAttribute("data-theme", mode || "light");
   root.style.setProperty("--accent",     t.accent);
   root.style.setProperty("--accent2",    t.accent2);
   root.style.setProperty("--accent-rgb", t.accentRgb);
@@ -98,7 +98,7 @@ export async function saveUser(userData) {
     semester:      userData.semester      || 1,
     ingreso_corte: userData.ingresoCorte  || "2023-2",
     photo:         userData.photo         || null,
-    app_mode:      userData.appMode       || "dark",
+    app_mode:      userData.appMode       || "light",
     app_theme:     userData.appTheme      || "ambar",
     theme_colors:  userData.themeColors   || null,
     border_radius: userData.borderRadius  ?? 12,
@@ -129,7 +129,7 @@ export function dbRowToUser(row) {
 }
 
 // Aplicar tema inicial
-applyTheme("ambar", "dark");
+applyTheme("ambar", "light");
 
 // ── App root ───────────────────────────────────────────────────────────────
 export default function App() {
@@ -143,7 +143,7 @@ export default function App() {
       if (savedUser) {
         const u = JSON.parse(savedUser);
         setUser(u);
-        applyTheme(u.appTheme || "ambar", u.appMode || "dark", u.fontBody);
+        applyTheme(u.appTheme || "ambar", u.appMode || "light", u.fontBody);
       }
     } catch (_) {}
     setReady(true);
@@ -152,11 +152,11 @@ export default function App() {
   const handleLogin = (userData) => {
     localStorage.setItem("malla_session", JSON.stringify(userData));
     setUser(userData);
-    applyTheme(userData.appTheme || "ambar", userData.appMode || "dark", userData.fontBody);
+    applyTheme(userData.appTheme || "ambar", userData.appMode || "light", userData.fontBody);
   };
 
   const handleLogout = () => {
-    const currentMode  = user?.appMode  || "dark";
+    const currentMode  = user?.appMode  || "light";
     const currentTheme = user?.appTheme || "ambar";
     localStorage.removeItem("malla_session");
     setUser(null);
@@ -166,7 +166,7 @@ export default function App() {
   const handleUpdateUser = async (updated) => {
     localStorage.setItem("malla_session", JSON.stringify(updated));
     setUser(updated);
-    applyTheme(updated.appTheme || "ambar", updated.appMode || "dark", updated.fontBody);
+    applyTheme(updated.appTheme || "ambar", updated.appMode || "light", updated.fontBody);
     await saveUser(updated);
   };
 
