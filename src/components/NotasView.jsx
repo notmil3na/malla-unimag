@@ -2,6 +2,7 @@ import { useState } from "react";
 import styles from "./NotasView.module.css";
 
 const PASS_GRADE = 300;
+const MAX_GRADE = 500;
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function calcPonderado(materias, notasMap) {
@@ -41,15 +42,22 @@ function calcGlobal(allMaterias, notasMap) {
   return { valor: sumPond / sumCred, creditos: sumCred };
 }
 
+function sanitizeGrade(value) {
+  if (value === undefined || value === null || value === "") return undefined;
+  const numeric = Number(value);
+  if (isNaN(numeric)) return undefined;
+  return Math.max(0, Math.min(MAX_GRADE, numeric));
+}
+
 // ── sub-components ────────────────────────────────────────────────────────────
 
 function GradeInput({ value, onChange, placeholder = "0 – 500" }) {
   return (
     <input
       className={styles.gradeInput}
-      type="number" min="0" max="500"
+      type="number" min="0" max={MAX_GRADE}
       value={value ?? ""}
-      onChange={(e) => onChange(e.target.value === "" ? undefined : Number(e.target.value))}
+      onChange={(e) => onChange(sanitizeGrade(e.target.value))}
       placeholder={placeholder}
     />
   );

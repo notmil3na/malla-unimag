@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Sidebar from "../components/Sidebar";
 import MallaView from "../components/MallaView";
 import PerfilView from "../components/PerfilView";
@@ -69,6 +69,8 @@ async function saveUserData(username, patch) {
 export default function Dashboard({ user, onLogout, onUpdateUser }) {
   const [tab, setTab]   = useState("malla");
   const [loaded, setLoaded] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
+  const toastTimerRef = useRef(null);
 
   const baseMalla = getMallaByCareer(user.career);
   const defaultMalla = autoApply(baseMalla, user.semester || 1);
@@ -77,6 +79,12 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
   const [notas,        setNotas]        = useState({});
   const [cursandoData, setCursandoData] = useState({});
   const [horarioData,  setHorarioData]  = useState({ dias: ["L","M","X","J","V"], clases: [] });
+
+  const notify = (msg) => {
+    setToastMsg(msg);
+    window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => setToastMsg(""), 2200);
+  };
 
   // Cargar datos desde Supabase al iniciar
   useEffect(() => {
@@ -96,21 +104,25 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
   const saveMalla = async (data) => {
     setMalla(data);
     await saveUserData(user.username, { malla: data });
+    notify("Guardado correctamente");
   };
 
   const saveNotas = async (data) => {
     setNotas(data);
     await saveUserData(user.username, { notas: data });
+    notify("Guardado correctamente");
   };
 
   const saveCursando = async (data) => {
     setCursandoData(data);
     await saveUserData(user.username, { cursando: data });
+    notify("Guardado correctamente");
   };
 
   const saveHorario = async (data) => {
     setHorarioData(data);
     await saveUserData(user.username, { horario: data });
+    notify("Guardado correctamente");
   };
 
   const handleMallaReset = (newSemester) => {
@@ -168,6 +180,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
             malla={malla}
             horarioData={horarioData}
             onSave={saveHorario}
+            onNotify={notify}
             user={user}
           />
         )}
@@ -189,6 +202,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
           <TemaView user={user} onUpdate={onUpdateUser} />
         )}
       </main>
+      {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
     </div>
   );
 }

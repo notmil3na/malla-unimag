@@ -60,9 +60,9 @@ const EDIFICIOS = [
 ];
 
 const HORAS = [
-  "06:00", "07:00", "08:00", "09:00", "10:00", "11:00",
-  "12:00", "1:00", "2:00", "3:00", "4:00", "5:00",
-  "6:00", "7:00", "8:00", "9:00",
+  "06:00 a. m.", "07:00 a. m.", "08:00 a. m.", "09:00 a. m.", "10:00 a. m.", "11:00 a. m.",
+  "12:00 p. m.", "01:00 p. m.", "02:00 p. m.", "03:00 p. m.", "04:00 p. m.", "05:00 p. m.",
+  "06:00 p. m.", "07:00 p. m.", "08:00 p. m.", "09:00 p. m.",
 ];
 
 const TODOS_DIAS = [
@@ -87,29 +87,45 @@ function buildSalonLabel(edificioId, lado, salon) {
   return `${ed.nombre} ${lado} ${salon}`;
 }
 
+const LEGACY_HORAS = [
+  "06:00", "07:00", "08:00", "09:00", "10:00", "11:00",
+  "12:00", "1:00", "2:00", "3:00", "4:00", "5:00",
+  "6:00", "7:00", "8:00", "9:00",
+];
+
+function normalizeHora(hora) {
+  if (!hora) return hora;
+  if (HORAS.includes(hora)) return hora;
+  const legacyIdx = LEGACY_HORAS.indexOf(hora);
+  if (legacyIdx >= 0) return HORAS[legacyIdx];
+  return hora;
+}
+
 // ── Modal para añadir/editar clase ───────────────────────────────────────
-function ClaseModal({ materiasActuales, diasActivos, onSave, onClose, editando }) {
+function ClaseModal({ materiasActuales, diasActivos, onSave, onClose, editando, onDelete, onNotify }) {
   const [form, setForm] = useState(editando ? {
     ...editando,
+    horaInicio: normalizeHora(editando.horaInicio),
+    horaFin: normalizeHora(editando.horaFin),
     segundoDiaActivo: false,
     dia2: "",
-    horaInicio2: "07:00",
-    horaFin2: "09:00",
+    horaInicio2: "07:00 a. m.",
+    horaFin2: "09:00 a. m.",
     edificio2: "",
     lado2: "",
     salon2: "",
   } : {
     materiaId: materiasActuales[0]?.id || "",
     dia:       diasActivos[0] || "L",
-    horaInicio: "07:00",
-    horaFin:    "09:00",
+    horaInicio: "07:00 a. m.",
+    horaFin:    "09:00 a. m.",
     edificio:  "",
     lado:      "",
     salon:     "",
     segundoDiaActivo: false,
     dia2: "",
-    horaInicio2: "07:00",
-    horaFin2: "09:00",
+    horaInicio2: "07:00 a. m.",
+    horaFin2: "09:00 a. m.",
     edificio2: "",
     lado2: "",
     salon2: "",
@@ -130,6 +146,21 @@ function ClaseModal({ materiasActuales, diasActivos, onSave, onClose, editando }
     if (!form.materiaId || !form.dia || !form.horaInicio || !form.horaFin) return;
     if (form.segundoDiaActivo && (!form.dia2 || !form.horaInicio2 || !form.horaFin2)) return;
     if (form.segundoDiaActivo && form.dia2 === form.dia) return;
+
+    const startIdx = HORAS.indexOf(form.horaInicio);
+    const endIdx = HORAS.indexOf(form.horaFin);
+    if (startIdx < 0 || endIdx <= startIdx) {
+      onNotify?.("Horario inválido: la hora de fin debe ser posterior al inicio");
+      return;
+    }
+    if (form.segundoDiaActivo) {
+      const startIdx2 = HORAS.indexOf(form.horaInicio2);
+      const endIdx2 = HORAS.indexOf(form.horaFin2);
+      if (startIdx2 < 0 || endIdx2 <= startIdx2) {
+        onNotify?.("Horario 2 inválido: la hora de fin debe ser posterior al inicio");
+        return;
+      }
+    }
 
     const clases = [{
       materiaId: form.materiaId,
@@ -387,6 +418,11 @@ function ClaseModal({ materiasActuales, diasActivos, onSave, onClose, editando }
         </div>
 
         <div className={styles.modalFooter}>
+          {editando && (
+            <button className={styles.deleteBtn} onClick={onDelete}>
+              🗑 Eliminar esta clase
+            </button>
+          )}
           <button className={styles.btnSecondary} onClick={onClose}>Cancelar</button>
           <button className={styles.btnPrimary} onClick={handleSave}>
             {editando ? "Guardar cambios" : "Añadir clase"}
@@ -401,18 +437,20 @@ function ClaseModal({ materiasActuales, diasActivos, onSave, onClose, editando }
 function ClaseBloque({ clase, materia, color, horaStart, duracion, onClick }) {
   const top    = horaStart * 64;
   const height = duracion * 64 - 4;
+  const horaInicio = normalizeHora(clase.horaInicio);
+  const horaFin = normalizeHora(clase.horaFin);
 
   return (
     <div
       className={styles.claseBloque}
       style={{ top, height, "--clase-color": color }}
       onClick={onClick}
-      title={`${clase.horaInicio}–${clase.horaFin} | ${clase.salonLabel || ""}`}
+      title={`${horaInicio}–${horaFin} | ${clase.salonLabel || ""}`}
     >
       <div className={styles.claseBloqueBar} />
       <div className={styles.claseBloqueContent}>
         <span className={styles.claseId}>{materia?.id || clase.materiaId}</span>
-        <span className={styles.claseHora}>{clase.horaInicio}–{clase.horaFin}</span>
+        <span className={styles.claseHora}>{horaInicio}–{horaFin}</span>
         {clase.salonLabel && (
           <span className={styles.claseSalon}>{clase.salonLabel}</span>
         )}
@@ -422,7 +460,7 @@ function ClaseBloque({ clase, materia, color, horaStart, duracion, onClick }) {
 }
 
 // ── Vista principal ───────────────────────────────────────────────────────
-export default function HorarioView({ malla, horarioData, onSave, user }) {
+export default function HorarioView({ malla, horarioData, onSave, user, onNotify }) {
   const [data, setData]             = useState(horarioData || { dias: ["L","M","X","J","V"], clases: [] });
   const [showModal, setShowModal]   = useState(false);
   const [editando, setEditando]     = useState(null);  // { claseIdx, clase }
@@ -444,6 +482,7 @@ export default function HorarioView({ malla, horarioData, onSave, user }) {
     const updated = { ...data, dias };
     setData(updated);
     onSave(updated);
+    onNotify?.("Días del horario actualizados");
   };
 
   const handleAddClase = (clase) => {
@@ -459,6 +498,7 @@ export default function HorarioView({ malla, horarioData, onSave, user }) {
     onSave(updated);
     setShowModal(false);
     setEditando(null);
+    onNotify?.(editando !== null && editando.claseIdx !== undefined ? "Clase actualizada" : "Clase agregada");
   };
 
   const handleDeleteClase = (idx) => {
@@ -468,10 +508,11 @@ export default function HorarioView({ malla, horarioData, onSave, user }) {
     onSave(updated);
     setShowModal(false);
     setEditando(null);
+    onNotify?.("Clase eliminada");
   };
 
   // Calcular posición de bloque
-  const horaIdx = (h) => HORAS.indexOf(h);
+  const horaIdx = (h) => HORAS.indexOf(normalizeHora(h));
 
   const diasActivos = TODOS_DIAS.filter(d => data.dias.includes(d.id));
 
@@ -583,20 +624,10 @@ export default function HorarioView({ malla, horarioData, onSave, user }) {
           diasActivos={data.dias}
           editando={editando?.claseIdx !== undefined ? editando : null}
           onSave={handleAddClase}
+          onDelete={() => handleDeleteClase(editando.claseIdx)}
+          onNotify={onNotify}
           onClose={() => { setShowModal(false); setEditando(null); }}
         />
-      )}
-
-      {/* Boton eliminar si está editando */}
-      {showModal && editando?.claseIdx !== undefined && (
-        <div className={styles.deleteHint}>
-          <button
-            className={styles.deleteBtn}
-            onClick={() => handleDeleteClase(editando.claseIdx)}
-          >
-            🗑 Eliminar esta clase
-          </button>
-        </div>
       )}
     </div>
   );
