@@ -8,9 +8,9 @@ const EDIFICIOS = [
     nombre: "Mar Caribe",
     icon: "🌊",
     lados: ["Norte", "Sur"],
-    salones: Array.from({ length: 12 }, (_, i) => {
-      const piso = Math.floor(i / 4) + 1;
-      const num  = (i % 4) + 1;
+    salones: Array.from({ length: 28 }, (_, i) => {
+      const piso = Math.floor(i / 7) + 1;
+      const num  = (i % 7) + 1;
       return `${100 * piso + num}`;
     }),
   },
@@ -19,9 +19,9 @@ const EDIFICIOS = [
     nombre: "Ciénaga Grande",
     icon: "🐊",
     lados: ["Norte", "Sur"],
-    salones: Array.from({ length: 12 }, (_, i) => {
-      const piso = Math.floor(i / 4) + 1;
-      const num  = (i % 4) + 1;
+    salones: Array.from({ length: 18 }, (_, i) => {
+      const piso = Math.floor(i / 6) + 1;
+      const num  = (i % 6) + 1;
       return `${100 * piso + num}`;
     }),
   },
@@ -30,9 +30,9 @@ const EDIFICIOS = [
     nombre: "Sierra Nevada",
     icon: "⛰️",
     lados: ["Norte", "Sur"],
-    salones: Array.from({ length: 12 }, (_, i) => {
-      const piso = Math.floor(i / 4) + 1;
-      const num  = (i % 4) + 1;
+    salones: Array.from({ length: 18 }, (_, i) => {
+      const piso = Math.floor(i / 6) + 1;
+      const num  = (i % 6) + 1;
       return `${100 * piso + num}`;
     }),
   },
@@ -89,7 +89,16 @@ function buildSalonLabel(edificioId, lado, salon) {
 
 // ── Modal para añadir/editar clase ───────────────────────────────────────
 function ClaseModal({ materiasActuales, diasActivos, onSave, onClose, editando }) {
-  const [form, setForm] = useState(editando || {
+  const [form, setForm] = useState(editando ? {
+    ...editando,
+    segundoDiaActivo: false,
+    dia2: "",
+    horaInicio2: "07:00",
+    horaFin2: "09:00",
+    edificio2: "",
+    lado2: "",
+    salon2: "",
+  } : {
     materiaId: materiasActuales[0]?.id || "",
     dia:       diasActivos[0] || "L",
     horaInicio: "07:00",
@@ -97,18 +106,58 @@ function ClaseModal({ materiasActuales, diasActivos, onSave, onClose, editando }
     edificio:  "",
     lado:      "",
     salon:     "",
+    segundoDiaActivo: false,
+    dia2: "",
+    horaInicio2: "07:00",
+    horaFin2: "09:00",
+    edificio2: "",
+    lado2: "",
+    salon2: "",
     notas:     "",
   });
 
   const ed = EDIFICIOS.find(e => e.id === form.edificio);
+  const ed2 = EDIFICIOS.find(e => e.id === form.edificio2);
 
   const salonLabel = form.edificio
     ? buildSalonLabel(form.edificio, form.lado, form.salon)
     : "";
+  const salonLabel2 = form.edificio2
+    ? buildSalonLabel(form.edificio2, form.lado2, form.salon2)
+    : "";
 
   const handleSave = () => {
     if (!form.materiaId || !form.dia || !form.horaInicio || !form.horaFin) return;
-    onSave({ ...form, salonLabel });
+    if (form.segundoDiaActivo && (!form.dia2 || !form.horaInicio2 || !form.horaFin2)) return;
+    if (form.segundoDiaActivo && form.dia2 === form.dia) return;
+
+    const clases = [{
+      materiaId: form.materiaId,
+      dia: form.dia,
+      horaInicio: form.horaInicio,
+      horaFin: form.horaFin,
+      edificio: form.edificio,
+      lado: form.lado,
+      salon: form.salon,
+      salonLabel,
+      notas: form.notas,
+    }];
+
+    if (form.segundoDiaActivo) {
+      clases.push({
+        materiaId: form.materiaId,
+        dia: form.dia2,
+        horaInicio: form.horaInicio2,
+        horaFin: form.horaFin2,
+        edificio: form.edificio2,
+        lado: form.lado2,
+        salon: form.salon2,
+        salonLabel: salonLabel2,
+        notas: form.notas,
+      });
+    }
+
+    onSave({ clases });
   };
 
   return (
@@ -159,6 +208,117 @@ function ClaseModal({ materiasActuales, diasActivos, onSave, onClose, editando }
               </select>
             </div>
           </div>
+
+          {!editando && (
+            <div className={styles.formField}>
+              <label>Segundo día (opcional)</label>
+              <button
+                className={styles.btnSecondary}
+                type="button"
+                onClick={() =>
+                  setForm(f => ({
+                    ...f,
+                    segundoDiaActivo: !f.segundoDiaActivo,
+                    dia2: !f.segundoDiaActivo
+                      ? (diasActivos.find(id => id !== f.dia) || "")
+                      : "",
+                    edificio2: "",
+                    lado2: "",
+                    salon2: "",
+                  }))
+                }
+              >
+                {form.segundoDiaActivo ? "Quitar segundo día" : "Añadir segundo día"}
+              </button>
+            </div>
+          )}
+
+          {form.segundoDiaActivo && !editando && (
+            <>
+              <div className={styles.formRow}>
+                <div className={styles.formField}>
+                  <label>Día 2</label>
+                  <select className={styles.select} value={form.dia2}
+                    onChange={e => setForm(f => ({ ...f, dia2: e.target.value }))}>
+                    {diasActivos.filter(id => id !== form.dia).map(id => {
+                      const d = TODOS_DIAS.find(x => x.id === id);
+                      return <option key={id} value={id}>{d?.label}</option>;
+                    })}
+                  </select>
+                </div>
+                <div className={styles.formField}>
+                  <label>Inicio 2</label>
+                  <select className={styles.select} value={form.horaInicio2}
+                    onChange={e => setForm(f => ({ ...f, horaInicio2: e.target.value }))}>
+                    {HORAS.map(h => <option key={h} value={h}>{h}</option>)}
+                  </select>
+                </div>
+                <div className={styles.formField}>
+                  <label>Fin 2</label>
+                  <select className={styles.select} value={form.horaFin2}
+                    onChange={e => setForm(f => ({ ...f, horaFin2: e.target.value }))}>
+                    {HORAS.map(h => <option key={h} value={h}>{h}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className={styles.formField}>
+                <label>Edificio 2</label>
+                <div className={styles.edificioGrid}>
+                  {EDIFICIOS.map(e => (
+                    <button
+                      key={e.id}
+                      className={`${styles.edificioBtn} ${form.edificio2 === e.id ? styles.edificioBtnActive : ""}`}
+                      onClick={() => setForm(f => ({ ...f, edificio2: e.id, lado2: "", salon2: "" }))}
+                    >
+                      <span>{e.icon}</span>
+                      <span>{e.nombre}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {ed2 && ed2.lados && (
+                <div className={styles.formField}>
+                  <label>Lado 2</label>
+                  <div className={styles.ladoRow}>
+                    {ed2.lados.map(l => (
+                      <button
+                        key={l}
+                        className={`${styles.ladoBtn} ${form.lado2 === l ? styles.ladoBtnActive : ""}`}
+                        onClick={() => setForm(f => ({ ...f, lado2: l, salon2: "" }))}
+                      >
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {ed2 && (
+                <div className={styles.formField}>
+                  <label>Salón 2</label>
+                  <div className={styles.salonGrid}>
+                    {ed2.salones.map(s => (
+                      <button
+                        key={s}
+                        className={`${styles.salonBtn} ${form.salon2 === s ? styles.salonBtnActive : ""}`}
+                        onClick={() => setForm(f => ({ ...f, salon2: s }))}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {salonLabel2 && (
+                <div className={styles.salonPreview}>
+                  📍 {salonLabel2}
+                </div>
+              )}
+            </>
+          )}
 
           {/* Ubicación */}
           <div className={styles.formField}>
@@ -288,10 +448,11 @@ export default function HorarioView({ malla, horarioData, onSave, user }) {
 
   const handleAddClase = (clase) => {
     let clases;
+    const nuevasClases = clase?.clases || [];
     if (editando !== null && editando.claseIdx !== undefined) {
-      clases = data.clases.map((c, i) => i === editando.claseIdx ? clase : c);
+      clases = data.clases.map((c, i) => i === editando.claseIdx ? nuevasClases[0] : c);
     } else {
-      clases = [...data.clases, clase];
+      clases = [...data.clases, ...nuevasClases];
     }
     const updated = { ...data, clases };
     setData(updated);
@@ -402,7 +563,7 @@ export default function HorarioView({ malla, horarioData, onSave, user }) {
                           horaStart={start}
                           duracion={end - start}
                           onClick={() => {
-                            setEditando({ claseIdx: globalIdx, ...clase });
+                            setEditando({ claseIdx: globalIdx, ...clase, segundoDiaActivo: false });
                             setShowModal(true);
                           }}
                         />

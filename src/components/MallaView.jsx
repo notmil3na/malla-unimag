@@ -80,7 +80,7 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
   };
   const progress = Math.round((stats.aprobadas / stats.total) * 100);
   const semesterStart = new Date("2026-02-14T00:00:00");
-  const semesterEnd = new Date("2026-06-24T23:59:59");
+  const semesterEnd = new Date("2026-05-29T23:59:59");
   const today = new Date();
   const msPerDay = 1000 * 60 * 60 * 24;
   const totalSemesterDays = Math.ceil((semesterEnd - semesterStart) / msPerDay);
@@ -130,7 +130,7 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
         <div className={styles.semesterWidgetTop}>
           <div>
             <p className={styles.semesterWidgetLabel}>Cuenta regresiva del semestre</p>
-            <p className={styles.semesterWidgetRange}>14 feb 2026 - 24 jun 2026</p>
+            <p className={styles.semesterWidgetRange}>14 feb 2026 - 29 may 2026</p>
           </div>
           <span className={styles.semesterWidgetStatus}>{semesterStatus}</span>
         </div>
