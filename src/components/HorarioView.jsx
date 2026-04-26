@@ -59,7 +59,7 @@ const EDIFICIOS = [
   },
 ];
 
-const HORAS = [
+const HORAS_FORM = [
   "06:00 a. m.", "07:00 a. m.", "08:00 a. m.", "09:00 a. m.", "10:00 a. m.", "11:00 a. m.",
   "12:00 p. m.", "01:00 p. m.", "02:00 p. m.", "03:00 p. m.", "04:00 p. m.", "05:00 p. m.",
   "06:00 p. m.", "07:00 p. m.", "08:00 p. m.", "09:00 p. m.",
@@ -95,9 +95,16 @@ const LEGACY_HORAS = [
 
 function normalizeHora(hora) {
   if (!hora) return hora;
-  if (HORAS.includes(hora)) return hora;
+  if (HORAS_FORM.includes(hora)) return hora;
   const legacyIdx = LEGACY_HORAS.indexOf(hora);
-  if (legacyIdx >= 0) return HORAS[legacyIdx];
+  if (legacyIdx >= 0) return HORAS_FORM[legacyIdx];
+  return hora;
+}
+
+function toViewHora(hora) {
+  const normalized = normalizeHora(hora);
+  const idx = HORAS_FORM.indexOf(normalized);
+  if (idx >= 0) return LEGACY_HORAS[idx];
   return hora;
 }
 
@@ -147,15 +154,15 @@ function ClaseModal({ materiasActuales, diasActivos, onSave, onClose, editando, 
     if (form.segundoDiaActivo && (!form.dia2 || !form.horaInicio2 || !form.horaFin2)) return;
     if (form.segundoDiaActivo && form.dia2 === form.dia) return;
 
-    const startIdx = HORAS.indexOf(form.horaInicio);
-    const endIdx = HORAS.indexOf(form.horaFin);
+    const startIdx = HORAS_FORM.indexOf(form.horaInicio);
+    const endIdx = HORAS_FORM.indexOf(form.horaFin);
     if (startIdx < 0 || endIdx <= startIdx) {
       onNotify?.("Horario inválido: la hora de fin debe ser posterior al inicio");
       return;
     }
     if (form.segundoDiaActivo) {
-      const startIdx2 = HORAS.indexOf(form.horaInicio2);
-      const endIdx2 = HORAS.indexOf(form.horaFin2);
+      const startIdx2 = HORAS_FORM.indexOf(form.horaInicio2);
+      const endIdx2 = HORAS_FORM.indexOf(form.horaFin2);
       if (startIdx2 < 0 || endIdx2 <= startIdx2) {
         onNotify?.("Horario 2 inválido: la hora de fin debe ser posterior al inicio");
         return;
@@ -228,14 +235,14 @@ function ClaseModal({ materiasActuales, diasActivos, onSave, onClose, editando, 
               <label>Inicio</label>
               <select className={styles.select} value={form.horaInicio}
                 onChange={e => setForm(f => ({ ...f, horaInicio: e.target.value }))}>
-                {HORAS.map(h => <option key={h} value={h}>{h}</option>)}
+                {HORAS_FORM.map(h => <option key={h} value={h}>{h}</option>)}
               </select>
             </div>
             <div className={styles.formField}>
               <label>Fin</label>
               <select className={styles.select} value={form.horaFin}
                 onChange={e => setForm(f => ({ ...f, horaFin: e.target.value }))}>
-                {HORAS.map(h => <option key={h} value={h}>{h}</option>)}
+                {HORAS_FORM.map(h => <option key={h} value={h}>{h}</option>)}
               </select>
             </div>
           </div>
@@ -281,14 +288,14 @@ function ClaseModal({ materiasActuales, diasActivos, onSave, onClose, editando, 
                   <label>Inicio 2</label>
                   <select className={styles.select} value={form.horaInicio2}
                     onChange={e => setForm(f => ({ ...f, horaInicio2: e.target.value }))}>
-                    {HORAS.map(h => <option key={h} value={h}>{h}</option>)}
+                    {HORAS_FORM.map(h => <option key={h} value={h}>{h}</option>)}
                   </select>
                 </div>
                 <div className={styles.formField}>
                   <label>Fin 2</label>
                   <select className={styles.select} value={form.horaFin2}
                     onChange={e => setForm(f => ({ ...f, horaFin2: e.target.value }))}>
-                    {HORAS.map(h => <option key={h} value={h}>{h}</option>)}
+                    {HORAS_FORM.map(h => <option key={h} value={h}>{h}</option>)}
                   </select>
                 </div>
               </div>
@@ -437,8 +444,8 @@ function ClaseModal({ materiasActuales, diasActivos, onSave, onClose, editando, 
 function ClaseBloque({ clase, materia, color, horaStart, duracion, onClick }) {
   const top    = horaStart * 64;
   const height = duracion * 64 - 4;
-  const horaInicio = normalizeHora(clase.horaInicio);
-  const horaFin = normalizeHora(clase.horaFin);
+  const horaInicio = toViewHora(clase.horaInicio);
+  const horaFin = toViewHora(clase.horaFin);
 
   return (
     <div
@@ -512,7 +519,7 @@ export default function HorarioView({ malla, horarioData, onSave, user, onNotify
   };
 
   // Calcular posición de bloque
-  const horaIdx = (h) => HORAS.indexOf(normalizeHora(h));
+  const horaIdx = (h) => HORAS_FORM.indexOf(normalizeHora(h));
 
   const diasActivos = TODOS_DIAS.filter(d => data.dias.includes(d.id));
 
@@ -572,7 +579,7 @@ export default function HorarioView({ malla, horarioData, onSave, user, onNotify
             {/* Columna de horas */}
             <div className={styles.horaCol}>
               <div className={styles.horaColHeader} />
-              {HORAS.map(h => (
+              {LEGACY_HORAS.map(h => (
                 <div key={h} className={styles.horaCell}>{h}</div>
               ))}
             </div>
@@ -583,7 +590,7 @@ export default function HorarioView({ malla, horarioData, onSave, user, onNotify
                 <div className={styles.diaHeader}>{dia.label}</div>
                 <div className={styles.diaBody}>
                   {/* Líneas guía */}
-                  {HORAS.map(h => (
+                  {LEGACY_HORAS.map(h => (
                     <div key={h} className={styles.horaLine} />
                   ))}
                   {/* Clases */}
