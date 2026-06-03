@@ -19,24 +19,31 @@ function calcPonderado(materias, notasMap) {
   return { valor: sumPond / sumCred, creditos: sumCred, sumPond };
 }
 
+function isValidGrade(value) {
+  if (value === undefined || value === null || value === "" || value === "-") return false;
+  const numeric = Number(value);
+  return !isNaN(numeric);
+}
+
 function calcGlobal(allMaterias, notasMap) {
-  // Use best (approved) attempt per materia
+  // Promedio acumulado: cada registro con nota válida cuenta por separado
+  // (incluye repeticiones e intentos perdidos; no se reemplaza por la más reciente)
   let sumPond = 0, sumCred = 0;
   allMaterias.forEach((m) => {
     const n = notasMap[m.id];
     if (!n) return;
-    // Pick best passing attempt, or last attempt if none passed
-    const intentos = n.intentos || [];
-    const passing  = intentos.filter((i) => Number(i.nota) >= PASS_GRADE);
-    const best     = passing.length ? passing[passing.length - 1] : intentos[intentos.length - 1];
-    const main     = n.nota !== undefined ? n : null;
-    let nota = null;
-    if (best) nota = Number(best.nota);
-    else if (main?.nota !== undefined) nota = Number(main.nota);
-    if (nota !== null && !isNaN(nota)) {
-      sumPond += nota * m.creditos;
+
+    if (isValidGrade(n.nota)) {
+      sumPond += Number(n.nota) * m.creditos;
       sumCred += m.creditos;
     }
+
+    (n.intentos || []).forEach((it) => {
+      if (isValidGrade(it.nota)) {
+        sumPond += Number(it.nota) * m.creditos;
+        sumCred += m.creditos;
+      }
+    });
   });
   if (sumCred === 0) return null;
   return { valor: sumPond / sumCred, creditos: sumCred };
