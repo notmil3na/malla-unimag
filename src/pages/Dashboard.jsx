@@ -7,6 +7,7 @@ import NotasView from "../components/NotasView";
 import CursandoView from "../components/CursandoView";
 import HorarioView from "../components/HorarioView";
 import SocialView from "../components/SocialView";
+import SemesterCountdownWidget from "../components/SemesterCountdownWidget";
 import { getMallaByCareer } from "../data/malla.js";
 import { supabase } from "../supabase";
 import styles from "./Dashboard.module.css";
@@ -202,6 +203,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
           <TemaView user={user} onUpdate={onUpdateUser} />
         )}
       </main>
+      <SemesterCountdownWidget />
       {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
     </div>
   );
