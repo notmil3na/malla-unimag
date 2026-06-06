@@ -193,6 +193,24 @@
   display: flex; flex-direction: column; gap: 6px;
 }
 
+.semestreOpt {
+  min-width: auto;
+}
+
+.materiasOptColumns {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.materiasOptCol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 168px;
+  flex-shrink: 0;
+}
+
 /* Detail panel */
 .detailPanel {
   position: fixed;
@@ -427,6 +445,14 @@
   }
 
   .semestre {
+    min-width: 165px;
+  }
+
+  .materiasOptColumns {
+    flex-direction: column;
+  }
+
+  .materiasOptCol {
     min-width: 165px;
   }
 

@@ -186,49 +186,68 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
 
       {/* Grid */}
       <div className={styles.grid}>
-        {malla.map((sem, si) => (
-          <div key={si} className={styles.semestre}>
-            <div className={styles.semestreHeader}>
-              <span className={styles.semestreNum}>
-                {typeof sem.semestre === "number" ? `S${sem.semestre}` : "OPT"}
-              </span>
-              <span className={styles.semestreLabel}>
-                {sem.label || `Semestre ${sem.semestre}`}
-              </span>
-              <span className={styles.semestreCreditos}>
-                {sem.materias.reduce((a, m) => a + m.creditos, 0)} cr
-              </span>
+        {malla.map((sem, si) => {
+          const isOptativas = sem.semestre === "opt";
+          const optColumns = isOptativas
+            ? [sem.materias.slice(0, 6), sem.materias.slice(6, 12), sem.materias.slice(12, 15)]
+            : null;
+
+          const renderCard = (mat) => (
+            <MateriaCard
+              key={mat.id}
+              materia={mat}
+              color={getColor(mat.estado)}
+              isSelected={selected?.id === mat.id}
+              isHighlightedPrereq={highlightedPrereqs.includes(mat.id)}
+              isHighlightedUnlock={highlightedUnlocks.includes(mat.id)}
+              isMatriculable={showMatriculables && matriculableIds.has(mat.id)}
+              isDimmed={
+                (selected
+                  && selected.id !== mat.id
+                  && !highlightedPrereqs.includes(mat.id)
+                  && !highlightedUnlocks.includes(mat.id))
+                || (showMatriculables
+                  && !selected
+                  && !matriculableIds.has(mat.id)
+                  && mat.estado === "faltante")
+              }
+              borderRadius={br}
+              fontScale={fs}
+              onClick={() => handleSelect(mat)}
+              onEstadoChange={(e) => handleEstadoChange(mat.id, e)}
+              allMaterias={allMaterias}
+            />
+          );
+
+          return (
+            <div key={si} className={`${styles.semestre} ${isOptativas ? styles.semestreOpt : ""}`}>
+              <div className={styles.semestreHeader}>
+                <span className={styles.semestreNum}>
+                  {typeof sem.semestre === "number" ? `S${sem.semestre}` : "OPT"}
+                </span>
+                <span className={styles.semestreLabel}>
+                  {sem.label || `Semestre ${sem.semestre}`}
+                </span>
+                <span className={styles.semestreCreditos}>
+                  {sem.materias.reduce((a, m) => a + m.creditos, 0)} cr
+                </span>
+              </div>
+              {isOptativas ? (
+                <div className={styles.materiasOptColumns}>
+                  {optColumns.map((col, ci) => (
+                    <div key={ci} className={styles.materiasOptCol}>
+                      {col.map((mat) => renderCard(mat))}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className={styles.materias}>
+                  {sem.materias.map((mat) => renderCard(mat))}
+                </div>
+              )}
             </div>
-            <div className={styles.materias}>
-              {sem.materias.map((mat, mi) => (
-                <MateriaCard
-                  key={mat.id}
-                  materia={mat}
-                  color={getColor(mat.estado)}
-                  isSelected={selected?.id === mat.id}
-                  isHighlightedPrereq={highlightedPrereqs.includes(mat.id)}
-                  isHighlightedUnlock={highlightedUnlocks.includes(mat.id)}
-                  isMatriculable={showMatriculables && matriculableIds.has(mat.id)}
-                  isDimmed={
-                    (selected
-                      && selected.id !== mat.id
-                      && !highlightedPrereqs.includes(mat.id)
-                      && !highlightedUnlocks.includes(mat.id))
-                    || (showMatriculables
-                      && !selected
-                      && !matriculableIds.has(mat.id)
-                      && mat.estado === "faltante")
-                  }
-                  borderRadius={br}
-                  fontScale={fs}
-                  onClick={() => handleSelect(mat)}
-                  onEstadoChange={(e) => handleEstadoChange(mat.id, e)}
-                  allMaterias={allMaterias}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className={styles.matriculablesBar}>
