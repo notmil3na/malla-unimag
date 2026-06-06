@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CORTES, corteForSemester } from "../App";
+import { calcCareerTime, estimateGraduation } from "../utils/careerProgress.js";
 import styles from "./PerfilView.module.css";
 
 const UNIVERSITIES = {
@@ -25,6 +26,8 @@ export default function PerfilView({ user, onUpdate, onMallaReset, malla }) {
   const totalCreditosCursando = materiasActuales.reduce((a, m) => a + m.creditos, 0);
 
   const corteActual = corteForSemester(form.ingresoCorte, Number(form.semester));
+  const careerTime = calcCareerTime({ ...user, ...form, semester: Number(form.semester) });
+  const graduation = estimateGraduation(malla, { ...user, ...form, semester: Number(form.semester) });
 
   const handlePhoto = (e) => {
     const file = e.target.files[0];
@@ -53,6 +56,43 @@ export default function PerfilView({ user, onUpdate, onMallaReset, malla }) {
       <div className={styles.header}>
         <h2 className={styles.title}>Mi Perfil</h2>
         <p className={styles.subtitle}>Personaliza tu información universitaria</p>
+      </div>
+
+      <div className={styles.careerCard}>
+        <h3 className={styles.careerTitle}>Trayectoria académica</h3>
+        <div className={styles.careerGrid}>
+          <div className={styles.careerStat}>
+            <span className={styles.careerLabel}>Tiempo en la carrera</span>
+            <span className={styles.careerVal}>
+              {careerTime.years > 0 ? `${careerTime.years} año${careerTime.years !== 1 ? "s" : ""}` : ""}
+              {careerTime.years > 0 && careerTime.months > 0 ? " y " : ""}
+              {careerTime.months > 0 ? `${careerTime.months} mes${careerTime.months !== 1 ? "es" : ""}` : careerTime.years === 0 ? `${careerTime.totalMonths} meses` : ""}
+            </span>
+            <span className={styles.careerSub}>
+              Desde corte {form.ingresoCorte}
+              {careerTime.currentCorte ? ` · Corte actual ${careerTime.currentCorte}` : ""}
+              {careerTime.semesters > 0 ? ` · ${careerTime.semesters} semestre${careerTime.semesters !== 1 ? "s" : ""}` : ""}
+            </span>
+          </div>
+          <div className={styles.careerStat}>
+            <span className={styles.careerLabel}>Estimado para graduarse</span>
+            {graduation.mensaje ? (
+              <span className={styles.careerValSmall}>{graduation.mensaje}</span>
+            ) : (
+              <>
+                <span className={styles.careerVal}>
+                  {graduation.anosEstimados > 0 ? `${graduation.anosEstimados} año${graduation.anosEstimados !== 1 ? "s" : ""}` : ""}
+                  {graduation.anosEstimados > 0 && graduation.mesesRestantes > 0 ? " y " : ""}
+                  {graduation.mesesRestantes > 0 ? `${graduation.mesesRestantes} mes${graduation.mesesRestantes !== 1 ? "es" : ""}` : graduation.anosEstimados === 0 ? `${graduation.mesesEstimados} meses` : ""}
+                </span>
+                <span className={styles.careerSub}>
+                  Ritmo: {graduation.ritmoCreditosPorSemestre.toFixed(1)} cr/semestre
+                  · Faltan {graduation.creditosPendientes} cr ({graduation.semestresEstimados} semestre{graduation.semestresEstimados !== 1 ? "s" : ""})
+                </span>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className={styles.twoCol}>

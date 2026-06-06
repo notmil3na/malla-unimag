@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { MALLA, ESTADOS } from "../data/malla.js";
 import { getSemesterCountdown, SEMESTER_CORTE } from "../utils/semesterCountdown.js";
 import { canEnrollMateria } from "../utils/gradeHelpers.js";
+import { buildMallaTxt, downloadTxt } from "../utils/mallaExport.js";
+import { getObligatorias } from "../utils/careerProgress.js";
 import MateriaCard from "./MateriaCard";
 import styles from "./MallaView.module.css";
 
@@ -20,7 +22,7 @@ function applyAutoApprove(malla, currentSemester) {
   }));
 }
 
-export default function MallaView({ malla: initialMalla, onSave, user }) {
+export default function MallaView({ malla: initialMalla, notas, onSave, user, onNotify }) {
   const [malla, setMalla] = useState(() =>
     applyAutoApprove(initialMalla || MALLA, user.semester || 1)
   );
@@ -38,6 +40,7 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
   const fs     = user.fontScale ?? 1;
 
   const allMaterias = malla.flatMap((s) => s.materias);
+  const obligatorias = getObligatorias(malla);
 
   const getColor = (estado) => {
     if (estado === "aprobada") return colors.aprobada || "#6ec88a";
@@ -96,12 +99,19 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
   };
 
   const stats = {
-    total:     allMaterias.length,
-    aprobadas: allMaterias.filter((m) => m.estado === "aprobada").length,
-    cursando:  allMaterias.filter((m) => m.estado === "cursando").length,
-    faltantes: allMaterias.filter((m) => m.estado === "faltante").length,
+    total:     obligatorias.length,
+    aprobadas: obligatorias.filter((m) => m.estado === "aprobada").length,
+    cursando:  obligatorias.filter((m) => m.estado === "cursando").length,
+    faltantes: obligatorias.filter((m) => m.estado === "faltante").length,
   };
-  const progress = Math.round((stats.aprobadas / stats.total) * 100);
+  const progress = stats.total > 0 ? Math.round((stats.aprobadas / stats.total) * 100) : 0;
+
+  const handleDownload = () => {
+    const content = buildMallaTxt({ user, malla, notas: notas || {} });
+    const safeName = (user.username || "estudiante").replace(/[^\w.-]/g, "_");
+    downloadTxt(`malla_${safeName}.txt`, content);
+    onNotify?.("Malla descargada");
+  };
   const semester = getSemesterCountdown();
   const matriculables = allMaterias.filter((m) => canEnrollMateria(m, allMaterias));
   const matriculableIds = new Set(matriculables.map((m) => m.id));
@@ -114,7 +124,11 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
           <h2 className={styles.title}>Malla Curricular</h2>
           <p className={styles.subtitle}>{user.career} · {user.university}</p>
         </div>
-        <div className={styles.stats}>
+        <div className={styles.headerActions}>
+          <button type="button" className={styles.downloadBtn} onClick={handleDownload}>
+            ↓ Descargar malla (.txt)
+          </button>
+          <div className={styles.stats}>
           {[
             { label: "Aprobadas", val: stats.aprobadas, color: colors.aprobada || "#6ec88a" },
             { label: "Cursando",  val: stats.cursando,  color: colors.cursando  || "#c8a96e" },
@@ -126,6 +140,7 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
               <span className={styles.statLabel}>{s.label}</span>
             </div>
           ))}
+          </div>
         </div>
       </div>
 

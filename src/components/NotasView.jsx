@@ -2,12 +2,14 @@ import { useState } from "react";
 import styles from "./NotasView.module.css";
 import {
   MAX_GRADE,
+  PASS_GRADE,
   isEnglishLetterGrade,
   isGradePassed,
   isGradeFailed,
   isValidNumericGrade,
   sanitizeNumericGrade,
 } from "../utils/gradeHelpers.js";
+import { projectDesiredAverage } from "../utils/careerProgress.js";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function calcPonderado(materias, notasMap, semestreById) {
@@ -228,6 +230,8 @@ export default function NotasView({ malla, notas, onSave, user }) {
   const [localNotas, setLocalNotas] = useState(notas || {});
   const [savedMsg, setSavedMsg]     = useState(false);
   const [view, setView]             = useState("semestres");
+  const [showDesiredMode, setShowDesiredMode] = useState(false);
+  const [desiredAvg, setDesiredAvg]           = useState("");
 
   const colors = user.themeColors || {};
   const colorA = colors.aprobada || "#6ec88a";
@@ -275,6 +279,10 @@ export default function NotasView({ malla, notas, onSave, user }) {
     return nota;
   };
 
+  const projection = showDesiredMode && desiredAvg !== ""
+    ? projectDesiredAverage(malla, localNotas, desiredAvg)
+    : null;
+
   return (
     <div className={styles.wrap}>
       <div className={styles.header}>
@@ -320,6 +328,75 @@ export default function NotasView({ malla, notas, onSave, user }) {
           )}
         </div>
       </div>
+
+      <div className={styles.desiredBar}>
+        <label className={styles.desiredToggle}>
+          <input
+            type="checkbox"
+            checked={showDesiredMode}
+            onChange={(e) => setShowDesiredMode(e.target.checked)}
+          />
+          <span>Modo promedio deseado</span>
+        </label>
+        {showDesiredMode && (
+          <div className={styles.desiredInputWrap}>
+            <label className={styles.desiredInputLabel}>Promedio meta</label>
+            <input
+              className={styles.desiredInput}
+              type="number"
+              min="0"
+              max={MAX_GRADE}
+              step="0.1"
+              value={desiredAvg}
+              onChange={(e) => setDesiredAvg(e.target.value)}
+              placeholder="Ej: 380"
+            />
+          </div>
+        )}
+      </div>
+
+      {showDesiredMode && projection && (
+        <div className={`${styles.projectionPanel} ${!projection.feasible ? styles.projectionWarn : ""}`}>
+          <div className={styles.projectionHeader}>
+            <h3 className={styles.projectionTitle}>Proyección hacia tu meta</h3>
+            {projection.currentAvg !== null && (
+              <span className={styles.projectionCurrent}>
+                Promedio actual: <strong>{projection.currentAvg.toFixed(1)}</strong>
+              </span>
+            )}
+          </div>
+          {projection.message && (
+            <p className={styles.projectionMessage}>{projection.message}</p>
+          )}
+          {projection.feasible && projection.requiredUniform !== null && (
+            <>
+              <p className={styles.projectionSummary}>
+                Necesitas un promedio de <strong>{projection.requiredUniform.toFixed(1)}</strong> en las
+                {" "}<strong>{projection.pendingCred}</strong> créditos pendientes sin nota numérica
+                {projection.requiredUniform >= PASS_GRADE ? " (aprobatorio)" : " (por debajo del mínimo 300)"}.
+              </p>
+              {[...projection.pendingBySem.entries()]
+                .sort(([a], [b]) => a - b)
+                .map(([semNum, mats]) => (
+                  <div key={semNum} className={styles.projectionSem}>
+                    <p className={styles.projectionSemTitle}>Semestre {semNum}</p>
+                    <div className={styles.projectionList}>
+                      {mats.map((m) => (
+                        <div key={m.id} className={styles.projectionRow}>
+                          <span className={styles.projectionNombre}>{m.nombre}</span>
+                          <span className={styles.projectionCred}>{m.creditos} cr</span>
+                          <span className={styles.projectionNota}>
+                            {projection.requiredUniform.toFixed(1)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+            </>
+          )}
+        </div>
+      )}
 
       {view === "semestres" && activeSemesters.map((sem) => {
         const activas = sem.materias.filter((m) => m.estado === "cursando" || m.estado === "aprobada");

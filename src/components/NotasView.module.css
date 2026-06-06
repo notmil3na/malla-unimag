@@ -46,6 +46,154 @@
 .globalSub   { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
 .globalVal   { font-family: var(--font-display); font-size: 36px; font-weight: 400; }
 
+.desiredBar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.desiredToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  user-select: none;
+}
+
+.desiredToggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.desiredInputWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.desiredInputLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.desiredInput {
+  width: 100px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 16px;
+  padding: 7px 10px;
+  text-align: center;
+}
+
+.projectionPanel {
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 12px;
+}
+
+.projectionWarn {
+  border-left-color: #e07070;
+}
+
+.projectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.projectionTitle {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 400;
+  margin: 0;
+  color: var(--text);
+}
+
+.projectionCurrent {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.projectionMessage,
+.projectionSummary {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 12px;
+  line-height: 1.45;
+}
+
+.projectionSem {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.projectionSemTitle {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin: 0 0 8px;
+}
+
+.projectionList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.projectionRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.projectionNombre {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.projectionCred {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.projectionNota {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--accent);
+  min-width: 48px;
+  text-align: right;
+}
+
 /* ── Semester card ────────────────────────────────── */
 .semCard {
   background: var(--surface); border: 1px solid var(--border);

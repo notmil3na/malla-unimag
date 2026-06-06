@@ -164,7 +164,13 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
       />
       <main className={styles.main}>
         {tab === "malla" && (
-          <MallaView malla={malla} onSave={saveMalla} user={user} />
+          <MallaView
+            malla={malla}
+            notas={notas}
+            onSave={saveMalla}
+            user={user}
+            onNotify={notify}
+          />
         )}
         {tab === "cursando" && (
           <CursandoView
