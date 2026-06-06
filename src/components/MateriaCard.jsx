@@ -1,7 +1,7 @@
 import styles from "./MateriaCard.module.css";
 
 export default function MateriaCard({
-  materia, color, isSelected, isHighlighted, isDimmed,
+  materia, color, isSelected, isHighlightedPrereq, isHighlightedUnlock, isDimmed,
   borderRadius, fontScale, onClick, onEstadoChange
 }) {
   const br = borderRadius ?? 12;
@@ -9,7 +9,8 @@ export default function MateriaCard({
 
   let cardClass = styles.card;
   if (isSelected) cardClass += " " + styles.selected;
-  else if (isHighlighted) cardClass += " " + styles.highlighted;
+  else if (isHighlightedPrereq) cardClass += " " + styles.highlighted;
+  else if (isHighlightedUnlock) cardClass += " " + styles.unlocked;
   else if (isDimmed) cardClass += " " + styles.dimmed;
 
   const hasPrereqs = materia.prereqs?.length > 0;

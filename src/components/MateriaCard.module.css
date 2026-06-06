@@ -26,9 +26,20 @@
   animation: pulse 1.5s infinite;
 }
 
+.card.unlocked {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--accent) 70%, var(--card-color));
+  animation: unlockPulse 1.8s infinite;
+}
+
 @keyframes pulse {
   0%, 100% { box-shadow: 0 0 0 1.5px var(--card-color); }
   50% { box-shadow: 0 0 0 3px var(--card-color), 0 0 12px var(--card-color); }
+}
+
+@keyframes unlockPulse {
+  0%, 100% { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--accent) 70%, var(--card-color)); }
+  50% { box-shadow: 0 0 0 3px var(--accent), 0 0 10px color-mix(in srgb, var(--accent) 40%, transparent); }
 }
 
 .card.dimmed {

@@ -22,8 +22,9 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
   const [malla, setMalla] = useState(() =>
     applyAutoApprove(initialMalla || MALLA, user.semester || 1)
   );
-  const [selected, setSelected]       = useState(null);
-  const [highlighted, setHighlighted] = useState([]);
+  const [selected, setSelected]               = useState(null);
+  const [highlightedPrereqs, setHighlightedPrereqs] = useState([]);
+  const [highlightedUnlocks, setHighlightedUnlocks] = useState([]);
 
   useEffect(() => {
     if (initialMalla) setMalla(initialMalla);
@@ -42,8 +43,14 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
   };
 
   const handleSelect = (materia) => {
-    if (selected?.id === materia.id) { setSelected(null); setHighlighted([]); return; }
+    if (selected?.id === materia.id) {
+      setSelected(null);
+      setHighlightedPrereqs([]);
+      setHighlightedUnlocks([]);
+      return;
+    }
     setSelected(materia);
+
     const prereqTree = [];
     const collectPrereqs = (ids) => {
       ids.forEach((id) => {
@@ -55,7 +62,19 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
       });
     };
     collectPrereqs(materia.prereqs);
-    setHighlighted(prereqTree);
+    setHighlightedPrereqs(prereqTree);
+
+    const unlockTree = [];
+    const collectUnlocks = (materiaId) => {
+      allMaterias.forEach((m) => {
+        if (m.prereqs.includes(materiaId) && !unlockTree.includes(m.id)) {
+          unlockTree.push(m.id);
+          collectUnlocks(m.id);
+        }
+      });
+    };
+    collectUnlocks(materia.id);
+    setHighlightedUnlocks(unlockTree);
   };
 
   const handleEstadoChange = (materiaId, newEstado) => {
@@ -149,7 +168,7 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
 
       {/* Legend */}
       <div className={styles.legend}>
-        <span className={styles.legendHint}>💡 Haz clic en una materia para ver sus prerequisitos</span>
+        <span className={styles.legendHint}>💡 Haz clic en una materia para ver prerequisitos y materias que desbloquea</span>
         <div className={styles.legendItems}>
           {Object.entries(ESTADOS).map(([k, v]) => (
             <div key={k} className={styles.legendItem}>
@@ -178,8 +197,14 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
                   materia={mat}
                   color={getColor(mat.estado)}
                   isSelected={selected?.id === mat.id}
-                  isHighlighted={highlighted.includes(mat.id)}
-                  isDimmed={selected && selected.id !== mat.id && !highlighted.includes(mat.id)}
+                  isHighlightedPrereq={highlightedPrereqs.includes(mat.id)}
+                  isHighlightedUnlock={highlightedUnlocks.includes(mat.id)}
+                  isDimmed={
+                    selected
+                    && selected.id !== mat.id
+                    && !highlightedPrereqs.includes(mat.id)
+                    && !highlightedUnlocks.includes(mat.id)
+                  }
                   borderRadius={br}
                   fontScale={fs}
                   onClick={() => handleSelect(mat)}
@@ -203,7 +228,11 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
               <h3 className={styles.detailName}>{selected.nombre}</h3>
               <p className={styles.detailId}>{selected.id} · {selected.creditos} créditos</p>
             </div>
-            <button className={styles.detailClose} onClick={() => { setSelected(null); setHighlighted([]); }}>✕</button>
+            <button className={styles.detailClose} onClick={() => {
+              setSelected(null);
+              setHighlightedPrereqs([]);
+              setHighlightedUnlocks([]);
+            }}>✕</button>
           </div>
           <div className={styles.detailBody}>
             <div className={styles.detailSection}>
@@ -234,6 +263,23 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
                         <span className={styles.prereqDot} style={{ background: getColor(pm.estado) }} />
                         <span className={styles.prereqName}>{pm.nombre}</span>
                         <span className={styles.prereqStatus}>{ESTADOS[pm.estado]?.label}</span>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            )}
+            {highlightedUnlocks.length > 0 && (
+              <div className={styles.detailSection}>
+                <p className={styles.detailSectionLabel}>Desbloquea:</p>
+                <div className={styles.prereqList}>
+                  {highlightedUnlocks.map((uid) => {
+                    const um = allMaterias.find((m) => m.id === uid);
+                    return um ? (
+                      <div key={uid} className={`${styles.prereqItem} ${styles.unlockItem}`} style={{ borderColor: getColor(um.estado) }}>
+                        <span className={styles.prereqDot} style={{ background: getColor(um.estado) }} />
+                        <span className={styles.prereqName}>{um.nombre}</span>
+                        <span className={styles.prereqStatus}>{ESTADOS[um.estado]?.label}</span>
                       </div>
                     ) : null;
                   })}
