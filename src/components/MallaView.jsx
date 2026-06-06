@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { MALLA, ESTADOS } from "../data/malla.js";
 import { getSemesterCountdown, SEMESTER_CORTE } from "../utils/semesterCountdown.js";
+import { canEnrollMateria } from "../utils/gradeHelpers.js";
 import MateriaCard from "./MateriaCard";
 import styles from "./MallaView.module.css";
 
@@ -9,6 +10,7 @@ function applyAutoApprove(malla, currentSemester) {
   return malla.map((sem) => ({
     ...sem,
     materias: sem.materias.map((m) => {
+      if (typeof sem.semestre !== "number") return m;
       if (sem.semestre < currentSemester && m.estado === "faltante")
         return { ...m, estado: "aprobada" };
       if (sem.semestre === currentSemester && m.estado === "faltante")
@@ -25,6 +27,7 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
   const [selected, setSelected]               = useState(null);
   const [highlightedPrereqs, setHighlightedPrereqs] = useState([]);
   const [highlightedUnlocks, setHighlightedUnlocks] = useState([]);
+  const [showMatriculables, setShowMatriculables] = useState(false);
 
   useEffect(() => {
     if (initialMalla) setMalla(initialMalla);
@@ -100,6 +103,8 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
   };
   const progress = Math.round((stats.aprobadas / stats.total) * 100);
   const semester = getSemesterCountdown();
+  const matriculables = allMaterias.filter((m) => canEnrollMateria(m, allMaterias));
+  const matriculableIds = new Set(matriculables.map((m) => m.id));
 
   return (
     <div className={styles.wrap} style={{ "--fs": fs }}>
@@ -168,7 +173,7 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
 
       {/* Legend */}
       <div className={styles.legend}>
-        <span className={styles.legendHint}>💡 Haz clic en una materia para ver prerequisitos y materias que desbloquea</span>
+        <span className={styles.legendHint}>💡 Haz clic en una materia para ver prerequisitos</span>
         <div className={styles.legendItems}>
           {Object.entries(ESTADOS).map(([k, v]) => (
             <div key={k} className={styles.legendItem}>
@@ -184,8 +189,12 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
         {malla.map((sem, si) => (
           <div key={si} className={styles.semestre}>
             <div className={styles.semestreHeader}>
-              <span className={styles.semestreNum}>S{sem.semestre}</span>
-              <span className={styles.semestreLabel}>Semestre {sem.semestre}</span>
+              <span className={styles.semestreNum}>
+                {typeof sem.semestre === "number" ? `S${sem.semestre}` : "OPT"}
+              </span>
+              <span className={styles.semestreLabel}>
+                {sem.label || `Semestre ${sem.semestre}`}
+              </span>
               <span className={styles.semestreCreditos}>
                 {sem.materias.reduce((a, m) => a + m.creditos, 0)} cr
               </span>
@@ -199,11 +208,16 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
                   isSelected={selected?.id === mat.id}
                   isHighlightedPrereq={highlightedPrereqs.includes(mat.id)}
                   isHighlightedUnlock={highlightedUnlocks.includes(mat.id)}
+                  isMatriculable={showMatriculables && matriculableIds.has(mat.id)}
                   isDimmed={
-                    selected
-                    && selected.id !== mat.id
-                    && !highlightedPrereqs.includes(mat.id)
-                    && !highlightedUnlocks.includes(mat.id)
+                    (selected
+                      && selected.id !== mat.id
+                      && !highlightedPrereqs.includes(mat.id)
+                      && !highlightedUnlocks.includes(mat.id))
+                    || (showMatriculables
+                      && !selected
+                      && !matriculableIds.has(mat.id)
+                      && mat.estado === "faltante")
                   }
                   borderRadius={br}
                   fontScale={fs}
@@ -216,6 +230,51 @@ export default function MallaView({ malla: initialMalla, onSave, user }) {
           </div>
         ))}
       </div>
+
+      <div className={styles.matriculablesBar}>
+        <label className={styles.matriculablesToggle}>
+          <input
+            type="checkbox"
+            checked={showMatriculables}
+            onChange={(e) => setShowMatriculables(e.target.checked)}
+          />
+          <span>Ver materias que puedo matricular este semestre</span>
+          {showMatriculables && (
+            <span className={styles.matriculablesCount}>{matriculables.length} disponibles</span>
+          )}
+        </label>
+      </div>
+
+      {showMatriculables && (
+        <div className={styles.matriculablesPanel}>
+          <div className={styles.matriculablesPanelHeader}>
+            <h3 className={styles.matriculablesTitle}>Puedes matricular este semestre</h3>
+            <p className={styles.matriculablesSub}>
+              Materias faltantes con todos los prerequisitos aprobados
+            </p>
+          </div>
+          {matriculables.length > 0 ? (
+            <div className={styles.matriculablesList}>
+              {matriculables.map((mat) => (
+                <button
+                  key={mat.id}
+                  type="button"
+                  className={styles.matriculableItem}
+                  onClick={() => handleSelect(mat)}
+                >
+                  <span className={styles.matriculableId}>{mat.id}</span>
+                  <span className={styles.matriculableNombre}>{mat.nombre}</span>
+                  <span className={styles.matriculableCred}>{mat.creditos} cr</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className={styles.matriculablesEmpty}>
+              No hay materias disponibles por ahora. Aprueba los prerequisitos pendientes.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Detail panel */}
       {selected && (

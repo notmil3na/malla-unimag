@@ -289,6 +289,121 @@
   font-size: 10px; color: var(--text-muted);
 }
 
+.matriculablesBar {
+  margin: 8px 0 16px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.matriculablesToggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: calc(13px * var(--fs, 1));
+  color: var(--text);
+  user-select: none;
+}
+
+.matriculablesToggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.matriculablesCount {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6eb5c8;
+  background: color-mix(in srgb, #6eb5c8 12%, transparent);
+  border: 1px solid color-mix(in srgb, #6eb5c8 35%, var(--border));
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.matriculablesPanel {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, #6eb5c8 8%, transparent), var(--surface));
+  border: 1px solid color-mix(in srgb, #6eb5c8 35%, var(--border));
+  border-radius: 12px;
+}
+
+.matriculablesPanelHeader {
+  margin-bottom: 12px;
+}
+
+.matriculablesTitle {
+  font-family: var(--font-display);
+  font-size: calc(18px * var(--fs, 1));
+  font-weight: 400;
+  color: var(--text);
+  margin: 0;
+}
+
+.matriculablesSub {
+  font-size: calc(12px * var(--fs, 1));
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+
+.matriculablesList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.matriculableItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 3px solid #6eb5c8;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.matriculableItem:hover {
+  border-color: #6eb5c8;
+  background: color-mix(in srgb, #6eb5c8 8%, var(--surface2));
+}
+
+.matriculableId {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6eb5c8;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.matriculableNombre {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.matriculableCred {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.matriculablesEmpty {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
 @media (max-width: 900px) {
   .wrap {
     padding: 18px 14px;

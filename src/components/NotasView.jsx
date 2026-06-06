@@ -1,14 +1,21 @@
 import { useState } from "react";
 import styles from "./NotasView.module.css";
-
-const PASS_GRADE = 300;
-const MAX_GRADE = 500;
+import {
+  MAX_GRADE,
+  isEnglishLetterGrade,
+  isGradePassed,
+  isGradeFailed,
+  isValidNumericGrade,
+  sanitizeNumericGrade,
+} from "../utils/gradeHelpers.js";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-function calcPonderado(materias, notasMap) {
+function calcPonderado(materias, notasMap, semestreById) {
   let sumPond = 0, sumCred = 0;
   materias.forEach((m) => {
     const n = notasMap[m.id];
+    const sem = semestreById.get(m.id);
+    if (isEnglishLetterGrade(m, sem)) return;
     const nota = n?.nota !== undefined ? Number(n.nota) : null;
     if (nota !== null && !isNaN(nota)) {
       sumPond += nota * m.creditos;
@@ -19,27 +26,21 @@ function calcPonderado(materias, notasMap) {
   return { valor: sumPond / sumCred, creditos: sumCred, sumPond };
 }
 
-function isValidGrade(value) {
-  if (value === undefined || value === null || value === "" || value === "-") return false;
-  const numeric = Number(value);
-  return !isNaN(numeric);
-}
-
-function calcGlobal(allMaterias, notasMap) {
-  // Promedio acumulado: cada registro con nota válida cuenta por separado
-  // (incluye repeticiones e intentos perdidos; no se reemplaza por la más reciente)
+function calcGlobal(allMaterias, notasMap, semestreById) {
   let sumPond = 0, sumCred = 0;
   allMaterias.forEach((m) => {
     const n = notasMap[m.id];
     if (!n) return;
+    const sem = semestreById.get(m.id);
+    if (isEnglishLetterGrade(m, sem)) return;
 
-    if (isValidGrade(n.nota)) {
+    if (isValidNumericGrade(n.nota)) {
       sumPond += Number(n.nota) * m.creditos;
       sumCred += m.creditos;
     }
 
     (n.intentos || []).forEach((it) => {
-      if (isValidGrade(it.nota)) {
+      if (isValidNumericGrade(it.nota)) {
         sumPond += Number(it.nota) * m.creditos;
         sumCred += m.creditos;
       }
@@ -49,11 +50,13 @@ function calcGlobal(allMaterias, notasMap) {
   return { valor: sumPond / sumCred, creditos: sumCred };
 }
 
-function sanitizeGrade(value) {
-  if (value === undefined || value === null || value === "") return undefined;
-  const numeric = Number(value);
-  if (isNaN(numeric)) return undefined;
-  return Math.max(0, Math.min(MAX_GRADE, numeric));
+function buildSemestreMap(malla) {
+  const map = new Map();
+  malla.forEach((sem) => {
+    if (typeof sem.semestre !== "number") return;
+    sem.materias.forEach((m) => map.set(m.id, sem.semestre));
+  });
+  return map;
 }
 
 // ── sub-components ────────────────────────────────────────────────────────────
@@ -64,17 +67,49 @@ function GradeInput({ value, onChange, placeholder = "0 – 500" }) {
       className={styles.gradeInput}
       type="number" min="0" max={MAX_GRADE}
       value={value ?? ""}
-      onChange={(e) => onChange(sanitizeGrade(e.target.value))}
+      onChange={(e) => onChange(sanitizeNumericGrade(e.target.value))}
       placeholder={placeholder}
     />
   );
 }
 
-function MateriaRow({ mat, notaData, onChange, colorAprobada, colorCursando, colorFaltante }) {
+function LetterGradeSelect({ value, onChange }) {
+  return (
+    <select
+      className={styles.letterSelect}
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value || undefined)}
+    >
+      <option value="">—</option>
+      <option value="A">A — Aprobado</option>
+      <option value="I">I — Insuficiente</option>
+    </select>
+  );
+}
+
+function GradeBadge({ mat, semestre, nota }) {
+  if (nota === undefined || nota === null || nota === "") return null;
+  const passed = isGradePassed(mat, semestre, nota);
+  const failed = isGradeFailed(mat, semestre, nota);
+  if (!passed && !failed) return null;
+
+  const label = isEnglishLetterGrade(mat, semestre)
+    ? (passed ? "✓ Aprobado" : "✗ Insuficiente")
+    : (passed ? "✓ Aprobó" : "✗ Asignatura perdida");
+
+  return (
+    <span className={`${styles.gradeBadge} ${passed ? styles.gradeBadgePass : styles.gradeBadgeFail}`}>
+      {label}
+    </span>
+  );
+}
+
+function MateriaRow({ mat, semestre, notaData, onChange, colorAprobada, colorCursando, colorFaltante }) {
   const estado = mat.estado;
   const nota   = notaData?.nota;
-  const passed = nota !== undefined && Number(nota) >= PASS_GRADE;
-  const failed  = nota !== undefined && Number(nota) < PASS_GRADE;
+  const letterGrade = isEnglishLetterGrade(mat, semestre);
+  const passed = isGradePassed(mat, semestre, nota);
+  const failed = isGradeFailed(mat, semestre, nota);
   const intentos = notaData?.intentos || [];
 
   const color = estado === "aprobada" ? colorAprobada : estado === "cursando" ? colorCursando : colorFaltante;
@@ -87,70 +122,66 @@ function MateriaRow({ mat, notaData, onChange, colorAprobada, colorCursando, col
   const addIntento = () => onChange({ ...notaData, intentos: [...intentos, { nota: undefined, semestre: "" }] });
   const removeIntento = (idx) => onChange({ ...notaData, intentos: intentos.filter((_, i) => i !== idx) });
 
+  const showGradeFields = estado === "cursando" || estado === "aprobada";
+
   return (
-    <div className={`${styles.materiaRow} ${failed && estado !== "cursando" ? styles.materiaFailed : ""}`}>
-      {/* Color bar */}
+    <div className={`${styles.materiaRow} ${failed ? styles.materiaFailed : ""}`}>
       <div className={styles.materiaBar} style={{ background: color }} />
 
       <div className={styles.materiaBody}>
-        {/* Top row: name + credits */}
         <div className={styles.materiaTop}>
           <div>
             <span className={styles.materiaId}>{mat.id}</span>
             <span className={styles.materiaNombre}>{mat.nombre}</span>
+            {estado === "cursando" && (
+              <span className={styles.cursandoTag}>Cursando actualmente</span>
+            )}
           </div>
           <span className={styles.materiaCreditos}>{mat.creditos} cr</span>
         </div>
 
-        {/* Cursando: profesor, grupo, nota parcial */}
-        {estado === "cursando" && (
-          <div className={styles.cursandoFields}>
-            <div className={styles.fieldGroup}>
-              <label>Profesor</label>
-              <input
-                className={styles.textInput}
-                value={notaData?.profesor || ""}
-                onChange={(e) => updateField("profesor", e.target.value)}
-                placeholder="Nombre del profesor"
-              />
-            </div>
-            <div className={styles.fieldGroup}>
-              <label>Grupo</label>
-              <input
-                className={styles.textInput}
-                value={notaData?.grupo || ""}
-                onChange={(e) => updateField("grupo", e.target.value)}
-                placeholder="Ej: G01"
-              />
-            </div>
-            <div className={styles.fieldGroup}>
-              <label>Nota actual</label>
-              <GradeInput value={notaData?.nota} onChange={(v) => updateField("nota", v)} placeholder="Nota parcial" />
-            </div>
-          </div>
-        )}
-
-        {/* Aprobada: nota definitiva */}
-        {estado === "aprobada" && (
+        {showGradeFields && (
           <div className={styles.aprobadaFields}>
+            {estado === "cursando" && (
+              <div className={styles.cursandoFields}>
+                <div className={styles.fieldGroup}>
+                  <label>Profesor</label>
+                  <input
+                    className={styles.textInput}
+                    value={notaData?.profesor || ""}
+                    onChange={(e) => updateField("profesor", e.target.value)}
+                    placeholder="Nombre del profesor"
+                  />
+                </div>
+                <div className={styles.fieldGroup}>
+                  <label>Grupo</label>
+                  <input
+                    className={styles.textInput}
+                    value={notaData?.grupo || ""}
+                    onChange={(e) => updateField("grupo", e.target.value)}
+                    placeholder="Ej: G01"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className={styles.fieldGroup}>
               <label>Nota definitiva</label>
               <div className={styles.gradeWrap}>
-                <GradeInput value={notaData?.nota} onChange={(v) => updateField("nota", v)} />
-                {nota !== undefined && (
-                  <span className={`${styles.gradeBadge} ${passed ? styles.gradeBadgePass : styles.gradeBadgeFail}`}>
-                    {passed ? "✓ Aprobó" : "✗ Perdió"}
-                  </span>
+                {letterGrade ? (
+                  <LetterGradeSelect value={notaData?.nota} onChange={(v) => updateField("nota", v)} />
+                ) : (
+                  <GradeInput value={notaData?.nota} onChange={(v) => updateField("nota", v)} />
                 )}
+                <GradeBadge mat={mat} semestre={semestre} nota={nota} />
               </div>
             </div>
 
-            {/* Repeticiones */}
             {failed && (
               <div className={styles.repeticionSection}>
                 <div className={styles.repeticionHeader}>
-                  <span className={styles.repeticionLabel}>Materia perdida — Intentos adicionales</span>
-                  <button className={styles.addBtn} onClick={addIntento}>+ Agregar intento</button>
+                  <span className={styles.repeticionLabel}>Intentos adicionales</span>
+                  <button type="button" className={styles.addBtn} onClick={addIntento}>+ Agregar intento</button>
                 </div>
                 {intentos.map((it, idx) => (
                   <div key={idx} className={styles.intentoRow}>
@@ -166,18 +197,21 @@ function MateriaRow({ mat, notaData, onChange, colorAprobada, colorCursando, col
                     <div className={styles.fieldGroup}>
                       <label>Nota</label>
                       <div className={styles.gradeWrap}>
-                        <GradeInput
-                          value={it.nota}
-                          onChange={(v) => updateIntento(idx, "nota", v)}
-                        />
-                        {it.nota !== undefined && (
-                          <span className={`${styles.gradeBadge} ${Number(it.nota) >= PASS_GRADE ? styles.gradeBadgePass : styles.gradeBadgeFail}`}>
-                            {Number(it.nota) >= PASS_GRADE ? "✓" : "✗"}
-                          </span>
+                        {letterGrade ? (
+                          <LetterGradeSelect
+                            value={it.nota}
+                            onChange={(v) => updateIntento(idx, "nota", v)}
+                          />
+                        ) : (
+                          <GradeInput
+                            value={it.nota}
+                            onChange={(v) => updateIntento(idx, "nota", v)}
+                          />
                         )}
+                        <GradeBadge mat={mat} semestre={semestre} nota={it.nota} />
                       </div>
                     </div>
-                    <button className={styles.removeBtn} onClick={() => removeIntento(idx)}>✕</button>
+                    <button type="button" className={styles.removeBtn} onClick={() => removeIntento(idx)}>✕</button>
                   </div>
                 ))}
               </div>
@@ -193,12 +227,14 @@ function MateriaRow({ mat, notaData, onChange, colorAprobada, colorCursando, col
 export default function NotasView({ malla, notas, onSave, user }) {
   const [localNotas, setLocalNotas] = useState(notas || {});
   const [savedMsg, setSavedMsg]     = useState(false);
-  const [view, setView]             = useState("semestres"); // "semestres" | "resumen"
+  const [view, setView]             = useState("semestres");
 
   const colors = user.themeColors || {};
   const colorA = colors.aprobada || "#6ec88a";
   const colorC = colors.cursando || "#c8a96e";
   const colorF = colors.faltante || "#3a3a52";
+
+  const semestreById = buildSemestreMap(malla);
 
   const updateNota = (id, data) => {
     setLocalNotas((prev) => ({ ...prev, [id]: data }));
@@ -210,38 +246,43 @@ export default function NotasView({ malla, notas, onSave, user }) {
     setTimeout(() => setSavedMsg(false), 2000);
   };
 
-  // Only show semesters with at least cursando or aprobada materias
   const activeSemesters = malla.filter((sem) =>
-    sem.materias.some((m) => m.estado === "cursando" || m.estado === "aprobada")
+    typeof sem.semestre === "number"
+    && sem.materias.some((m) => m.estado === "cursando" || m.estado === "aprobada")
   );
 
   const allMaterias = malla.flatMap((s) => s.materias);
-  const globalPond  = calcGlobal(allMaterias, localNotas);
+  const globalPond  = calcGlobal(allMaterias, localNotas, semestreById);
 
-  // Créditos aprobados: materia aprobada con nota >= 300, o con al menos un intento aprobado
   const totalCreditos = allMaterias.reduce((a, m) => a + m.creditos, 0);
   const creditosAprobados = allMaterias.reduce((acc, m) => {
     const n = localNotas[m.id];
     if (!n) return acc;
-    const notaMain = n.nota !== undefined ? Number(n.nota) : null;
+    const sem = semestreById.get(m.id);
+    const notaMain = n.nota;
     const intentos = n.intentos || [];
-    const tieneIntentoAprobado = intentos.some((i) => Number(i.nota) >= PASS_GRADE);
-    if ((notaMain !== null && notaMain >= PASS_GRADE) || tieneIntentoAprobado)
-      return acc + m.creditos;
+    const aprobadoMain = isGradePassed(m, sem, notaMain);
+    const tieneIntentoAprobado = intentos.some((i) => isGradePassed(m, sem, i.nota));
+    if (aprobadoMain || tieneIntentoAprobado) return acc + m.creditos;
     return acc;
   }, 0);
   const pctAprobados = totalCreditos > 0 ? Math.round((creditosAprobados / totalCreditos) * 100) : 0;
 
+  const formatNotaResumen = (m, nota) => {
+    if (nota === undefined || nota === null || nota === "") return "—";
+    const sem = semestreById.get(m.id);
+    if (isEnglishLetterGrade(m, sem)) return nota;
+    return nota;
+  };
+
   return (
     <div className={styles.wrap}>
-      {/* Header */}
       <div className={styles.header}>
         <div>
           <h2 className={styles.title}>Notas y Promedios</h2>
           <p className={styles.subtitle}>{user.career} · {user.university}</p>
         </div>
         <div className={styles.headerActions}>
-          {/* View toggle */}
           <div className={styles.viewToggle}>
             <button className={`${styles.toggleBtn} ${view === "semestres" ? styles.toggleActive : ""}`} onClick={() => setView("semestres")}>
               Por semestre
@@ -256,7 +297,6 @@ export default function NotasView({ malla, notas, onSave, user }) {
         </div>
       </div>
 
-      {/* Global average banner */}
       <div className={styles.globalBanner} style={{ borderColor: colorA }}>
         <div>
           <p className={styles.globalLabel}>Promedio ponderado global acumulado</p>
@@ -281,10 +321,9 @@ export default function NotasView({ malla, notas, onSave, user }) {
         </div>
       </div>
 
-      {/* ── Semestres view ─────────────────────────── */}
       {view === "semestres" && activeSemesters.map((sem) => {
         const activas = sem.materias.filter((m) => m.estado === "cursando" || m.estado === "aprobada");
-        const pond = calcPonderado(activas, localNotas);
+        const pond = calcPonderado(activas, localNotas, semestreById);
 
         return (
           <div key={sem.semestre} className={styles.semCard}>
@@ -306,6 +345,7 @@ export default function NotasView({ malla, notas, onSave, user }) {
                 <MateriaRow
                   key={mat.id}
                   mat={mat}
+                  semestre={sem.semestre}
                   notaData={localNotas[mat.id]}
                   onChange={(data) => updateNota(mat.id, data)}
                   colorAprobada={colorA}
@@ -330,12 +370,11 @@ export default function NotasView({ malla, notas, onSave, user }) {
         );
       })}
 
-      {/* ── Resumen global view ────────────────────── */}
       {view === "resumen" && (
         <div className={styles.resumenWrap}>
           {activeSemesters.map((sem) => {
             const activas = sem.materias.filter((m) => m.estado === "cursando" || m.estado === "aprobada");
-            const pond    = calcPonderado(activas, localNotas);
+            const pond    = calcPonderado(activas, localNotas, semestreById);
             return (
               <div key={sem.semestre} className={styles.resumenRow}>
                 <div className={styles.resumenLeft}>
@@ -344,21 +383,21 @@ export default function NotasView({ malla, notas, onSave, user }) {
                     {activas.map((m) => {
                       const n    = localNotas[m.id];
                       const nota = n?.nota;
-                      const passed = nota !== undefined && Number(nota) >= PASS_GRADE;
-                      const failed = nota !== undefined && Number(nota) < PASS_GRADE;
+                      const passed = isGradePassed(m, sem.semestre, nota);
+                      const failed = isGradeFailed(m, sem.semestre, nota);
                       const intentos = n?.intentos || [];
-                      const lastApproved = intentos.filter((i) => Number(i.nota) >= PASS_GRADE).slice(-1)[0];
+                      const lastApproved = intentos.filter((i) => isGradePassed(m, sem.semestre, i.nota)).slice(-1)[0];
                       return (
                         <div key={m.id} className={styles.resumenMateria}>
                           <span className={styles.resumenDot}
                             style={{ background: m.estado === "cursando" ? colorC : colorA }} />
                           <span className={styles.resumenNombre}>{m.nombre}</span>
                           <span className={styles.resumenCred}>{m.creditos}cr</span>
-                          {nota !== undefined ? (
+                          {nota !== undefined && nota !== "" ? (
                             <span className={`${styles.resumenNota} ${passed ? styles.resumenPass : styles.resumenFail}`}>
-                              {nota}
+                              {formatNotaResumen(m, nota)}
                               {failed && lastApproved && (
-                                <span className={styles.resumenRetake}> → {lastApproved.nota} ✓</span>
+                                <span className={styles.resumenRetake}> → {formatNotaResumen(m, lastApproved.nota)} ✓</span>
                               )}
                             </span>
                           ) : (
@@ -384,7 +423,6 @@ export default function NotasView({ malla, notas, onSave, user }) {
             );
           })}
 
-          {/* Global total */}
           {globalPond && (
             <div className={styles.resumenTotal} style={{ borderColor: colorA }}>
               <span>Promedio ponderado acumulado total</span>

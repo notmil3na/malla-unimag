@@ -1,8 +1,8 @@
 import styles from "./MateriaCard.module.css";
 
 export default function MateriaCard({
-  materia, color, isSelected, isHighlightedPrereq, isHighlightedUnlock, isDimmed,
-  borderRadius, fontScale, onClick, onEstadoChange
+  materia, color, isSelected, isHighlightedPrereq, isHighlightedUnlock,
+  isMatriculable, isDimmed, borderRadius, fontScale, onClick, onEstadoChange
 }) {
   const br = borderRadius ?? 12;
   const fs = fontScale ?? 1;
@@ -11,6 +11,7 @@ export default function MateriaCard({
   if (isSelected) cardClass += " " + styles.selected;
   else if (isHighlightedPrereq) cardClass += " " + styles.highlighted;
   else if (isHighlightedUnlock) cardClass += " " + styles.unlocked;
+  else if (isMatriculable) cardClass += " " + styles.matriculable;
   else if (isDimmed) cardClass += " " + styles.dimmed;
 
   const hasPrereqs = materia.prereqs?.length > 0;
@@ -33,6 +34,9 @@ export default function MateriaCard({
           <span className={styles.creditos}>{materia.creditos}cr</span>
         </div>
         <p className={styles.nombre}>{materia.nombre}</p>
+        {isMatriculable && (
+          <div className={styles.matriculableBadge}>✦ Puedes matricular</div>
+        )}
         {hasPrereqs && (
           <div className={styles.prereqBadge}>
             <span>⬡</span> {materia.prereqs.length} prereq{materia.prereqs.length > 1 ? "s" : ""}

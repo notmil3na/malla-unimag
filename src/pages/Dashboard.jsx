@@ -6,8 +6,6 @@ import TemaView from "../components/TemaView";
 import NotasView from "../components/NotasView";
 import CursandoView from "../components/CursandoView";
 import HorarioView from "../components/HorarioView";
-import SocialView from "../components/SocialView";
-import SemesterCountdownWidget from "../components/SemesterCountdownWidget";
 import { getMallaByCareer } from "../data/malla.js";
 import { supabase } from "../supabase";
 import styles from "./Dashboard.module.css";
@@ -16,6 +14,7 @@ function autoApply(malla, currentSemester) {
   return malla.map((sem) => ({
     ...sem,
     materias: sem.materias.map((m) => {
+      if (typeof sem.semestre !== "number") return m;
       if (sem.semestre < currentSemester && m.estado === "faltante")
         return { ...m, estado: "aprobada" };
       if (sem.semestre === currentSemester && m.estado === "faltante")
@@ -136,7 +135,6 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
     { id: "cursando", label: "Semestre",     icon: "◉" },
     { id: "horario",  label: "Horario",      icon: "📅" },
     { id: "notas",    label: "Notas",        icon: "◑" },
-    { id: "social",   label: "Amigos",       icon: "👥" },
     { id: "perfil",   label: "Mi Perfil",    icon: "◎" },
     { id: "tema",     label: "Personalizar", icon: "◈" },
   ];
@@ -188,9 +186,6 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
         {tab === "notas" && (
           <NotasView malla={malla} notas={notas} onSave={saveNotas} user={user} />
         )}
-        {tab === "social" && (
-          <SocialView user={user} />
-        )}
         {tab === "perfil" && (
           <PerfilView
             user={user}
@@ -203,7 +198,6 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
           <TemaView user={user} onUpdate={onUpdateUser} />
         )}
       </main>
-      <SemesterCountdownWidget />
       {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
     </div>
   );

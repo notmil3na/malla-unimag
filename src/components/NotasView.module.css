@@ -103,6 +103,30 @@
 .materiaNombre { font-size: 14px; font-weight: 500; color: var(--text); }
 .materiaCreditos { font-size: 11px; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
 
+.cursandoTag {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.letterSelect {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 8px 12px;
+  outline: none;
+  min-width: 160px;
+  cursor: pointer;
+}
+.letterSelect:focus { border-color: var(--accent); }
+
 /* ── Field groups ─────────────────────────────────── */
 .cursandoFields,
 .aprobadaFields {

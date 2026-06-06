@@ -47,6 +47,31 @@
   transform: none;
 }
 
+.card.matriculable {
+  border-color: #6eb5c8;
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, #6eb5c8 60%, var(--card-color));
+  animation: matriculablePulse 2s infinite;
+}
+
+@keyframes matriculablePulse {
+  0%, 100% { box-shadow: 0 0 0 1.5px color-mix(in srgb, #6eb5c8 60%, var(--card-color)); }
+  50% { box-shadow: 0 0 0 3px #6eb5c8, 0 0 10px color-mix(in srgb, #6eb5c8 35%, transparent); }
+}
+
+.matriculableBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72em;
+  font-weight: 600;
+  color: #6eb5c8;
+  background: color-mix(in srgb, #6eb5c8 12%, transparent);
+  border: 1px solid color-mix(in srgb, #6eb5c8 40%, var(--border));
+  border-radius: 4px;
+  padding: 2px 5px;
+  margin-bottom: 4px;
+}
+
 .colorBar {
   height: 3px;
   width: 100%;
