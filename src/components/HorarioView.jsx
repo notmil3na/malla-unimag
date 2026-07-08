@@ -37,6 +37,19 @@ const ACCENT_COLORS = [
 ];
 
 // ── helpers ───────────────────────────────────────────────────────────────
+function buildColorMap(materias = []) {
+  const colorMap = {};
+  materias.forEach((m, i) => {
+    colorMap[m.id] = ACCENT_COLORS[i % ACCENT_COLORS.length];
+  });
+  return colorMap;
+}
+function getMateriaColor(materiaId, colorMap) {
+  if (colorMap?.[materiaId]) return colorMap[materiaId];
+  const safeId = String(materiaId ?? "");
+  const hash = Array.from(safeId).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  return ACCENT_COLORS[hash % ACCENT_COLORS.length];
+}
 function buildSalonLabel(edificioId, lado, salon) {
   const ed = EDIFICIOS.find(e=>e.id===edificioId);
   if (!ed) return "";
@@ -67,7 +80,7 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
   } : {
     materiaId: materiasDisponibles[0]?.id||"", dia: diasActivos[0]||"L",
     horaInicio:"07:00 a. m.", horaFin:"09:00 a. m.",
-    edificio:"", lado:"", salon:"",
+    edificio:"", lado:"", salon:"", grupo:"", profesor:"",
     segundoDiaActivo:false, dia2:"", horaInicio2:"07:00 a. m.", horaFin2:"09:00 a. m.",
     edificio2:"", lado2:"", salon2:"", notas:"",
   });
@@ -89,11 +102,13 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
     }
     const clases=[{ materiaId:form.materiaId, dia:form.dia,
       horaInicio:form.horaInicio, horaFin:form.horaFin,
-      edificio:form.edificio, lado:form.lado, salon:form.salon, salonLabel, notas:form.notas }];
+      edificio:form.edificio, lado:form.lado, salon:form.salon, salonLabel,
+      grupo:form.grupo, profesor:form.profesor, notas:form.notas }];
     if (form.segundoDiaActivo) clases.push({
       materiaId:form.materiaId, dia:form.dia2,
       horaInicio:form.horaInicio2, horaFin:form.horaFin2,
-      edificio:form.edificio2, lado:form.lado2, salon:form.salon2, salonLabel:salonLabel2, notas:form.notas,
+      edificio:form.edificio2, lado:form.lado2, salon:form.salon2, salonLabel:salonLabel2,
+      grupo:form.grupo, profesor:form.profesor, notas:form.notas,
     });
     onSave({ clases });
   };
@@ -115,6 +130,18 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
                 <option key={m.id} value={m.id}>{m.id} — {m.nombre}</option>
               ))}
             </select>
+          </div>
+          <div className={styles.formRow}>
+            <div className={styles.formField}>
+              <label>Grupo</label>
+              <input type="text" className={styles.input} value={form.grupo}
+                placeholder="G2" onChange={e=>setForm(f=>({...f,grupo:e.target.value}))} />
+            </div>
+            <div className={styles.formField}>
+              <label>Profesor</label>
+              <input type="text" className={styles.input} value={form.profesor}
+                placeholder="Santiago Navarro" onChange={e=>setForm(f=>({...f,profesor:e.target.value}))} />
+            </div>
           </div>
           <div className={styles.formRow}>
             <div className={styles.formField}>
@@ -285,14 +312,17 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
 // ── ClaseBloque (main view) ───────────────────────────────────────────────
 function ClaseBloque({ clase, materia, color, horaStart, duracion, onClick }) {
   const top=horaStart*64, height=duracion*64-4;
+  const claseLabel = [materia?.id || clase.materiaId, clase.grupo ? `- ${clase.grupo}` : ""].filter(Boolean).join(" ");
+  const profesorLabel = clase.profesor?.trim();
   return (
     <div className={styles.claseBloque}
       style={{top,height,"--clase-color":color}} onClick={onClick}
-      title={`${toViewHora(clase.horaInicio)}–${toViewHora(clase.horaFin)} | ${clase.salonLabel||""}`}>
+      title={`${claseLabel} | ${profesorLabel || ""} | ${toViewHora(clase.horaInicio)}–${toViewHora(clase.horaFin)} | ${clase.salonLabel||""}`}>
       <div className={styles.claseBloqueBar}/>
       <div className={styles.claseBloqueContent}>
-        <span className={styles.claseId}>{materia?.id||clase.materiaId}</span>
+        <span className={styles.claseId}>{claseLabel}</span>
         <span className={styles.claseHora}>{toViewHora(clase.horaInicio)}–{toViewHora(clase.horaFin)}</span>
+        {profesorLabel && <span className={styles.claseProfesor}>{profesorLabel}</span>}
         {clase.salonLabel && <span className={styles.claseSalon}>{clase.salonLabel}</span>}
       </div>
     </div>
@@ -373,13 +403,15 @@ function MiniHorario({ opcion, colorMap, materiasActuales, diasActivos, onEdit, 
                   const s=horaIdx(clase.horaInicio)-minH;
                   const dur=horaIdx(clase.horaFin)-horaIdx(clase.horaInicio);
                   if(s<0||dur<=0) return null;
-                  const color=colorMap[clase.materiaId]||"var(--accent)";
+                  const color=getMateriaColor(clase.materiaId, colorMap);
+                  const claseLabel = [materia?.id || clase.materiaId, clase.grupo ? `- ${clase.grupo}` : ""].filter(Boolean).join(" ");
                   return (
                     <div key={i} className={styles.miniBloqueAbs}
                       style={{top:s*CELL_H, height:dur*CELL_H-2,"--bloque-color":color}}
                       onClick={e=>{ e.stopPropagation(); onEdit({claseIdx:opcion.clases.indexOf(clase),...clase}); }}
-                      title={`${clase.materiaId} ${toViewHora(clase.horaInicio)}–${toViewHora(clase.horaFin)}`}>
-                      <span className={styles.miniBloqueAbsId}>{clase.materiaId}</span>
+                      title={`${claseLabel} ${clase.profesor ? `| ${clase.profesor}` : ""} ${toViewHora(clase.horaInicio)}–${toViewHora(clase.horaFin)}`}>
+                      <span className={styles.miniBloqueAbsId}>{claseLabel}</span>
+                      {clase.profesor && <span className={styles.miniBloqueAbsProfesor}>{clase.profesor}</span>}
                       <span className={styles.miniBloqueAbsHora}>{toViewHora(clase.horaInicio)}</span>
                     </div>
                   );
@@ -413,8 +445,7 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
   const allMaterias = malla.flatMap((s) => s.materias);
   const materiasActuales = allMaterias.filter((m) => m.estado === "cursando");
   const materiasDisponibles = allMaterias.filter((m) => canEnrollMateria(m, allMaterias));
-  const colorMap = {};
-  materiasActuales.forEach((m,i)=>{ colorMap[m.id]=ACCENT_COLORS[i%ACCENT_COLORS.length]; });
+  const colorMap = buildColorMap(allMaterias);
 
   const [opciones, setOpciones] = useState(planData?.opciones || []);
   const [selectedIdx, setSelectedIdx] = useState(planData?.selectedIdx ?? 0);
@@ -547,9 +578,9 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
   const [showModal, setShowModal] = useState(false);
   const [editando, setEditando] = useState(null);
 
-  const materiasActuales = malla.flatMap(s=>s.materias).filter(m=>m.estado==="cursando");
-  const colorMap = {};
-  materiasActuales.forEach((m,i)=>{ colorMap[m.id]=ACCENT_COLORS[i%ACCENT_COLORS.length]; });
+  const allMaterias = malla.flatMap(s=>s.materias);
+  const materiasActuales = allMaterias.filter(m=>m.estado==="cursando");
+  const colorMap = buildColorMap(allMaterias);
 
   const toggleDia = (id) => {
     const dias = data.dias.includes(id)
@@ -662,7 +693,7 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
                       const materia=materiasActuales.find(m=>m.id===clase.materiaId);
                       return (
                         <ClaseBloque key={i} clase={clase} materia={materia}
-                          color={colorMap[clase.materiaId]||"var(--accent)"}
+                          color={getMateriaColor(clase.materiaId, colorMap)}
                           horaStart={start} duracion={end-start}
                           onClick={()=>{ setEditando({claseIdx:globalIdx,...clase,segundoDiaActivo:false}); setShowModal(true); }}
                         />
