@@ -26,11 +26,9 @@ function autoApply(malla, currentSemester) {
 
 function mergeMallaWithBase(baseMalla, savedMalla) {
   if (!savedMalla) return baseMalla;
-
   const savedById = new Map(
     savedMalla.flatMap((sem) => sem.materias).map((m) => [m.id, m])
   );
-
   return baseMalla.map((sem) => ({
     ...sem,
     materias: sem.materias.map((baseMat) => {
@@ -42,7 +40,7 @@ function mergeMallaWithBase(baseMalla, savedMalla) {
   }));
 }
 
-// ── Supabase helpers ───────────────────────────────
+// Supabase helpers
 async function loadUserData(username) {
   const { data } = await supabase
     .from("user_data")
@@ -67,18 +65,19 @@ async function saveUserData(username, patch) {
 }
 
 export default function Dashboard({ user, onLogout, onUpdateUser }) {
-  const [tab, setTab]   = useState("malla");
+  const [tab, setTab]       = useState("malla");
   const [loaded, setLoaded] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
   const toastTimerRef = useRef(null);
 
-  const baseMalla = getMallaByCareer(user.career);
+  const baseMalla    = getMallaByCareer(user.career);
   const defaultMalla = autoApply(baseMalla, user.semester || 1);
 
   const [malla,        setMalla]        = useState(defaultMalla);
   const [notas,        setNotas]        = useState({});
   const [cursandoData, setCursandoData] = useState({});
   const [horarioData,  setHorarioData]  = useState({ dias: ["L","M","X","J","V"], clases: [] });
+  const [planData,     setPlanData]     = useState(null);
 
   const notify = (msg) => {
     setToastMsg(msg);
@@ -95,6 +94,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
         if (data.notas)    setNotas(data.notas);
         if (data.cursando) setCursandoData(data.cursando);
         if (data.horario)  setHorarioData(data.horario);
+        if (data.plan)     setPlanData(data.plan);
       }
       setLoaded(true);
     }
@@ -125,18 +125,23 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
     notify("Guardado correctamente");
   };
 
+  const savePlan = async (data) => {
+    setPlanData(data);
+    await saveUserData(user.username, { plan: data });
+  };
+
   const handleMallaReset = (newSemester) => {
     const reset = autoApply(baseMalla, newSemester);
     saveMalla(reset);
   };
 
   const tabs = [
-    { id: "malla",    label: "Malla",       icon: "⬡" },
-    { id: "cursando", label: "Semestre",     icon: "◉" },
-    { id: "horario",  label: "Horario",      icon: "📅" },
-    { id: "notas",    label: "Notas",        icon: "◑" },
-    { id: "perfil",   label: "Mi Perfil",    icon: "◎" },
-    { id: "tema",     label: "Personalizar", icon: "◈" },
+    { id: "malla",    label: "Malla",        icon: "⬡" },
+    { id: "cursando", label: "Semestre",      icon: "◉" },
+    { id: "horario",  label: "Horario",       icon: "📅" },
+    { id: "notas",    label: "Notas",         icon: "◑" },
+    { id: "perfil",   label: "Mi Perfil",     icon: "◎" },
+    { id: "tema",     label: "Personalizar",  icon: "◈" },
   ];
 
   if (!loaded) {
@@ -144,7 +149,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "center",
         height: "100vh", color: "var(--text-muted)", fontFamily: "var(--font-body)",
-        flexDirection: "column", gap: "12px"
+        flexDirection: "column", gap: "12px",
       }}>
         <span style={{ fontSize: "28px", color: "var(--accent)" }}>✦</span>
         <span>Cargando tu información...</span>
@@ -184,7 +189,9 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
           <HorarioView
             malla={malla}
             horarioData={horarioData}
+            planData={planData}
             onSave={saveHorario}
+            onSavePlan={savePlan}
             onNotify={notify}
             user={user}
           />
@@ -204,6 +211,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
           <TemaView user={user} onUpdate={onUpdateUser} />
         )}
       </main>
+
       {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
     </div>
   );
