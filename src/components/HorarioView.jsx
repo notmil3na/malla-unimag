@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { canEnrollMateria } from "../utils/gradeHelpers.js";
 import styles from "./HorarioView.module.css";
 
 // ── Edificios y salones ───────────────────────────────────────────────────
@@ -56,7 +57,7 @@ function toViewHora(hora) {
 function horaIdx(h) { return HORAS_FORM.indexOf(normalizeHora(h)); }
 
 // ── ClaseModal (unchanged) ────────────────────────────────────────────────
-function ClaseModal({ materiasActuales, diasActivos, onSave, onClose, editando, onDelete, onNotify }) {
+function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editando, onDelete, onNotify }) {
   const [form, setForm] = useState(editando ? {
     ...editando,
     horaInicio: normalizeHora(editando.horaInicio),
@@ -64,7 +65,7 @@ function ClaseModal({ materiasActuales, diasActivos, onSave, onClose, editando, 
     segundoDiaActivo:false, dia2:"", horaInicio2:"07:00 a. m.", horaFin2:"09:00 a. m.",
     edificio2:"", lado2:"", salon2:"",
   } : {
-    materiaId: materiasActuales[0]?.id||"", dia: diasActivos[0]||"L",
+    materiaId: materiasDisponibles[0]?.id||"", dia: diasActivos[0]||"L",
     horaInicio:"07:00 a. m.", horaFin:"09:00 a. m.",
     edificio:"", lado:"", salon:"",
     segundoDiaActivo:false, dia2:"", horaInicio2:"07:00 a. m.", horaFin2:"09:00 a. m.",
@@ -110,7 +111,7 @@ function ClaseModal({ materiasActuales, diasActivos, onSave, onClose, editando, 
             <select className={styles.select} value={form.materiaId}
               onChange={e=>setForm(f=>({...f,materiaId:e.target.value}))}>
               <option value="">— Selecciona —</option>
-              {materiasActuales.map(m=>(
+              {materiasDisponibles.map(m=>(
                 <option key={m.id} value={m.id}>{m.id} — {m.nombre}</option>
               ))}
             </select>
@@ -409,7 +410,9 @@ function MiniHorario({ opcion, colorMap, materiasActuales, diasActivos, onEdit, 
 
 // ── PlanificadorView ──────────────────────────────────────────────────────
 function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDias }) {
-  const materiasActuales = malla.flatMap(s=>s.materias).filter(m=>m.estado==="cursando");
+  const allMaterias = malla.flatMap((s) => s.materias);
+  const materiasActuales = allMaterias.filter((m) => m.estado === "cursando");
+  const materiasDisponibles = allMaterias.filter((m) => canEnrollMateria(m, allMaterias));
   const colorMap = {};
   materiasActuales.forEach((m,i)=>{ colorMap[m.id]=ACCENT_COLORS[i%ACCENT_COLORS.length]; });
 
@@ -524,7 +527,7 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
       {/* Modal */}
       {modalState && (
         <ClaseModal
-          materiasActuales={materiasActuales}
+          materiasDisponibles={materiasDisponibles}
           diasActivos={diasActivos}
           editando={modalState.editando?.claseIdx!==undefined ? modalState.editando : null}
           onSave={handleSaveClase}
@@ -688,7 +691,7 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
       {/* Modal horario principal */}
       {showModal && (
         <ClaseModal
-          materiasActuales={materiasActuales}
+          materiasDisponibles={materiasActuales}
           diasActivos={data.dias}
           editando={editando?.claseIdx!==undefined?editando:null}
           onSave={handleAddClase}
