@@ -318,7 +318,7 @@ function ClaseBloque({ clase, materia, color, horaStart, duracion, onClick }) {
 }
 
 // ── MiniHorario: small schedule card for planner ─────────────────────────
-function MiniHorario({ opcion, colorMap, materiasActuales, diasActivos, onEdit, onDelete, onRename, isSelected, onSelect, onAddClase }) {
+function MiniHorario({ opcion, colorMap, materiasRef, diasActivos, onEdit, onDelete, onRename, isSelected, onSelect, onAddClase }) {
   const [editingName, setEditingName] = useState(false);
   const [tempName, setTempName] = useState(opcion.nombre);
 
@@ -340,7 +340,7 @@ function MiniHorario({ opcion, colorMap, materiasActuales, diasActivos, onEdit, 
 
   const totalCred = [...new Set(clases.map(c=>c.materiaId))]
     .reduce((sum,id)=>{
-      const m=materiasActuales.find(x=>x.id===id);
+      const m=materiasRef.find(x=>x.id===id);
       return sum+(m?.creditos||0);
     },0);
 
@@ -543,7 +543,7 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
             <MiniHorario key={i}
               opcion={op}
               colorMap={colorMap}
-              materiasActuales={materiasActuales}
+              materiasRef={allMaterias}
               diasActivos={diasActivos}
               isSelected={selectedIdx===i}
               onSelect={()=>setSelectedIdx(i)}

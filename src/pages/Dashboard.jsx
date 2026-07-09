@@ -42,11 +42,15 @@ function mergeMallaWithBase(baseMalla, savedMalla) {
 
 // Supabase helpers
 async function loadUserData(username) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("user_data")
     .select("*")
     .eq("username", username)
     .single();
+  if (error && error.code !== "PGRST116") {
+    // PGRST116 = "no rows found", que es normal para un usuario nuevo.
+    console.error("Error cargando datos de usuario:", error);
+  }
   return data || null;
 }
 
@@ -57,11 +61,15 @@ async function saveUserData(username, patch) {
     .eq("username", username)
     .single();
 
-  if (existing) {
-    await supabase.from("user_data").update(patch).eq("username", username);
-  } else {
-    await supabase.from("user_data").insert({ username, ...patch });
+  const { error } = existing
+    ? await supabase.from("user_data").update(patch).eq("username", username)
+    : await supabase.from("user_data").insert({ username, ...patch });
+
+  if (error) {
+    console.error("Error guardando en Supabase:", error);
+    return { ok: false, error };
   }
+  return { ok: true };
 }
 
 export default function Dashboard({ user, onLogout, onUpdateUser }) {
@@ -103,32 +111,32 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
 
   const saveMalla = async (data) => {
     setMalla(data);
-    await saveUserData(user.username, { malla: data });
-    notify("Guardado correctamente");
+    const res = await saveUserData(user.username, { malla: data });
+    notify(res.ok ? "Guardado correctamente" : "Error al guardar. Intenta de nuevo.");
   };
 
   const saveNotas = async (data) => {
     setNotas(data);
-    await saveUserData(user.username, { notas: data });
-    notify("Guardado correctamente");
+    const res = await saveUserData(user.username, { notas: data });
+    notify(res.ok ? "Guardado correctamente" : "Error al guardar. Intenta de nuevo.");
   };
 
   const saveCursando = async (data) => {
     setCursandoData(data);
-    await saveUserData(user.username, { cursando: data });
-    notify("Guardado correctamente");
+    const res = await saveUserData(user.username, { cursando: data });
+    notify(res.ok ? "Guardado correctamente" : "Error al guardar. Intenta de nuevo.");
   };
 
   const saveHorario = async (data) => {
     setHorarioData(data);
-    await saveUserData(user.username, { horario: data });
-    notify("Guardado correctamente");
+    const res = await saveUserData(user.username, { horario: data });
+    notify(res.ok ? "Guardado correctamente" : "Error al guardar. Intenta de nuevo.");
   };
 
   const savePlan = async (data) => {
     setPlanData(data);
-    await saveUserData(user.username, { plan: data });
-    notify("Guardado correctamente");
+    const res = await saveUserData(user.username, { plan: data });
+    notify(res.ok ? "Guardado correctamente" : "Error al guardar. Intenta de nuevo.");
   };
 
   const handleMallaReset = (newSemester) => {
