@@ -15,7 +15,7 @@ const EDIFICIOS = [
   { id:"bloque_3", nombre:"Bloque 3", icon:"🧱", lados:null,
     salones: Array.from({length:8},(_,i)=>`${i+1}`), },
   { id:"hangar_a", nombre:"Hangar A", icon:"🔬", lados:null,
-    salones:["Lab. Modelado y Simulación"], },
+    salones:["Lab. Modelado y Simulación", "Lab. Redes"], },
 ];
 
 const HORAS_FORM = [
