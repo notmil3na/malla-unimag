@@ -62,12 +62,13 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
     ...editando,
     horaInicio: normalizeHora(editando.horaInicio),
     horaFin: normalizeHora(editando.horaFin),
+    grupo: editando.grupo||"", profesor: editando.profesor||"",
     segundoDiaActivo:false, dia2:"", horaInicio2:"07:00 a. m.", horaFin2:"09:00 a. m.",
     edificio2:"", lado2:"", salon2:"",
   } : {
     materiaId: materiasDisponibles[0]?.id||"", dia: diasActivos[0]||"L",
     horaInicio:"07:00 a. m.", horaFin:"09:00 a. m.",
-    edificio:"", lado:"", salon:"",
+    edificio:"", lado:"", salon:"", grupo:"", profesor:"",
     segundoDiaActivo:false, dia2:"", horaInicio2:"07:00 a. m.", horaFin2:"09:00 a. m.",
     edificio2:"", lado2:"", salon2:"", notas:"",
   });
@@ -89,11 +90,13 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
     }
     const clases=[{ materiaId:form.materiaId, dia:form.dia,
       horaInicio:form.horaInicio, horaFin:form.horaFin,
-      edificio:form.edificio, lado:form.lado, salon:form.salon, salonLabel, notas:form.notas }];
+      edificio:form.edificio, lado:form.lado, salon:form.salon, salonLabel,
+      grupo:form.grupo, profesor:form.profesor, notas:form.notas }];
     if (form.segundoDiaActivo) clases.push({
       materiaId:form.materiaId, dia:form.dia2,
       horaInicio:form.horaInicio2, horaFin:form.horaFin2,
-      edificio:form.edificio2, lado:form.lado2, salon:form.salon2, salonLabel:salonLabel2, notas:form.notas,
+      edificio:form.edificio2, lado:form.lado2, salon:form.salon2, salonLabel:salonLabel2,
+      grupo:form.grupo, profesor:form.profesor, notas:form.notas,
     });
     onSave({ clases });
   };
@@ -115,6 +118,18 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
                 <option key={m.id} value={m.id}>{m.id} — {m.nombre}</option>
               ))}
             </select>
+          </div>
+          <div className={styles.formRow}>
+            <div className={styles.formField}>
+              <label>Grupo</label>
+              <input type="text" className={styles.input} value={form.grupo}
+                placeholder="ej: G2" onChange={e=>setForm(f=>({...f,grupo:e.target.value}))} />
+            </div>
+            <div className={styles.formField}>
+              <label>Profesor</label>
+              <input type="text" className={styles.input} value={form.profesor}
+                placeholder="ej: Santiago Navarro" onChange={e=>setForm(f=>({...f,profesor:e.target.value}))} />
+            </div>
           </div>
           <div className={styles.formRow}>
             <div className={styles.formField}>
@@ -288,10 +303,13 @@ function ClaseBloque({ clase, materia, color, horaStart, duracion, onClick }) {
   return (
     <div className={styles.claseBloque}
       style={{top,height,"--clase-color":color}} onClick={onClick}
-      title={`${toViewHora(clase.horaInicio)}–${toViewHora(clase.horaFin)} | ${clase.salonLabel||""}`}>
+      title={`${materia?.id||clase.materiaId}${clase.grupo?` - ${clase.grupo}`:""}${clase.profesor?` · ${clase.profesor}`:""} | ${toViewHora(clase.horaInicio)}–${toViewHora(clase.horaFin)} | ${clase.salonLabel||""}`}>
       <div className={styles.claseBloqueBar}/>
       <div className={styles.claseBloqueContent}>
-        <span className={styles.claseId}>{materia?.id||clase.materiaId}</span>
+        <span className={styles.claseId}>
+          {materia?.id||clase.materiaId}{clase.grupo ? ` - ${clase.grupo}` : ""}
+        </span>
+        {clase.profesor && <span className={styles.claseProfesor}>{clase.profesor}</span>}
         <span className={styles.claseHora}>{toViewHora(clase.horaInicio)}–{toViewHora(clase.horaFin)}</span>
         {clase.salonLabel && <span className={styles.claseSalon}>{clase.salonLabel}</span>}
       </div>
@@ -378,8 +396,10 @@ function MiniHorario({ opcion, colorMap, materiasActuales, diasActivos, onEdit, 
                     <div key={i} className={styles.miniBloqueAbs}
                       style={{top:s*CELL_H, height:dur*CELL_H-2,"--bloque-color":color}}
                       onClick={e=>{ e.stopPropagation(); onEdit({claseIdx:opcion.clases.indexOf(clase),...clase}); }}
-                      title={`${clase.materiaId} ${toViewHora(clase.horaInicio)}–${toViewHora(clase.horaFin)}`}>
-                      <span className={styles.miniBloqueAbsId}>{clase.materiaId}</span>
+                      title={`${clase.materiaId}${clase.grupo?` - ${clase.grupo}`:""}${clase.profesor?` · ${clase.profesor}`:""} ${toViewHora(clase.horaInicio)}–${toViewHora(clase.horaFin)}`}>
+                      <span className={styles.miniBloqueAbsId}>
+                        {clase.materiaId}{clase.grupo ? ` - ${clase.grupo}` : ""}
+                      </span>
                       <span className={styles.miniBloqueAbsHora}>{toViewHora(clase.horaInicio)}</span>
                     </div>
                   );
