@@ -119,7 +119,6 @@
 }
 .claseId { font-size: 10px; font-weight: 700; color: var(--clase-color); letter-spacing: 0.04em; }
 .claseHora { font-size: 9px; color: var(--text-muted); }
-.claseProfesor { font-size: 8px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .claseSalon { font-size: 9px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ── Modal ────────────────────────────────────────── */
@@ -449,7 +448,6 @@
 }
 .miniBloqueAbs:hover { opacity: 0.8; z-index: 2; }
 .miniBloqueAbsId { font-size: 8px; font-weight: 700; color: var(--bloque-color); display: block; }
-.miniBloqueAbsProfesor { font-size: 7px; color: var(--text); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .miniBloqueAbsHora { font-size: 7px; color: var(--text-muted); }
 
 /* ── Agregar clase al plan ────────────────────────── */
