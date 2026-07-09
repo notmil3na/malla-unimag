@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { canEnrollMateria } from "../utils/gradeHelpers.js";
 import styles from "./HorarioView.module.css";
 
@@ -336,7 +336,7 @@ function MiniHorario({ opcion, colorMap, materiasActuales, diasActivos, onEdit, 
   const minH = usedHoras.length ? Math.max(0, Math.min(...usedHoras)-1) : 1;
   const maxH = usedHoras.length ? Math.min(LEGACY_HORAS.length-1, Math.max(...usedHoras)+1) : 9;
   const visHoras = LEGACY_HORAS.slice(minH, maxH+1);
-  const CELL_H = 28;
+  const CELL_H = 40;
 
   const totalCred = [...new Set(clases.map(c=>c.materiaId))]
     .reduce((sum,id)=>{
@@ -392,15 +392,17 @@ function MiniHorario({ opcion, colorMap, materiasActuales, diasActivos, onEdit, 
                   const dur=horaIdx(clase.horaFin)-horaIdx(clase.horaInicio);
                   if(s<0||dur<=0) return null;
                   const color=colorMap[clase.materiaId]||"var(--accent)";
+                  const miniLabel = `${clase.materiaId}${clase.grupo?` - ${clase.grupo}`:""}`;
                   return (
                     <div key={i} className={styles.miniBloqueAbs}
                       style={{top:s*CELL_H, height:dur*CELL_H-2,"--bloque-color":color}}
                       onClick={e=>{ e.stopPropagation(); onEdit({claseIdx:opcion.clases.indexOf(clase),...clase}); }}
-                      title={`${clase.materiaId}${clase.grupo?` - ${clase.grupo}`:""}${clase.profesor?` · ${clase.profesor}`:""} ${toViewHora(clase.horaInicio)}–${toViewHora(clase.horaFin)}`}>
-                      <span className={styles.miniBloqueAbsId}>
-                        {clase.materiaId}{clase.grupo ? ` - ${clase.grupo}` : ""}
-                      </span>
+                      title={`${miniLabel}${clase.profesor?` · ${clase.profesor}`:""} ${toViewHora(clase.horaInicio)}–${toViewHora(clase.horaFin)}`}>
+                      <span className={styles.miniBloqueAbsId}>{miniLabel}</span>
                       <span className={styles.miniBloqueAbsHora}>{toViewHora(clase.horaInicio)}</span>
+                      {clase.profesor && dur*CELL_H>=44 && (
+                        <span className={styles.miniBloqueAbsProf}>{clase.profesor}</span>
+                      )}
                     </div>
                   );
                 })}
@@ -433,12 +435,20 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
   const allMaterias = malla.flatMap((s) => s.materias);
   const materiasActuales = allMaterias.filter((m) => m.estado === "cursando");
   const materiasDisponibles = allMaterias.filter((m) => canEnrollMateria(m, allMaterias));
+  // El colorMap debe cubrir TODAS las materias agendables aquí (no solo
+  // las que están en curso), o muchas terminan compartiendo el mismo color.
+  const coloreables = materiasDisponibles.length ? materiasDisponibles : materiasActuales;
   const colorMap = {};
-  materiasActuales.forEach((m,i)=>{ colorMap[m.id]=ACCENT_COLORS[i%ACCENT_COLORS.length]; });
+  coloreables.forEach((m,i)=>{ colorMap[m.id]=ACCENT_COLORS[i%ACCENT_COLORS.length]; });
 
   const [opciones, setOpciones] = useState(planData?.opciones || []);
   const [selectedIdx, setSelectedIdx] = useState(planData?.selectedIdx ?? 0);
   const [modalState, setModalState] = useState(null); // {opcionIdx, editando?}
+
+  useEffect(() => {
+    setOpciones(planData?.opciones || []);
+    setSelectedIdx(planData?.selectedIdx ?? 0);
+  }, [planData]);
 
   const save = (newOpciones, newSelected) => {
     const d = { opciones: newOpciones, selectedIdx: newSelected??selectedIdx };
@@ -566,6 +576,10 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
   const [data, setData] = useState(horarioData || {dias:["L","M","X","J","V"],clases:[]});
   const [showModal, setShowModal] = useState(false);
   const [editando, setEditando] = useState(null);
+
+  useEffect(() => {
+    setData(horarioData || {dias:["L","M","X","J","V"],clases:[]});
+  }, [horarioData]);
 
   const materiasActuales = malla.flatMap(s=>s.materias).filter(m=>m.estado==="cursando");
   const colorMap = {};
