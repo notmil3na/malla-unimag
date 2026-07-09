@@ -434,7 +434,9 @@ function MiniHorario({ opcion, colorMap, materiasActuales, diasActivos, onEdit, 
 function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDias }) {
   const allMaterias = malla.flatMap((s) => s.materias);
   const materiasActuales = allMaterias.filter((m) => m.estado === "cursando");
-  const materiasDisponibles = allMaterias.filter((m) => canEnrollMateria(m, allMaterias));
+  const materiasDisponibles = allMaterias.filter(
+    (m) => canEnrollMateria(m, allMaterias) || m.estado === "cursando"
+  );
   // El colorMap debe cubrir TODAS las materias agendables aquí (no solo
   // las que están en curso), o muchas terminan compartiendo el mismo color.
   const coloreables = materiasDisponibles.length ? materiasDisponibles : materiasActuales;
@@ -482,11 +484,11 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
     if (!modalState) return;
     const {opcionIdx, editando} = modalState;
     const opcion = opciones[opcionIdx];
-    let clasesList;
+    let clasesList = [...(opcion.clases || [])];
     if (editando?.claseIdx !== undefined) {
-      clasesList = opcion.clases.map((c,i)=>i===editando.claseIdx?nuevasClases[0]:c);
+      clasesList.splice(editando.claseIdx, 1, ...nuevasClases);
     } else {
-      clasesList = [...(opcion.clases||[]), ...nuevasClases];
+      clasesList = [...clasesList, ...nuevasClases];
     }
     const next = opciones.map((o,i)=>i===opcionIdx?{...o,clases:clasesList}:o);
     save(next);
