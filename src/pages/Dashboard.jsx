@@ -128,6 +128,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
   const savePlan = async (data) => {
     setPlanData(data);
     await saveUserData(user.username, { plan: data });
+    notify("Guardado correctamente");
   };
 
   const handleMallaReset = (newSemester) => {
