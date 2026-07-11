@@ -144,6 +144,22 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
     saveMalla(reset);
   };
 
+  // Al transferir una opción del planificador a "Mi horario": las materias de
+  // esa opción pasan a "cursando"; las que estaban "cursando" y ya no están
+  // en la opción elegida vuelven a "faltante" (no se tocan las "aprobada").
+  const enrollMateriasFromPlan = (materiaIds) => {
+    const idSet = new Set(materiaIds);
+    const updated = malla.map((sem) => ({
+      ...sem,
+      materias: sem.materias.map((m) => {
+        if (idSet.has(m.id)) return { ...m, estado: "cursando" };
+        if (m.estado === "cursando") return { ...m, estado: "faltante" };
+        return m;
+      }),
+    }));
+    saveMalla(updated);
+  };
+
   const tabs = [
     { id: "malla",    label: "Malla",        icon: "⬡" },
     { id: "cursando", label: "Semestre",      icon: "◉" },
@@ -203,6 +219,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
             onSavePlan={savePlan}
             onNotify={notify}
             user={user}
+            onEnrollMaterias={enrollMateriasFromPlan}
           />
         )}
         {tab === "notas" && (

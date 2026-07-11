@@ -14,9 +14,24 @@ const EDIFICIOS = [
     salones:["Lab. de Mecánica I"], },
   { id:"bloque_3", nombre:"Bloque 3", icon:"🧱", lados:null,
     salones: Array.from({length:8},(_,i)=>`${i+1}`), },
+  { id:"bloque_8", nombre:"Bloque 8", icon:"🧱", lados:null,
+    salones: Array.from({length:8},(_,i)=>`${i+1}`), },
   { id:"hangar_a", nombre:"Hangar A", icon:"🔬", lados:null,
     salones:["Lab. Modelado y Simulación", "Lab. Redes"], },
 ];
+
+// Edificios donde se permite escribir un salón/laboratorio personalizado.
+const OTRO_SALON_IDS = ["bloque_3", "bloque_8"];
+const CUSTOM_SALONES_KEY = "horario_custom_salones_v1";
+function getCustomSalones() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(CUSTOM_SALONES_KEY));
+    return raw && typeof raw === "object" ? raw : {};
+  } catch { return {}; }
+}
+function saveCustomSalones(obj) {
+  try { localStorage.setItem(CUSTOM_SALONES_KEY, JSON.stringify(obj)); } catch {}
+}
 
 const HORAS_FORM = [
   "06:00 a. m.","07:00 a. m.","08:00 a. m.","09:00 a. m.","10:00 a. m.","11:00 a. m.",
@@ -56,15 +71,52 @@ function toViewHora(hora) {
 }
 function horaIdx(h) { return HORAS_FORM.indexOf(normalizeHora(h)); }
 
+// Dado un arreglo de clases y el índice en el que se hizo click, arma el
+// objeto que precarga el modal: si la clase tiene "pairId" y existe su
+// pareja (el otro día), las combina para editarlas juntas en un solo modal.
+function buildEditando(clases, idx) {
+  const clase = clases[idx];
+  if (!clase) return null;
+  if (clase.pairId) {
+    const otherIdx = clases.findIndex((c,i)=> i!==idx && c.pairId===clase.pairId);
+    if (otherIdx !== -1) {
+      const other = clases[otherIdx];
+      return {
+        idx1: idx, idx2: otherIdx, pairId: clase.pairId,
+        materiaId: clase.materiaId, grupo: clase.grupo||"", profesor: clase.profesor||"",
+        notas: clase.notas||"",
+        dia: clase.dia, horaInicio: clase.horaInicio, horaFin: clase.horaFin,
+        edificio: clase.edificio||"", lado: clase.lado||"", salon: clase.salon||"",
+        dia2: other.dia, horaInicio2: other.horaInicio, horaFin2: other.horaFin,
+        edificio2: other.edificio||"", lado2: other.lado||"", salon2: other.salon||"",
+        segundoDiaActivo: true,
+      };
+    }
+  }
+  return {
+    idx1: idx,
+    materiaId: clase.materiaId, grupo: clase.grupo||"", profesor: clase.profesor||"",
+    notas: clase.notas||"",
+    dia: clase.dia, horaInicio: clase.horaInicio, horaFin: clase.horaFin,
+    edificio: clase.edificio||"", lado: clase.lado||"", salon: clase.salon||"",
+    segundoDiaActivo: false,
+  };
+}
+
 // ── ClaseModal (unchanged) ────────────────────────────────────────────────
 function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editando, onDelete, onNotify }) {
   const [form, setForm] = useState(editando ? {
-    ...editando,
-    horaInicio: normalizeHora(editando.horaInicio),
-    horaFin: normalizeHora(editando.horaFin),
-    grupo: editando.grupo||"", profesor: editando.profesor||"",
-    segundoDiaActivo:false, dia2:"", horaInicio2:"07:00 a. m.", horaFin2:"09:00 a. m.",
-    edificio2:"", lado2:"", salon2:"",
+    materiaId: editando.materiaId||"", grupo: editando.grupo||"", profesor: editando.profesor||"",
+    dia: editando.dia||diasActivos[0]||"L",
+    horaInicio: normalizeHora(editando.horaInicio)||"07:00 a. m.",
+    horaFin: normalizeHora(editando.horaFin)||"09:00 a. m.",
+    edificio: editando.edificio||"", lado: editando.lado||"", salon: editando.salon||"",
+    segundoDiaActivo: !!editando.segundoDiaActivo,
+    dia2: editando.dia2||"",
+    horaInicio2: normalizeHora(editando.horaInicio2)||"07:00 a. m.",
+    horaFin2: normalizeHora(editando.horaFin2)||"09:00 a. m.",
+    edificio2: editando.edificio2||"", lado2: editando.lado2||"", salon2: editando.salon2||"",
+    notas: editando.notas||"",
   } : {
     materiaId: materiasDisponibles[0]?.id||"", dia: diasActivos[0]||"L",
     horaInicio:"07:00 a. m.", horaFin:"09:00 a. m.",
@@ -72,6 +124,24 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
     segundoDiaActivo:false, dia2:"", horaInicio2:"07:00 a. m.", horaFin2:"09:00 a. m.",
     edificio2:"", lado2:"", salon2:"", notas:"",
   });
+  const [customSalones, setCustomSalones] = useState(()=>getCustomSalones());
+  const [otroValue, setOtroValue] = useState("");
+  const [otroValue2, setOtroValue2] = useState("");
+
+  const commitOtro = (which) => {
+    const val = (which===1?otroValue:otroValue2).trim();
+    const edId = which===1?form.edificio:form.edificio2;
+    if (!val || !edId) return;
+    setCustomSalones(prev=>{
+      const list = prev[edId]||[];
+      if (list.includes(val)) return prev;
+      const next = {...prev, [edId]:[...list, val]};
+      saveCustomSalones(next);
+      return next;
+    });
+    if (which===1) { setForm(f=>({...f,salon:val})); setOtroValue(""); }
+    else { setForm(f=>({...f,salon2:val})); setOtroValue2(""); }
+  };
 
   const ed  = EDIFICIOS.find(e=>e.id===form.edificio);
   const ed2 = EDIFICIOS.find(e=>e.id===form.edificio2);
@@ -88,15 +158,20 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
       const s2=HORAS_FORM.indexOf(form.horaInicio2), e2=HORAS_FORM.indexOf(form.horaFin2);
       if(s2<0||e2<=s2){ onNotify?.("Horario 2 inválido"); return; }
     }
+    const pairId = form.segundoDiaActivo
+      ? (form.pairId || `p_${Date.now()}_${Math.random().toString(36).slice(2,8)}`)
+      : undefined;
     const clases=[{ materiaId:form.materiaId, dia:form.dia,
       horaInicio:form.horaInicio, horaFin:form.horaFin,
       edificio:form.edificio, lado:form.lado, salon:form.salon, salonLabel,
-      grupo:form.grupo, profesor:form.profesor, notas:form.notas }];
+      grupo:form.grupo, profesor:form.profesor, notas:form.notas,
+      ...(pairId?{pairId}:{}) }];
     if (form.segundoDiaActivo) clases.push({
       materiaId:form.materiaId, dia:form.dia2,
       horaInicio:form.horaInicio2, horaFin:form.horaFin2,
       edificio:form.edificio2, lado:form.lado2, salon:form.salon2, salonLabel:salonLabel2,
       grupo:form.grupo, profesor:form.profesor, notas:form.notas,
+      pairId,
     });
     onSave({ clases });
   };
@@ -186,7 +261,7 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
             <div className={styles.formField}>
               <label>Salón</label>
               <div className={styles.salonGrid}>
-                {ed?.salones.map(s=>(
+                {[...(ed?.salones||[]), ...(customSalones[form.edificio]||[])].map(s=>(
                   <button key={s}
                     className={`${styles.salonBtn} ${form.salon===s?styles.salonBtnActive:""}`}
                     onClick={()=>setForm(f=>({...f,salon:s}))}>
@@ -194,6 +269,15 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
                   </button>
                 ))}
               </div>
+              {OTRO_SALON_IDS.includes(form.edificio) && (
+                <div className={styles.otroSalonRow}>
+                  <input type="text" className={styles.input} value={otroValue}
+                    placeholder="Escribe el número o nombre del salón/lab…"
+                    onChange={e=>setOtroValue(e.target.value)}
+                    onKeyDown={e=>{ if(e.key==="Enter"){ e.preventDefault(); commitOtro(1); } }} />
+                  <button type="button" className={styles.btnSecondary} onClick={()=>commitOtro(1)}>+ Agregar</button>
+                </div>
+              )}
             </div>
           )}
           {salonLabel && <div className={styles.salonPreview}>📍 {salonLabel}</div>}
@@ -266,7 +350,7 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
               <div className={styles.formField}>
                 <label>Salón día 2</label>
                 <div className={styles.salonGrid}>
-                  {ed2?.salones.map(s=>(
+                  {[...(ed2?.salones||[]), ...(customSalones[form.edificio2]||[])].map(s=>(
                     <button key={s}
                       className={`${styles.salonBtn} ${form.salon2===s?styles.salonBtnActive:""}`}
                       onClick={()=>setForm(f=>({...f,salon2:s}))}>
@@ -274,6 +358,15 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
                     </button>
                   ))}
                 </div>
+                {OTRO_SALON_IDS.includes(form.edificio2) && (
+                  <div className={styles.otroSalonRow}>
+                    <input type="text" className={styles.input} value={otroValue2}
+                      placeholder="Escribe el número o nombre del salón/lab…"
+                      onChange={e=>setOtroValue2(e.target.value)}
+                      onKeyDown={e=>{ if(e.key==="Enter"){ e.preventDefault(); commitOtro(2); } }} />
+                    <button type="button" className={styles.btnSecondary} onClick={()=>commitOtro(2)}>+ Agregar</button>
+                  </div>
+                )}
               </div>
             )}
             {salonLabel2 && <div className={styles.salonPreview}>📍 {salonLabel2}</div>}
@@ -318,7 +411,7 @@ function ClaseBloque({ clase, materia, color, horaStart, duracion, onClick }) {
 }
 
 // ── MiniHorario: small schedule card for planner ─────────────────────────
-function MiniHorario({ opcion, colorMap, materiasRef, diasActivos, onEdit, onDelete, onRename, isSelected, onSelect, onAddClase }) {
+function MiniHorario({ opcion, priority, colorMap, materiasRef, diasActivos, onEdit, onDelete, onRename, isSelected, onSelect, onAddClase, onTransfer }) {
   const [editingName, setEditingName] = useState(false);
   const [tempName, setTempName] = useState(opcion.nombre);
 
@@ -350,6 +443,8 @@ function MiniHorario({ opcion, colorMap, materiasRef, diasActivos, onEdit, onDel
       {/* Header */}
       <div className={styles.miniCardHeader}>
         <div className={styles.miniCardName}>
+          <span className={styles.miniDragHandle} title="Arrastra para reordenar">⠿</span>
+          {typeof priority === "number" && <span className={styles.miniCardPriority}>#{priority}</span>}
           {editingName ? (
             <input className={styles.miniCardNameInput} value={tempName} autoFocus
               onClick={e=>e.stopPropagation()}
@@ -364,6 +459,10 @@ function MiniHorario({ opcion, colorMap, materiasRef, diasActivos, onEdit, onDel
           {isSelected && <span className={styles.miniCardBadge}>Activa</span>}
         </div>
         <div className={styles.miniCardActions}>
+          <button className={styles.miniActionBtn}
+            title={clases.length ? "Transferir a horario: este será tu horario del semestre" : "Agrega clases antes de transferir"}
+            disabled={!clases.length}
+            onClick={e=>{ e.stopPropagation(); if(clases.length) onTransfer(); }}>📤</button>
           <button className={styles.miniActionBtn} title="Renombrar"
             onClick={e=>{ e.stopPropagation(); setEditingName(true); }}>✎</button>
           <button className={`${styles.miniActionBtn} ${styles.miniActionBtnDanger}`}
@@ -396,7 +495,7 @@ function MiniHorario({ opcion, colorMap, materiasRef, diasActivos, onEdit, onDel
                   return (
                     <div key={i} className={styles.miniBloqueAbs}
                       style={{top:s*CELL_H, height:dur*CELL_H-2,"--bloque-color":color}}
-                      onClick={e=>{ e.stopPropagation(); onEdit({claseIdx:opcion.clases.indexOf(clase),...clase}); }}
+                      onClick={e=>{ e.stopPropagation(); onEdit(buildEditando(opcion.clases, opcion.clases.indexOf(clase))); }}
                       title={`${miniLabel}${clase.profesor?` · ${clase.profesor}`:""} ${toViewHora(clase.horaInicio)}–${toViewHora(clase.horaFin)}`}>
                       <span className={styles.miniBloqueAbsId}>{miniLabel}</span>
                       <span className={styles.miniBloqueAbsHora}>{toViewHora(clase.horaInicio)}</span>
@@ -431,7 +530,7 @@ function MiniHorario({ opcion, colorMap, materiasRef, diasActivos, onEdit, onDel
 }
 
 // ── PlanificadorView ──────────────────────────────────────────────────────
-function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDias }) {
+function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDias, onTransferToHorario, onEnrollMaterias }) {
   const allMaterias = malla.flatMap((s) => s.materias);
   const materiasActuales = allMaterias.filter((m) => m.estado === "cursando");
   const materiasDisponibles = allMaterias.filter(
@@ -446,6 +545,9 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
   const [opciones, setOpciones] = useState(planData?.opciones || []);
   const [selectedIdx, setSelectedIdx] = useState(planData?.selectedIdx ?? 0);
   const [modalState, setModalState] = useState(null); // {opcionIdx, editando?}
+  const [dragIdx, setDragIdx] = useState(null);
+  const [dragOverIdx, setDragOverIdx] = useState(null);
+  const [confirmTransferIdx, setConfirmTransferIdx] = useState(null);
 
   useEffect(() => {
     setOpciones(planData?.opciones || []);
@@ -480,13 +582,29 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
     save(next);
   };
 
+  const reorderOpciones = (fromIdx, toIdx) => {
+    if (fromIdx===toIdx) return;
+    const next = [...opciones];
+    const [moved] = next.splice(fromIdx,1);
+    next.splice(toIdx,0,moved);
+    let newSelected = selectedIdx;
+    if (selectedIdx===fromIdx) newSelected = toIdx;
+    else if (fromIdx<selectedIdx && toIdx>=selectedIdx) newSelected = selectedIdx-1;
+    else if (fromIdx>selectedIdx && toIdx<=selectedIdx) newSelected = selectedIdx+1;
+    save(next, newSelected);
+    setSelectedIdx(newSelected);
+    onNotify?.("Orden de prioridad actualizado");
+  };
+
   const handleSaveClase = ({clases:nuevasClases}) => {
     if (!modalState) return;
     const {opcionIdx, editando} = modalState;
     const opcion = opciones[opcionIdx];
     let clasesList = [...(opcion.clases || [])];
-    if (editando?.claseIdx !== undefined) {
-      clasesList.splice(editando.claseIdx, 1, ...nuevasClases);
+    if (editando && editando.idx1 !== undefined) {
+      const removeIdxs = new Set([editando.idx1, editando.idx2].filter(i=>i!==undefined));
+      clasesList = clasesList.filter((_,i)=>!removeIdxs.has(i));
+      clasesList = [...clasesList, ...nuevasClases];
     } else {
       clasesList = [...clasesList, ...nuevasClases];
     }
@@ -499,7 +617,8 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
   const handleDeleteClase = () => {
     if (!modalState?.editando) return;
     const {opcionIdx, editando} = modalState;
-    const clases = opciones[opcionIdx].clases.filter((_,i)=>i!==editando.claseIdx);
+    const removeIdxs = new Set([editando.idx1, editando.idx2].filter(i=>i!==undefined));
+    const clases = opciones[opcionIdx].clases.filter((_,i)=>!removeIdxs.has(i));
     const next = opciones.map((o,i)=>i===opcionIdx?{...o,clases}:o);
     save(next);
     setModalState(null);
@@ -507,6 +626,22 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
   };
 
   const diasActivos = mainDias || ["L","M","X","J","V"];
+
+  const handleTransferConfirmed = () => {
+    const idx = confirmTransferIdx;
+    if (idx==null || !opciones[idx]) return;
+    const opcion = opciones[idx];
+    const clases = (opcion.clases||[]).map(c=>({...c}));
+    const dias = (opcion.dias && opcion.dias.length) ? opcion.dias : diasActivos;
+
+    onTransferToHorario?.({ dias, clases });
+
+    const materiaIds = [...new Set(clases.map(c=>c.materiaId))];
+    if (materiaIds.length) onEnrollMaterias?.(materiaIds);
+
+    setConfirmTransferIdx(null);
+    onNotify?.(`"${opcion.nombre}" ahora es tu horario de este semestre`);
+  };
 
   return (
     <div className={styles.planWrap}>
@@ -540,18 +675,28 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
       ) : (
         <div className={styles.planGrid}>
           {opciones.map((op,i)=>(
-            <MiniHorario key={i}
-              opcion={op}
-              colorMap={colorMap}
-              materiasRef={allMaterias}
-              diasActivos={diasActivos}
-              isSelected={selectedIdx===i}
-              onSelect={()=>setSelectedIdx(i)}
-              onDelete={()=>deleteOpcion(i)}
-              onRename={(n)=>renameOpcion(i,n)}
-              onEdit={(editando)=>setModalState({opcionIdx:i,editando})}
-              onAddClase={()=>setModalState({opcionIdx:i})}
-            />
+            <div key={i}
+              className={`${styles.miniCardDragWrap} ${dragIdx===i?styles.miniCardDragging:""} ${dragOverIdx===i&&dragIdx!==null&&dragIdx!==i?styles.miniCardDragOver:""}`}
+              draggable
+              onDragStart={()=>setDragIdx(i)}
+              onDragOver={e=>{ e.preventDefault(); setDragOverIdx(i); }}
+              onDrop={()=>{ if(dragIdx!==null) reorderOpciones(dragIdx,i); setDragIdx(null); setDragOverIdx(null); }}
+              onDragEnd={()=>{ setDragIdx(null); setDragOverIdx(null); }}>
+              <MiniHorario
+                opcion={op}
+                priority={i+1}
+                colorMap={colorMap}
+                materiasRef={allMaterias}
+                diasActivos={diasActivos}
+                isSelected={selectedIdx===i}
+                onSelect={()=>setSelectedIdx(i)}
+                onDelete={()=>deleteOpcion(i)}
+                onRename={(n)=>renameOpcion(i,n)}
+                onEdit={(editando)=>setModalState({opcionIdx:i,editando})}
+                onAddClase={()=>setModalState({opcionIdx:i})}
+                onTransfer={()=>setConfirmTransferIdx(i)}
+              />
+            </div>
           ))}
         </div>
       )}
@@ -561,19 +706,44 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
         <ClaseModal
           materiasDisponibles={materiasDisponibles}
           diasActivos={diasActivos}
-          editando={modalState.editando?.claseIdx!==undefined ? modalState.editando : null}
+          editando={modalState.editando?.idx1!==undefined ? modalState.editando : null}
           onSave={handleSaveClase}
           onDelete={handleDeleteClase}
           onNotify={onNotify}
           onClose={()=>setModalState(null)}
         />
       )}
+
+      {/* Confirmación de transferencia a Mi horario */}
+      {confirmTransferIdx !== null && opciones[confirmTransferIdx] && (
+        <div className={styles.modalOverlay} onClick={()=>setConfirmTransferIdx(null)}>
+          <div className={styles.modal} onClick={e=>e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Transferir a horario</h3>
+              <button className={styles.modalClose} onClick={()=>setConfirmTransferIdx(null)}>✕</button>
+            </div>
+            <div className={styles.modalBody}>
+              <p>
+                <strong>"{opciones[confirmTransferIdx].nombre}"</strong> se convertirá en tu <strong>horario de este semestre</strong> (pestaña "Mi horario").
+              </p>
+              <p style={{color:"var(--text-muted)",fontSize:13}}>
+                Esto reemplaza el contenido actual de "Mi horario"
+                {onEnrollMaterias ? " y marca las materias de esta opción como \"Cursando\"." : "."}
+              </p>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.btnSecondary} onClick={()=>setConfirmTransferIdx(null)}>Cancelar</button>
+              <button className={styles.btnPrimary} onClick={handleTransferConfirmed}>Sí, transferir</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ── Vista principal ───────────────────────────────────────────────────────
-export default function HorarioView({ malla, horarioData, planData, onSave, onSavePlan, user, onNotify }) {
+export default function HorarioView({ malla, horarioData, planData, onSave, onSavePlan, user, onNotify, onEnrollMaterias }) {
   const [mode, setMode] = useState("horario"); // "horario" | "planificador"
   const [data, setData] = useState(horarioData || {dias:["L","M","X","J","V"],clases:[]});
   const [showModal, setShowModal] = useState(false);
@@ -599,21 +769,31 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
   const handleAddClase = (clase) => {
     const nuevasClases=clase?.clases||[];
     let clases;
-    if (editando!==null&&editando.claseIdx!==undefined) {
-      clases=data.clases.map((c,i)=>i===editando.claseIdx?nuevasClases[0]:c);
+    if (editando && editando.idx1 !== undefined) {
+      const removeIdxs = new Set([editando.idx1, editando.idx2].filter(i=>i!==undefined));
+      clases = data.clases.filter((_,i)=>!removeIdxs.has(i));
+      clases = [...clases, ...nuevasClases];
     } else {
       clases=[...data.clases,...nuevasClases];
     }
     const updated={...data,clases};
     setData(updated); onSave(updated); setShowModal(false); setEditando(null);
-    onNotify?.(editando!==null&&editando.claseIdx!==undefined?"Clase actualizada":"Clase agregada");
+    onNotify?.(editando?"Clase actualizada":"Clase agregada");
   };
 
-  const handleDeleteClase=(idx)=>{
-    const clases=data.clases.filter((_,i)=>i!==idx);
+  const handleDeleteClase=(indices)=>{
+    const idxSet = new Set(Array.isArray(indices)?indices:[indices]);
+    const clases=data.clases.filter((_,i)=>!idxSet.has(i));
     const updated={...data,clases};
     setData(updated); onSave(updated); setShowModal(false); setEditando(null);
     onNotify?.("Clase eliminada");
+  };
+
+  const handleTransferPlanToHorario = ({dias, clases}) => {
+    const updated = { dias: dias?.length ? dias : data.dias, clases };
+    setData(updated);
+    onSave(updated);
+    setMode("horario");
   };
 
   const diasActivos=TODOS_DIAS.filter(d=>data.dias.includes(d.id));
@@ -700,7 +880,7 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
                         <ClaseBloque key={i} clase={clase} materia={materia}
                           color={colorMap[clase.materiaId]||"var(--accent)"}
                           horaStart={start} duracion={end-start}
-                          onClick={()=>{ setEditando({claseIdx:globalIdx,...clase,segundoDiaActivo:false}); setShowModal(true); }}
+                          onClick={()=>{ setEditando(buildEditando(data.clases, globalIdx)); setShowModal(true); }}
                         />
                       );
                     })}
@@ -721,6 +901,8 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
           user={user}
           onNotify={onNotify}
           mainDias={data.dias}
+          onTransferToHorario={handleTransferPlanToHorario}
+          onEnrollMaterias={onEnrollMaterias}
         />
       )}
 
@@ -729,9 +911,9 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
         <ClaseModal
           materiasDisponibles={materiasActuales}
           diasActivos={data.dias}
-          editando={editando?.claseIdx!==undefined?editando:null}
+          editando={editando?.idx1!==undefined?editando:null}
           onSave={handleAddClase}
-          onDelete={()=>handleDeleteClase(editando.claseIdx)}
+          onDelete={()=>handleDeleteClase([editando.idx1, editando.idx2].filter(i=>i!==undefined))}
           onNotify={onNotify}
           onClose={()=>{ setShowModal(false); setEditando(null); }}
         />
