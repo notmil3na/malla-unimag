@@ -271,3 +271,16 @@
   .cursandoBadge { font-size: 10px; }
   .cursandoItemBar { height: 42px; }
 }
+
+@media (max-width: 480px) {
+  .wrap { padding: 14px 10px; }
+  .title { font-size: 22px; }
+  .card { padding: 14px 10px 12px; }
+  .avatar, .avatarImg, .avatarInitial { width: 56px; height: 56px; }
+  .avatarInitial { font-size: 20px; }
+  .avatarName { font-size: 16px; }
+  .formGrid { gap: 10px; margin-bottom: 12px; }
+  .cursandoItem { flex-wrap: wrap; }
+  .cursandoItemCred { padding: 0 10px; }
+  .cursandoTotal { padding: 10px 14px; }
+}

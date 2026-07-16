@@ -432,7 +432,7 @@
 
 @media (max-width: 900px) {
   .wrap { padding: 18px 14px; }
-  .title { font-size: 24px; }
+  .title { font-size: 22px; }
   .headerActions { width: 100%; }
   .viewToggle { width: 100%; }
   .toggleBtn { flex: 1; }
@@ -445,4 +445,18 @@
   .resumenRight { width: 100%; border-left: none; border-top: 1px solid var(--border); }
   .resumenTotal { padding: 12px 14px; }
   .resumenTotalVal { font-size: 26px; }
+}
+
+@media (max-width: 480px) {
+  .wrap { padding: 14px 10px; }
+  .title { font-size: 20px; }
+  .globalBanner { padding: 10px 12px; }
+  .globalVal { font-size: 24px; }
+  .semTitle { gap: 6px; }
+  .semNum { font-size: 16px; }
+  .materiaTop { flex-direction: column; gap: 4px; }
+  .cursandoFields, .aprobadaFields { gap: 8px 10px; }
+  .gradeInput { width: 80px; font-size: 14px; }
+  .letterSelect { min-width: 0; width: 100%; }
+  .resumenTotalVal { font-size: 22px; }
 }

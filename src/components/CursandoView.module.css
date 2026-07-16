@@ -233,7 +233,7 @@
 
 @media (max-width: 900px) {
   .wrap { padding: 18px 14px; }
-  .title { font-size: 24px; }
+  .title { font-size: 22px; }
   .header { margin-bottom: 14px; }
   .ponderadoBanner { padding: 12px 14px; margin-bottom: 14px; }
   .ponderadoVal { font-size: 30px; }
@@ -243,4 +243,15 @@
   .textInput { min-width: 0; width: 100%; }
   .notaInput, .pesoInput { width: 82px; }
   .table th, .table td { padding: 10px 8px; font-size: 12px; }
+}
+
+@media (max-width: 480px) {
+  .wrap { padding: 14px 10px; }
+  .title { font-size: 20px; }
+  .ponderadoVal { font-size: 26px; }
+  .ponderadoMax { font-size: 13px; }
+  .cardBody { padding: 10px; }
+  .notaInput, .pesoInput { width: 72px; font-size: 14px; }
+  .equivBadge { font-size: 12px; }
+  .table th, .table td { padding: 8px 6px; font-size: 11px; }
 }

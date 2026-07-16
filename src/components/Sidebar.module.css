@@ -144,13 +144,25 @@
   .sidebar {
     width: auto; min-width: 0; margin: 12px; height: auto;
     border-radius: var(--radius-lg);
-    padding: 14px 12px 12px; gap: 10px;
+    padding: 10px 12px 10px; gap: 0;
   }
-  .brandRow { margin-bottom: 0; }
-  .themeIndicator { margin-bottom: 0; }
-  .profile { margin-bottom: 0; }
-  .nav { flex-direction: row; overflow-x: auto; gap: 8px; padding-bottom: 2px; }
-  .navBtn { width: auto; min-width: max-content; padding: 9px 11px; }
+  .brandRow { margin-bottom: 0; padding: 0 4px; }
+  .themeIndicator { display: none; }
+  .profile { margin-bottom: 0; padding: 8px 10px; }
+  .avatar, .avatarImg, .avatar > span { width: 34px; height: 34px; }
+  .avatar > span { font-size: 14px; }
+  .avatarRing { display: none; }
+  .profileName { font-size: 12px; }
+  .profileSub { font-size: 10px; }
+  .nav { flex-direction: row; overflow-x: auto; gap: 4px; padding-bottom: 0; flex: 1; }
+  .navBtn { width: auto; min-width: max-content; padding: 7px 10px; font-size: 12px; gap: 6px; border-radius: var(--radius-sm); }
   .navBtn.active::before { display: none; }
-  .logout { margin-top: 0; }
+  .navIcon { font-size: 14px; width: 16px; }
+  .logout { margin-top: 0; padding: 7px 10px; font-size: 11px; }
+}
+
+@media (max-width: 480px) {
+  .sidebar { margin: 8px; padding: 8px 10px 8px; }
+  .brandText { font-size: 18px; }
+  .profile { padding: 6px 8px; }
 }

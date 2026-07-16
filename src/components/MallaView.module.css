@@ -471,11 +471,23 @@
   }
 
   .title {
-    font-size: calc(24px * var(--fs, 1));
+    font-size: calc(22px * var(--fs, 1));
+  }
+
+  .subtitle {
+    font-size: calc(12px * var(--fs, 1));
   }
 
   .stats {
     gap: 12px;
+  }
+
+  .stat {
+    font-size: calc(12px * var(--fs, 1));
+  }
+
+  .statVal {
+    font-size: calc(14px * var(--fs, 1));
   }
 
   .legend {
@@ -487,8 +499,20 @@
     flex-wrap: wrap;
   }
 
+  .legendHint {
+    font-size: calc(11px * var(--fs, 1));
+  }
+
   .semestre {
-    min-width: 165px;
+    min-width: 160px;
+  }
+
+  .semestreNum {
+    font-size: calc(18px * var(--fs, 1));
+  }
+
+  .semestreLabel {
+    font-size: calc(9px * var(--fs, 1));
   }
 
   .materiasOptColumns {
@@ -496,7 +520,7 @@
   }
 
   .materiasOptCol {
-    min-width: 165px;
+    min-width: 160px;
   }
 
   .detailPanel {
@@ -506,5 +530,28 @@
     width: auto;
     max-height: 72vh;
     overflow-y: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .wrap {
+    padding: 14px 10px;
+  }
+
+  .title {
+    font-size: calc(20px * var(--fs, 1));
+  }
+
+  .stats {
+    gap: 8px;
+  }
+
+  .semestre {
+    min-width: 150px;
+  }
+
+  .downloadBtn {
+    font-size: calc(11px * var(--fs, 1));
+    padding: 7px 12px;
   }
 }

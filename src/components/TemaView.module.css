@@ -156,7 +156,7 @@
 
 @media (max-width: 900px) {
   .wrap { padding: 18px 14px; max-width: 100%; }
-  .title { font-size: 24px; }
+  .title { font-size: 22px; }
   .section { margin-bottom: 22px; }
   .modeRow { flex-direction: column; }
   .appThemeGrid { grid-template-columns: repeat(2, 1fr); }
@@ -166,4 +166,15 @@
   .fontBtn { flex: 1; min-width: 120px; }
   .previewCard { width: calc(50% - 6px); min-width: 130px; }
   .btn { width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .wrap { padding: 14px 10px; }
+  .title { font-size: 20px; }
+  .sectionTitle { font-size: 10px; }
+  .appThemeGrid { gap: 6px; }
+  .appThemeBtn { padding: 9px 10px; font-size: 12px; }
+  .presetBtn { min-width: 70px; padding: 8px 10px; }
+  .presets { gap: 6px; }
+  .previewCard { min-width: 110px; }
 }

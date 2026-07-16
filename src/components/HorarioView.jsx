@@ -47,8 +47,8 @@ const TODOS_DIAS = [
   {id:"J",label:"Jueves"},{id:"V",label:"Viernes"},{id:"S",label:"Sábado"},
 ];
 const ACCENT_COLORS = [
-  "#c8a96e","#6eb5c8","#a86ec8","#6ec8a8","#c86e6e","#c8c86e",
-  "#6e8bc8","#c86eab","#8bc86e","#c8956e",
+  "#B882E8","#6BA3E8","#E87098","#6EC8A8","#E8946B","#EECE7B",
+  "#82B8E8","#E882B8","#82E8B8","#E8B882",
 ];
 
 // ── helpers ───────────────────────────────────────────────────────────────
