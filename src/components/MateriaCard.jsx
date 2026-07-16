@@ -1,3 +1,4 @@
+import { memo } from "react";
 import styles from "./MateriaCard.module.css";
 
 const ESTADO_GLYPH = {
@@ -6,9 +7,9 @@ const ESTADO_GLYPH = {
   aprobada: "✦",
 };
 
-export default function MateriaCard({
+function MateriaCardInner({
   materia, color, isSelected, isHighlightedPrereq, isHighlightedUnlock,
-  isMatriculable, isDimmed, borderRadius, fontScale, onClick, onEstadoChange
+  isMatriculable, isDimmed, borderRadius, fontScale, onClick
 }) {
   const br = borderRadius ?? 12;
   const fs = fontScale ?? 1;
@@ -20,7 +21,6 @@ export default function MateriaCard({
   else if (isMatriculable) cardClass += " " + styles.matriculable;
   else if (isDimmed) cardClass += " " + styles.dimmed;
 
-  const hasPrereqs = materia.prereqs?.length > 0;
   const glyph = ESTADO_GLYPH[materia.estado] || ESTADO_GLYPH.faltante;
 
   return (
@@ -32,7 +32,6 @@ export default function MateriaCard({
         fontSize: `calc(11px * ${fs})`,
       }}
       onClick={onClick}
-      title={hasPrereqs ? `Prerequisitos: ${materia.prereqs.join(", ")}` : "Sin prerequisitos"}
     >
       <div className={styles.colorBar} style={{ background: color, borderRadius: `${br}px ${br}px 0 0` }} />
       <span className={styles.estadoGlyph} style={{ color }}>{glyph}</span>
@@ -45,7 +44,7 @@ export default function MateriaCard({
         {isMatriculable && (
           <div className={styles.matriculableBadge}>✦ Puedes matricular</div>
         )}
-        {hasPrereqs && (
+        {materia.prereqs?.length > 0 && (
           <div className={styles.prereqBadge}>
             <span>⬡</span> {materia.prereqs.length} prereq{materia.prereqs.length > 1 ? "s" : ""}
           </div>
@@ -54,3 +53,5 @@ export default function MateriaCard({
     </div>
   );
 }
+
+export default memo(MateriaCardInner);

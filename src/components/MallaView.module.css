@@ -188,6 +188,7 @@
   gap: 12px;
   overflow-x: auto;
   padding-bottom: 20px;
+  will-change: scroll-position;
 }
 
 .semestre {

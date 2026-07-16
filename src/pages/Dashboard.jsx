@@ -1,14 +1,15 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
 import Sidebar from "../components/Sidebar";
-import MallaView from "../components/MallaView";
-import PerfilView from "../components/PerfilView";
-import TemaView from "../components/TemaView";
-import NotasView from "../components/NotasView";
-import CursandoView from "../components/CursandoView";
-import HorarioView from "../components/HorarioView";
 import { getMallaByCareer } from "../data/malla.js";
 import { supabase } from "../supabase";
 import styles from "./Dashboard.module.css";
+
+const MallaView    = lazy(() => import("../components/MallaView"));
+const CursandoView = lazy(() => import("../components/CursandoView"));
+const HorarioView  = lazy(() => import("../components/HorarioView"));
+const NotasView    = lazy(() => import("../components/NotasView"));
+const PerfilView   = lazy(() => import("../components/PerfilView"));
+const TemaView     = lazy(() => import("../components/TemaView"));
 
 function autoApply(malla, currentSemester) {
   return malla.map((sem) => ({
@@ -78,8 +79,8 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
   const [toastMsg, setToastMsg] = useState("");
   const toastTimerRef = useRef(null);
 
-  const baseMalla    = getMallaByCareer(user.career);
-  const defaultMalla = autoApply(baseMalla, user.semester || 1);
+  const baseMalla = useMemo(() => getMallaByCareer(user.career), [user.career]);
+  const defaultMalla = useMemo(() => autoApply(baseMalla, user.semester || 1), [baseMalla, user.semester]);
 
   const [malla,        setMalla]        = useState(defaultMalla);
   const [notas,        setNotas]        = useState({});
@@ -87,11 +88,11 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
   const [horarioData,  setHorarioData]  = useState({ dias: ["L","M","X","J","V"], clases: [] });
   const [planData,     setPlanData]     = useState(null);
 
-  const notify = (msg) => {
+  const notify = useCallback((msg) => {
     setToastMsg(msg);
     window.clearTimeout(toastTimerRef.current);
     toastTimerRef.current = window.setTimeout(() => setToastMsg(""), 2200);
-  };
+  }, []);
 
   // Cargar datos desde Supabase al iniciar
   useEffect(() => {
@@ -109,65 +110,67 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
     load();
   }, [user.username]);
 
-  const saveMalla = async (data) => {
+  const saveMalla = useCallback(async (data) => {
     setMalla(data);
     const res = await saveUserData(user.username, { malla: data });
     notify(res.ok ? "Guardado correctamente" : "Error al guardar. Intenta de nuevo.");
-  };
+  }, [user.username, notify]);
 
-  const saveNotas = async (data) => {
+  const saveNotas = useCallback(async (data) => {
     setNotas(data);
     const res = await saveUserData(user.username, { notas: data });
     notify(res.ok ? "Guardado correctamente" : "Error al guardar. Intenta de nuevo.");
-  };
+  }, [user.username, notify]);
 
-  const saveCursando = async (data) => {
+  const saveCursando = useCallback(async (data) => {
     setCursandoData(data);
     const res = await saveUserData(user.username, { cursando: data });
     notify(res.ok ? "Guardado correctamente" : "Error al guardar. Intenta de nuevo.");
-  };
+  }, [user.username, notify]);
 
-  const saveHorario = async (data) => {
+  const saveHorario = useCallback(async (data) => {
     setHorarioData(data);
     const res = await saveUserData(user.username, { horario: data });
     notify(res.ok ? "Guardado correctamente" : "Error al guardar. Intenta de nuevo.");
-  };
+  }, [user.username, notify]);
 
-  const savePlan = async (data) => {
+  const savePlan = useCallback(async (data) => {
     setPlanData(data);
     const res = await saveUserData(user.username, { plan: data });
     notify(res.ok ? "Guardado correctamente" : "Error al guardar. Intenta de nuevo.");
-  };
+  }, [user.username, notify]);
 
-  const handleMallaReset = (newSemester) => {
+  const handleMallaReset = useCallback((newSemester) => {
     const reset = autoApply(baseMalla, newSemester);
-    saveMalla(reset);
-  };
+    setMalla(reset);
+    saveUserData(user.username, { malla: reset });
+    notify("Semestre reiniciado");
+  }, [baseMalla, user.username, notify]);
 
-  // Al transferir una opción del planificador a "Mi horario": las materias de
-  // esa opción pasan a "cursando"; las que estaban "cursando" y ya no están
-  // en la opción elegida vuelven a "faltante" (no se tocan las "aprobada").
-  const enrollMateriasFromPlan = (materiaIds) => {
+  const enrollMateriasFromPlan = useCallback((materiaIds) => {
     const idSet = new Set(materiaIds);
-    const updated = malla.map((sem) => ({
-      ...sem,
-      materias: sem.materias.map((m) => {
-        if (idSet.has(m.id)) return { ...m, estado: "cursando" };
-        if (m.estado === "cursando") return { ...m, estado: "faltante" };
-        return m;
-      }),
-    }));
-    saveMalla(updated);
-  };
+    setMalla(prev => {
+      const updated = prev.map((sem) => ({
+        ...sem,
+        materias: sem.materias.map((m) => {
+          if (idSet.has(m.id)) return { ...m, estado: "cursando" };
+          if (m.estado === "cursando") return { ...m, estado: "faltante" };
+          return m;
+        }),
+      }));
+      saveUserData(user.username, { malla: updated });
+      return updated;
+    });
+  }, [user.username]);
 
-  const tabs = [
+  const tabs = useMemo(() => [
     { id: "malla",    label: "Malla",        icon: "⬡" },
     { id: "cursando", label: "Semestre",      icon: "◉" },
     { id: "horario",  label: "Horario",       icon: "▦" },
     { id: "notas",    label: "Notas",         icon: "◑" },
     { id: "perfil",   label: "Mi Perfil",     icon: "◎" },
     { id: "tema",     label: "Personalizar",  icon: "◈" },
-  ];
+  ], []);
 
   if (!loaded) {
     return (
@@ -193,6 +196,12 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
         onUpdateUser={onUpdateUser}
       />
       <main className={styles.main}>
+        <Suspense fallback={
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",color:"var(--text-muted)",fontFamily:"var(--font-body)",gap:"8px"}}>
+            <span style={{fontSize:"20px",color:"var(--accent)"}}>✦</span>
+            <span>Cargando...</span>
+          </div>
+        }>
         {tab === "malla" && (
           <MallaView
             malla={malla}
@@ -236,6 +245,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
         {tab === "tema" && (
           <TemaView user={user} onUpdate={onUpdateUser} />
         )}
+        </Suspense>
       </main>
 
       {toastMsg && <div className={styles.toast}>{toastMsg}</div>}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { MALLA, ESTADOS } from "../data/malla.js";
 import { getSemesterCountdown, SEMESTER_CORTE } from "../utils/semesterCountdown.js";
 import { canEnrollMateria } from "../utils/gradeHelpers.js";
@@ -39,16 +39,17 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
   const br     = user.borderRadius ?? 12;
   const fs     = user.fontScale ?? 1;
 
-  const allMaterias = malla.flatMap((s) => s.materias);
-  const obligatorias = getObligatorias(malla);
+  const allMaterias = useMemo(() => malla.flatMap((s) => s.materias), [malla]);
+  const materiaById = useMemo(() => new Map(allMaterias.map(m => [m.id, m])), [allMaterias]);
+  const obligatorias = useMemo(() => getObligatorias(malla), [malla]);
 
-  const getColor = (estado) => {
+  const getColor = useCallback((estado) => {
     if (estado === "aprobada") return colors.aprobada || "#6ec88a";
     if (estado === "cursando") return colors.cursando || "#c8a96e";
     return colors.faltante || "#3a3a52";
-  };
+  }, [colors.aprobada, colors.cursando, colors.faltante]);
 
-  const handleSelect = (materia) => {
+  const handleSelect = useCallback((materia) => {
     if (selected?.id === materia.id) {
       setSelected(null);
       setHighlightedPrereqs([]);
@@ -62,7 +63,7 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
       ids.forEach((id) => {
         if (!prereqTree.includes(id)) {
           prereqTree.push(id);
-          const m = allMaterias.find((x) => x.id === id);
+          const m = materiaById.get(id);
           if (m) collectPrereqs(m.prereqs);
         }
       });
@@ -81,9 +82,9 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
     };
     collectUnlocks(materia.id);
     setHighlightedUnlocks(unlockTree);
-  };
+  }, [selected, materiaById, allMaterias]);
 
-  const handleEstadoChange = (materiaId, newEstado) => {
+  const handleEstadoChange = useCallback((materiaId, newEstado) => {
     const updated = malla.map((s) => ({
       ...s,
       materias: s.materias.map((m) =>
@@ -96,14 +97,14 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
       const updatedSelected = updated.flatMap((s) => s.materias).find((m) => m.id === selected.id);
       if (updatedSelected) setSelected(updatedSelected);
     }
-  };
+  }, [malla, onSave, selected]);
 
-  const stats = {
+  const stats = useMemo(() => ({
     total:     obligatorias.length,
     aprobadas: obligatorias.filter((m) => m.estado === "aprobada").length,
     cursando:  obligatorias.filter((m) => m.estado === "cursando").length,
     faltantes: obligatorias.filter((m) => m.estado === "faltante").length,
-  };
+  }), [obligatorias]);
   const progress = stats.total > 0 ? Math.round((stats.aprobadas / stats.total) * 100) : 0;
 
   const handleDownload = () => {
@@ -112,9 +113,9 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
     downloadTxt(`malla_${safeName}.txt`, content);
     onNotify?.("Malla descargada");
   };
-  const semester = getSemesterCountdown();
-  const matriculables = allMaterias.filter((m) => canEnrollMateria(m, allMaterias));
-  const matriculableIds = new Set(matriculables.map((m) => m.id));
+  const semester = useMemo(() => getSemesterCountdown(), []);
+  const matriculables = useMemo(() => allMaterias.filter((m) => canEnrollMateria(m, allMaterias)), [allMaterias]);
+  const matriculableIds = useMemo(() => new Set(matriculables.map((m) => m.id)), [matriculables]);
 
   return (
     <div className={styles.wrap} style={{ "--fs": fs }}>
@@ -229,8 +230,6 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
               borderRadius={br}
               fontScale={fs}
               onClick={() => handleSelect(mat)}
-              onEstadoChange={(e) => handleEstadoChange(mat.id, e)}
-              allMaterias={allMaterias}
             />
           );
 
@@ -350,7 +349,7 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
                 <p className={styles.detailSectionLabel}>Prerequisitos:</p>
                 <div className={styles.prereqList}>
                   {selected.prereqs.map((pid) => {
-                    const pm = allMaterias.find((m) => m.id === pid);
+                    const pm = materiaById.get(pid);
                     return pm ? (
                       <div key={pid} className={styles.prereqItem} style={{ borderColor: getColor(pm.estado) }}>
                         <span className={styles.prereqDot} style={{ background: getColor(pm.estado) }} />
@@ -367,7 +366,7 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
                 <p className={styles.detailSectionLabel}>Desbloquea:</p>
                 <div className={styles.prereqList}>
                   {highlightedUnlocks.map((uid) => {
-                    const um = allMaterias.find((m) => m.id === uid);
+                    const um = materiaById.get(uid);
                     return um ? (
                       <div key={uid} className={`${styles.prereqItem} ${styles.unlockItem}`} style={{ borderColor: getColor(um.estado) }}>
                         <span className={styles.prereqDot} style={{ background: getColor(um.estado) }} />

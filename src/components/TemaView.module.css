@@ -26,7 +26,7 @@
   border-radius: var(--radius-md); padding: 14px 18px;
   cursor: pointer; font-family: var(--font-body);
   font-size: 14px; font-weight: 500; color: var(--text-muted);
-  transition: all 0.18s;
+  transition: border-color 0.18s, color 0.18s, background 0.18s, box-shadow 0.18s;
 }
 .modeBtn:hover { border-color: var(--accent); color: var(--text); }
 .modeBtnActive {
@@ -52,7 +52,7 @@
   border-radius: var(--radius-sm); padding: 11px 14px;
   cursor: pointer; font-family: var(--font-body);
   font-size: 13px; color: var(--text-muted);
-  transition: all 0.18s;
+  transition: border-color 0.18s, color 0.18s, background 0.18s;
   position: relative;
 }
 .appThemeBtn:hover { border-color: var(--t-accent); color: var(--text); }
@@ -78,7 +78,7 @@
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border-radius: var(--radius-sm); padding: 12px 14px;
   cursor: pointer; text-align: left;
-  transition: all 0.18s;
+  transition: border-color 0.18s, background 0.18s;
   position: relative;
 }
 .fontOptionBtn:hover { border-color: var(--accent); background: var(--surface2); }
@@ -108,7 +108,7 @@
   border-radius: var(--radius-sm); padding: 10px 14px;
   cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 7px;
   font-family: var(--font-body); font-size: 12px; color: var(--text-muted);
-  transition: all 0.15s; min-width: 90px;
+  transition: border-color 0.15s, color 0.15s, background 0.15s; min-width: 90px;
 }
 .presetBtn:hover { border-color: var(--accent); color: var(--text); background: var(--surface2); }
 
@@ -126,14 +126,14 @@
 
 /* ── Borders ──────────────────────────────────────── */
 .borderPreviewRow { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-.borderBtn { background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); font-family: var(--font-body); font-size: 11px; padding: 8px 12px; cursor: pointer; transition: all 0.15s; }
+.borderBtn { background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); font-family: var(--font-body); font-size: 11px; padding: 8px 12px; cursor: pointer; transition: border-color 0.15s, color 0.15s; }
 .borderBtn:hover { border-color: var(--accent); color: var(--text); }
 .borderBtnActive { border-color: var(--accent) !important; color: var(--accent) !important; }
 .rangeInput { width: 100%; accent-color: var(--accent); }
 
 /* ── Font scale ───────────────────────────────────── */
 .fontScaleRow { display: flex; gap: 8px; }
-.fontBtn { background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); font-family: var(--font-body); padding: 8px 16px; cursor: pointer; border-radius: var(--radius-sm); transition: all 0.15s; }
+.fontBtn { background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); font-family: var(--font-body); padding: 8px 16px; cursor: pointer; border-radius: var(--radius-sm); transition: border-color 0.15s, color 0.15s; }
 .fontBtn:hover { border-color: var(--accent); color: var(--text); }
 .fontBtnActive { border-color: var(--accent) !important; color: var(--accent) !important; }
 
@@ -149,7 +149,7 @@
   border: none; border-radius: var(--radius-sm);
   font-family: var(--font-body); font-size: 14px; font-weight: 600;
   padding: 12px 28px; cursor: pointer;
-  transition: all 0.2s;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
 }
 .btn:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.35); }
 .btnSaved { background: #6ec88a !important; }
