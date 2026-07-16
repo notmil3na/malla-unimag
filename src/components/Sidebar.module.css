@@ -6,9 +6,22 @@
   padding: 24px 16px 20px;
   gap: 0;
   transition: background 0.3s, border-color 0.3s;
+  position: relative;
 }
 
-/* Brand row with mode toggle */
+/* Línea vertical tipo "lomo de códice" */
+.sidebar::after {
+  content: "";
+  position: absolute;
+  top: 24px; bottom: 20px; right: 0;
+  width: 1px;
+  background: linear-gradient(to bottom,
+    transparent,
+    rgba(var(--accent-rgb), 0.35) 15%,
+    rgba(var(--accent-rgb), 0.35) 85%,
+    transparent);
+}
+
 .brandRow {
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 8px;
@@ -17,11 +30,17 @@
 
 .brand { display: flex; align-items: center; gap: 8px; }
 
-.brandIcon { font-size: 20px; color: var(--accent); }
+.brandIcon {
+  font-size: 20px; color: var(--accent);
+  display: inline-block;
+  animation: brandSpin 12s linear infinite;
+}
+@keyframes brandSpin { to { transform: rotate(360deg); } }
 
 .brandText {
   font-family: var(--font-display);
   font-size: 22px; font-weight: 400; color: var(--text);
+  letter-spacing: 0.01em;
 }
 .brandText em { color: var(--accent); font-style: italic; }
 
@@ -32,9 +51,8 @@
   font-size: 16px; cursor: pointer;
   transition: all 0.2s;
 }
-.modeToggle:hover { border-color: var(--accent); transform: scale(1.05); }
+.modeToggle:hover { border-color: var(--accent); transform: scale(1.05) rotate(-8deg); }
 
-/* Theme indicator */
 .themeIndicator {
   display: flex; align-items: center; gap: 7px;
   padding: 0 10px;
@@ -42,13 +60,14 @@
 }
 .themeDot {
   width: 8px; height: 8px; border-radius: 50%;
+  box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.7);
   transition: background 0.3s;
 }
 .themeLabel {
   font-size: 11px; color: var(--text-muted);
+  letter-spacing: 0.02em;
 }
 
-/* Profile */
 .profile {
   display: flex; align-items: center; gap: 12px;
   padding: 12px;
@@ -75,8 +94,14 @@
 }
 
 .avatarRing {
-  position: absolute; inset: -2px; border-radius: 50%;
-  border: 1.5px solid var(--accent); opacity: 0.5;
+  position: absolute; inset: -3px; border-radius: 50%;
+  border: 1px solid var(--accent);
+  opacity: 0.4;
+}
+.avatarRing::after {
+  content: "";
+  position: absolute; inset: -4px; border-radius: 50%;
+  border: 1px dashed rgba(var(--accent-rgb), 0.3);
 }
 
 .profileInfo { min-width: 0; }
@@ -88,7 +113,6 @@
 
 .profileSub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
-/* Nav */
 .nav { flex: 1; display: flex; flex-direction: column; gap: 4px; }
 
 .navBtn {
@@ -99,12 +123,20 @@
   font-family: var(--font-body); font-size: 13px; font-weight: 500;
   padding: 10px 12px; cursor: pointer; text-align: left;
   transition: all 0.15s;
+  position: relative;
 }
 .navBtn:hover { background: var(--surface2); color: var(--text); }
 .navBtn.active {
   background: rgba(var(--accent-rgb), 0.1);
   border-color: rgba(var(--accent-rgb), 0.25);
   color: var(--accent);
+}
+.navBtn.active::before {
+  content: "";
+  position: absolute; left: -16px; top: 50%; transform: translateY(-50%);
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
 }
 
 .navIcon { font-size: 16px; width: 20px; text-align: center; }
@@ -120,33 +152,13 @@
 .logout:hover { border-color: #e07070; color: #e07070; background: rgba(224,112,112,0.05); }
 
 @media (max-width: 900px) {
-  .sidebar {
-    width: 100%;
-    min-width: 0;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    padding: 14px 12px 12px;
-    gap: 10px;
-  }
-
+  .sidebar { width: 100%; min-width: 0; border-right: none; border-bottom: 1px solid var(--border); padding: 14px 12px 12px; gap: 10px; }
+  .sidebar::after { display: none; }
   .brandRow { margin-bottom: 0; }
   .themeIndicator { margin-bottom: 0; }
   .profile { margin-bottom: 0; }
-
-  .nav {
-    flex-direction: row;
-    overflow-x: auto;
-    gap: 8px;
-    padding-bottom: 2px;
-  }
-
-  .navBtn {
-    width: auto;
-    min-width: max-content;
-    padding: 9px 11px;
-  }
-
-  .logout {
-    margin-top: 0;
-  }
+  .nav { flex-direction: row; overflow-x: auto; gap: 8px; padding-bottom: 2px; }
+  .navBtn { width: auto; min-width: max-content; padding: 9px 11px; }
+  .navBtn.active::before { display: none; }
+  .logout { margin-top: 0; }
 }

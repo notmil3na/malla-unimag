@@ -8,15 +8,15 @@ import "./App.css";
 export const APP_THEMES = {
   ambar: {
     name: "Ámbar",
-    accent: "#c8a96e",
-    accent2: "#8b6f3a",
-    accentRgb: "200,169,110",
+    accent: "#EECE7B",
+    accent2: "#D0783B",
+    accentRgb: "238,206,123",
   },
   oceano: {
     name: "Océano",
-    accent: "#6eb5c8",
-    accent2: "#3a7a8b",
-    accentRgb: "110,181,200",
+    accent: "#2C3F70",
+    accent2: "#8089D2",
+    accentRgb: "44,63,112",
   },
   violeta: {
     name: "Violeta",
@@ -38,9 +38,9 @@ export const APP_THEMES = {
   },
   rojo: {
     name: "Rojo",
-    accent: "#c86e6e",
-    accent2: "#8b3a3a",
-    accentRgb: "200,110,110",
+    accent: "#ff0000",
+    accent2: "#930500",
+    accentRgb: "255,0,0",
   },
 };
 

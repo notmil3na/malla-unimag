@@ -4,14 +4,35 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  background: radial-gradient(ellipse at 60% 40%, rgba(var(--accent-rgb), 0.07) 0%, var(--bg) 70%);
+  background:
+    radial-gradient(ellipse 900px 600px at 20% 15%, rgba(var(--accent-rgb), 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 700px 500px at 85% 85%, rgba(var(--accent-rgb), 0.05) 0%, transparent 60%),
+    var(--bg);
+  overflow: hidden;
 }
 
-.noise {
-  position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  opacity: 0.04;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 200px 200px;
+/* Constelación decorativa (puntos + destello sutil), no interactiva */
+.wrap::before {
+  content: "";
+  position: absolute;
+  top: 12%; left: 8%;
+  width: 3px; height: 3px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow:
+    120px 40px 0 -0.5px rgba(var(--accent-rgb), 0.6),
+    260px 10px 0 -1px rgba(var(--accent-rgb), 0.4),
+    60px 140px 0 -1px rgba(var(--accent-rgb), 0.5),
+    340px 180px 0 -0.5px rgba(var(--accent-rgb), 0.35),
+    620px 60px 0 -1px rgba(var(--accent-rgb), 0.45),
+    780px 220px 0 -1px rgba(var(--accent-rgb), 0.3);
+  opacity: 0.7;
+  animation: twinkle 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 0.9; }
 }
 
 .card {
@@ -22,8 +43,18 @@
   padding: 44px 40px 36px;
   width: 100%;
   max-width: 500px;
-  box-shadow: 0 0 80px rgba(var(--accent-rgb), 0.07), 0 24px 64px rgba(0,0,0,0.3);
-  animation: fadeUp 0.5s ease;
+  box-shadow: 0 0 80px rgba(var(--accent-rgb), 0.08), 0 24px 64px rgba(0,0,0,0.35);
+  animation: fadeUp 0.55s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/* Filete superior tipo "borde de carta" */
+.card::before {
+  content: "";
+  position: absolute;
+  top: -1px; left: 14%; right: 14%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--accent), transparent);
+  opacity: 0.6;
 }
 
 @keyframes fadeUp {
@@ -44,13 +75,15 @@
 
 .logoIcon {
   font-size: 26px; color: var(--accent);
-  animation: spin 8s linear infinite;
+  display: inline-block;
+  animation: spin 10s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .logoText {
   font-family: var(--font-display);
   font-size: 30px; font-weight: 400; color: var(--text);
+  letter-spacing: 0.01em;
 }
 .logoText em { color: var(--accent); font-style: italic; }
 
@@ -129,15 +162,8 @@
 }
 .field input::placeholder { color: var(--border); }
 
-.selectInput:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.selectInput option {
-  background: var(--surface2);
-  color: var(--text);
-}
+.selectInput:disabled { opacity: 0.4; cursor: not-allowed; }
+.selectInput option { background: var(--surface2); color: var(--text); }
 
 .error {
   font-size: 13px; color: #e07070;
@@ -163,24 +189,19 @@
   font-family: var(--font-body); font-size: 14px; font-weight: 600;
   padding: 13px;
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.15s;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
 }
-.btn:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.3);
+}
 .btn:active { transform: translateY(0); }
 
 @media (max-width: 640px) {
-  .wrap {
-    align-items: flex-start;
-    padding: 14px;
-  }
-
-  .card {
-    margin-top: 14px;
-    border-radius: 14px;
-    padding: 24px 18px 20px;
-    max-width: 100%;
-  }
-
+  .wrap { align-items: flex-start; padding: 14px; }
+  .wrap::before { display: none; }
+  .card { margin-top: 14px; border-radius: 14px; padding: 24px 18px 20px; max-width: 100%; }
   .logoText { font-size: 26px; }
   .sub { margin-bottom: 16px; }
   .row2 { grid-template-columns: 1fr; gap: 10px; }

@@ -7,12 +7,12 @@
   --font-display: 'DM Serif Display', Georgia, serif;
   --font-body: 'DM Sans', system-ui, sans-serif;
 
-  --bg:       #0e0e14;
-  --surface:  #16161f;
-  --surface2: #1e1e2a;
-  --border:   #2a2a3a;
-  --text:     #f0eee8;
-  --text-muted: #7a7a9a;
+  --bg:       #0d0c12;
+  --surface:  #17151f;
+  --surface2: #1f1c29;
+  --border:   #2d2938;
+  --text:     #f2efe6;
+  --text-muted: #8a86a3;
 
   --accent:     #c8a96e;
   --accent2:    #8b6f3a;
@@ -23,25 +23,76 @@
 
 /* ── Light theme ──────────────────────────────────── */
 [data-theme="light"] {
-  --bg:       #f5f4f0;
+  --bg:       #f7f5f0;
   --surface:  #ffffff;
-  --surface2: #eeecea;
-  --border:   #d8d4cc;
-  --text:     #1a1a24;
-  --text-muted: #6a6a7a;
+  --surface2: #efece4;
+  --border:   #ddd7c9;
+  --text:     #1c1a22;
+  --text-muted: #736d82;
 
   color-scheme: light;
 }
 
-html, body, #root {
+html, body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
-  transition: background 0.3s, color 0.3s;
+  transition: background 0.35s ease, color 0.35s ease;
+  letter-spacing: 0.01em;
+}
+
+body {
+  position: relative;
+}
+
+/* Textura sutil, consistente en toda la app (no solo Login) */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.03;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+  height: 100%;
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--surface); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ── Utilidades globales de movimiento ─────────────── */
+/* Transición al entrar una vista (usar como className en el wrapper de cada tab) */
+@keyframes viewReveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.view-fade {
+  animation: viewReveal 0.4s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/* Destello único (no infinito) para marcar un logro/estado nuevo */
+@keyframes revealFlash {
+  0%   { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.55); }
+  100% { box-shadow: 0 0 0 14px rgba(var(--accent-rgb), 0); }
+}
+.reveal-flash {
+  animation: revealFlash 0.7s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

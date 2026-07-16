@@ -1,5 +1,11 @@
 import styles from "./MateriaCard.module.css";
 
+const ESTADO_GLYPH = {
+  faltante: "○",
+  cursando: "◐",
+  aprobada: "✦",
+};
+
 export default function MateriaCard({
   materia, color, isSelected, isHighlightedPrereq, isHighlightedUnlock,
   isMatriculable, isDimmed, borderRadius, fontScale, onClick, onEstadoChange
@@ -15,6 +21,7 @@ export default function MateriaCard({
   else if (isDimmed) cardClass += " " + styles.dimmed;
 
   const hasPrereqs = materia.prereqs?.length > 0;
+  const glyph = ESTADO_GLYPH[materia.estado] || ESTADO_GLYPH.faltante;
 
   return (
     <div
@@ -28,6 +35,7 @@ export default function MateriaCard({
       title={hasPrereqs ? `Prerequisitos: ${materia.prereqs.join(", ")}` : "Sin prerequisitos"}
     >
       <div className={styles.colorBar} style={{ background: color, borderRadius: `${br}px ${br}px 0 0` }} />
+      <span className={styles.estadoGlyph} style={{ color }}>{glyph}</span>
       <div className={styles.content}>
         <div className={styles.top}>
           <span className={styles.id}>{materia.id}</span>
