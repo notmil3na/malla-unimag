@@ -36,6 +36,77 @@
   box-shadow: var(--shadow-lg);
 }
 
+/* ── Hoy widget ───────────────────────────────────── */
+.hoyWidget {
+  margin: 24px 28px 0;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+.hoyDate {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+}
+.hoyCards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hoyCard {
+  display: flex;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.hoyCard:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+.hoyCardAccent {
+  width: 4px;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+.hoyCardBody {
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.hoyCardTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hoyCardId {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  border-radius: 4px;
+  padding: 1px 6px;
+  letter-spacing: 0.04em;
+}
+.hoyCardLocation {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.hoyCardTime {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
 @media (max-width: 900px) {
   .layout {
     flex-direction: column;
@@ -49,6 +120,8 @@
     margin: 0 12px 12px;
     border-radius: var(--radius-lg);
   }
+
+  .hoyWidget { margin: 16px 14px 0; }
 }
 
 @media (max-width: 480px) {
@@ -56,4 +129,6 @@
     margin: 0 8px 8px;
     border-radius: var(--radius-md);
   }
+  .hoyWidget { margin: 12px 10px 0; }
+  .hoyCardTitle { font-size: 12px; }
 }

@@ -1,20 +1,49 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import styles from "./CursandoView.module.css";
 
-// ── Constantes ────────────────────────────────────────────────────────────
 const NOTA_MIN  = 0;
 const NOTA_MAX  = 500;
 const NOTA_PASS = 300;
 
-// ── Helpers ───────────────────────────────────────────────────────────────
-function calcNotaFinal(cortes) {
-  // cortes: [{ nota, peso }]
+function migrateCortes(cortes) {
+  if (!cortes || cortes.length === 0) {
+    return [
+      { nombre: "Corte 1", peso: 33, items: [] },
+      { nombre: "Corte 2", peso: 33, items: [] },
+      { nombre: "Corte 3", peso: 34, items: [] },
+    ];
+  }
+  return cortes.map((c, i) => {
+    if (c.items) return c;
+    return {
+      nombre: c.nombre || `Corte ${i + 1}`,
+      peso: c.peso || 33,
+      items: c.nota !== "" && c.nota !== undefined
+        ? [{ nombre: "Evaluación", nota: c.nota, peso: 100 }]
+        : [],
+    };
+  });
+}
+
+function calcCorteNota(items) {
+  if (!items || items.length === 0) return null;
   let sumProd = 0, sumPeso = 0;
-  cortes.forEach(({ nota, peso }) => {
+  items.forEach(({ nota, peso }) => {
     const n = parseFloat(nota);
     const p = parseFloat(peso);
-    if (!isNaN(n) && !isNaN(p) && p > 0) {
-      sumProd += n * p;
+    if (!isNaN(n) && !isNaN(p) && p > 0) { sumProd += n * p; sumPeso += p; }
+  });
+  if (sumPeso === 0) return null;
+  return Number((sumProd / sumPeso).toFixed(1));
+}
+
+function calcNotaFinal(cortes) {
+  let sumProd = 0, sumPeso = 0;
+  cortes.forEach((c) => {
+    const notaCorte = calcCorteNota(c.items);
+    const p = parseFloat(c.peso);
+    if (notaCorte !== null && !isNaN(p) && p > 0) {
+      sumProd += notaCorte * p;
       sumPeso += p;
     }
   });
@@ -27,73 +56,137 @@ function colorNota(nota) {
   return Number(nota) >= NOTA_PASS ? "#6ec88a" : "#e07070";
 }
 
-// Ponderado semestral: Σ(nota_definitiva × créditos) / Σ(créditos con nota)
 function calcPonderado(materias, cursandoData) {
   let sumPond = 0, sumCred = 0;
   materias.forEach((m) => {
     const d = cursandoData[m.id];
     if (!d) return;
-    const notaFinal = calcNotaFinal(d.cortes || [{ nota: "", peso: 100 }]);
-    if (notaFinal !== null) {
-      sumPond += Number(notaFinal) * m.creditos;
-      sumCred += m.creditos;
-    }
+    const nf = calcNotaFinal(d.cortes || migrateCortes([]));
+    if (nf !== null) { sumPond += Number(nf) * m.creditos; sumCred += m.creditos; }
   });
   return sumCred > 0 ? { valor: (sumPond / sumCred).toFixed(1), creditos: sumCred } : null;
 }
 
-// ── Componente corte ──────────────────────────────────────────────────────
-function CorteRow({ corte, idx, onChange, onRemove, canRemove }) {
+function CorteItemRow({ item, idx, onChange, onRemove, canRemove }) {
   return (
-    <div className={styles.corteRow}>
-      <span className={styles.corteLabel}>Corte {idx + 1}</span>
-      <div className={styles.corteInputs}>
-        <div className={styles.inputGroup}>
-          <label>Nota (/{NOTA_MAX})</label>
-          <input
-            type="number" min={NOTA_MIN} max={NOTA_MAX} step="0.1"
-            className={styles.notaInput}
-            value={corte.nota}
-            placeholder="—"
-            onChange={e => onChange({ ...corte, nota: e.target.value })}
-          />
-        </div>
-        <div className={styles.inputGroup}>
-          <label>Peso %</label>
-          <input
-            type="number" min={1} max={100}
-            className={styles.pesoInput}
-            value={corte.peso}
-            onChange={e => onChange({ ...corte, peso: e.target.value })}
-          />
-        </div>
-        {corte.nota !== "" && (
-          <div className={styles.inputGroup}>
-            <label>Equiv.</label>
-            <span className={styles.equivBadge} style={{ color: colorNota(corte.nota) }}>
-              {Number(corte.nota) >= NOTA_PASS ? "✓" : "✗"} {(Number(corte.nota) / 100).toFixed(1)}
-            </span>
-          </div>
-        )}
+    <div className={styles.itemRow}>
+      <input
+        type="text"
+        className={styles.itemNameInput}
+        value={item.nombre}
+        placeholder="Nombre"
+        onChange={e => onChange({ ...item, nombre: e.target.value })}
+      />
+      <div className={styles.inputGroup}>
+        <label>Nota /{NOTA_MAX}</label>
+        <input
+          type="number" min={NOTA_MIN} max={NOTA_MAX} step="0.1"
+          className={styles.notaInput}
+          value={item.nota}
+          placeholder="—"
+          onChange={e => onChange({ ...item, nota: e.target.value })}
+        />
+      </div>
+      <div className={styles.inputGroup}>
+        <label>Peso %</label>
+        <input
+          type="number" min={1} max={100}
+          className={styles.pesoInput}
+          value={item.peso}
+          onChange={e => onChange({ ...item, peso: e.target.value })}
+        />
       </div>
       {canRemove && (
-        <button className={styles.removeBtn} onClick={onRemove} title="Eliminar corte">✕</button>
+        <button className={styles.removeBtn} onClick={onRemove} title="Eliminar item">✕</button>
       )}
     </div>
   );
 }
 
-// ── Componente materia card ───────────────────────────────────────────────
-function MateriaCard({ materia, data, onChange, colors, borderRadius }) {
-  const [expanded, setExpanded] = useState(false);
+function CorteRow({ corte, idx, onChange, onRemove, canRemove }) {
+  const corteNota = calcCorteNota(corte.items);
+  const totalPeso = (corte.items || []).reduce((s, it) => s + (parseFloat(it.peso) || 0), 0);
 
+  const updateItem = (i, val) => {
+    const items = [...(corte.items || [])];
+    items[i] = val;
+    onChange({ ...corte, items });
+  };
+  const addItem = () => {
+    onChange({ ...corte, items: [...(corte.items || []), { nombre: "", nota: "", peso: 50 }] });
+  };
+  const removeItem = (i) => {
+    onChange({ ...corte, items: (corte.items || []).filter((_, idx) => idx !== i) });
+  };
+
+  return (
+    <div className={styles.corteSection}>
+      <div className={styles.corteHeader}>
+        <div className={styles.corteHeaderLeft}>
+          <input
+            type="text"
+            className={styles.corteNameInput}
+            value={corte.nombre}
+            placeholder={`Corte ${idx + 1}`}
+            onChange={e => onChange({ ...corte, nombre: e.target.value })}
+          />
+          <div className={styles.inputGroup}>
+            <label>Peso</label>
+            <input
+              type="number" min={1} max={100}
+              className={styles.pesoInput}
+              value={corte.peso}
+              onChange={e => onChange({ ...corte, peso: e.target.value })}
+            />
+            <span className={styles.pesoUnit}>%</span>
+          </div>
+        </div>
+        <div className={styles.corteHeaderRight}>
+          {corteNota !== null && (
+            <span className={styles.corteNotaBadge} style={{ color: colorNota(corteNota) }}>
+              {corteNota} /{NOTA_MAX}
+            </span>
+          )}
+          {canRemove && (
+            <button className={styles.removeBtn} onClick={onRemove} title="Eliminar corte">✕</button>
+          )}
+        </div>
+      </div>
+
+      <div className={styles.itemsList}>
+        {(corte.items || []).length === 0 && (
+          <p className={styles.itemsEmpty}>Sin evaluaciones. Agrega un item para registrar notas.</p>
+        )}
+        {(corte.items || []).map((item, i) => (
+          <CorteItemRow
+            key={i} item={item} idx={i}
+            onChange={val => updateItem(i, val)}
+            onRemove={() => removeItem(i)}
+            canRemove={(corte.items || []).length > 1}
+          />
+        ))}
+        <button className={styles.addItemBtn} onClick={addItem}>+ Evaluar</button>
+      </div>
+
+      {totalPeso > 0 && totalPeso !== 100 && (
+        <p className={styles.pesoHint} style={{ color: totalPeso > 100 ? "#e07070" : "var(--text-muted)" }}>
+          Pesos suman {totalPeso}% {totalPeso !== 100 ? "(debería ser 100%)" : "✓"}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function MateriaCard({ materia, data, onChange, colors, borderRadius, horarioClase }) {
+  const [expanded, setExpanded] = useState(false);
   const d = data || {
-    profesor: "",
-    grupo: "",
-    salon: "",
-    cortes: [{ nota: "", peso: 33 }, { nota: "", peso: 33 }, { nota: "", peso: 34 }],
+    profesor: "", grupo: "", salon: "",
+    cortes: migrateCortes([]),
     repeticiones: [],
   };
+  if (!d.cortes || d.cortes.length === 0 || (d.cortes[0] && d.cortes[0].items === undefined)) {
+    d.cortes = migrateCortes(d.cortes);
+  }
 
   const notaFinal = calcNotaFinal(d.cortes);
   const perdio = notaFinal !== null && Number(notaFinal) < NOTA_PASS;
@@ -104,12 +197,10 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius }) {
     c[i] = val;
     onChange({ ...d, cortes: c });
   };
-
   const addCorte = () => {
     if (d.cortes.length >= 5) return;
-    onChange({ ...d, cortes: [...d.cortes, { nota: "", peso: 20 }] });
+    onChange({ ...d, cortes: [...d.cortes, { nombre: `Corte ${d.cortes.length + 1}`, peso: 20, items: [] }] });
   };
-
   const removeCorte = (i) => {
     onChange({ ...d, cortes: d.cortes.filter((_, idx) => idx !== i) });
   };
@@ -120,16 +211,18 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius }) {
       repeticiones: [...(d.repeticiones || []), { notaAnterior: notaFinal || "", notaNueva: "", periodo: "" }],
     });
   };
-
   const updateRep = (i, field, val) => {
     const reps = [...(d.repeticiones || [])];
     reps[i] = { ...reps[i], [field]: val };
     onChange({ ...d, repeticiones: reps });
   };
-
   const removeRep = (i) => {
     onChange({ ...d, repeticiones: (d.repeticiones || []).filter((_, idx) => idx !== i) });
   };
+
+  const autoProf = horarioClase?.profesor || "";
+  const autoGrupo = horarioClase?.grupo || "";
+  const autoSalon = horarioClase?.salonLabel || "";
 
   const cardColor = paso ? (colors?.aprobada || "#6ec88a")
     : perdio ? "#e07070"
@@ -140,7 +233,6 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius }) {
       className={`${styles.card} ${perdio ? styles.cardFailed : ""}`}
       style={{ "--card-color": cardColor, borderRadius: `${borderRadius ?? 12}px` }}
     >
-      {/* Header */}
       <div className={styles.cardHeader} onClick={() => setExpanded(v => !v)}>
         <div className={styles.cardColorBar} style={{ background: cardColor }} />
         <div className={styles.cardMeta}>
@@ -149,10 +241,10 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius }) {
             <span className={styles.cardCreditos}>{materia.creditos} cr</span>
           </div>
           <p className={styles.cardNombre}>{materia.nombre}</p>
-          {(d.profesor || d.grupo) && (
+          {(d.profesor || d.grupo || autoProf) && (
             <p className={styles.cardSub}>
-              {d.profesor && <span>👤 {d.profesor}</span>}
-              {d.grupo && <span>· Grupo {d.grupo}</span>}
+              {d.profesor || autoProf ? <span>👤 {d.profesor || autoProf}</span> : null}
+              {(d.grupo || autoGrupo) ? <span>· Grupo {d.grupo || autoGrupo}</span> : null}
             </p>
           )}
         </div>
@@ -161,9 +253,7 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius }) {
             <div className={styles.notaDisplay}>
               <span className={styles.notaNum} style={{ color: cardColor }}>{notaFinal}</span>
               <span className={styles.notaMax}>/{NOTA_MAX}</span>
-              <span className={styles.notaStatus}>
-                {paso ? "Aprueba" : "Pierde"}
-              </span>
+              <span className={styles.notaStatus}>{paso ? "Aprueba" : "Pierde"}</span>
             </div>
           ) : (
             <span className={styles.notaEmpty}>Sin notas</span>
@@ -172,33 +262,32 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius }) {
         </div>
       </div>
 
-      {/* Body */}
       {expanded && (
         <div className={styles.cardBody}>
-          {/* Info básica */}
           <div className={styles.infoRow}>
             <div className={styles.inputGroup}>
               <label>Profesor</label>
-              <input
-                type="text" className={styles.textInput}
-                value={d.profesor} placeholder="Nombre del profesor"
-                onChange={e => onChange({ ...d, profesor: e.target.value })}
-              />
+              <input type="text" className={styles.textInput}
+                value={d.profesor} placeholder={autoProf || "Nombre del profesor"}
+                onChange={e => onChange({ ...d, profesor: e.target.value })} />
             </div>
             <div className={styles.inputGroup}>
               <label>Grupo</label>
-              <input
-                type="text" className={styles.textInput}
-                value={d.grupo} placeholder="01, A, ..."
-                onChange={e => onChange({ ...d, grupo: e.target.value })}
-              />
+              <input type="text" className={styles.textInput}
+                value={d.grupo} placeholder={autoGrupo || "01, A, ..."}
+                onChange={e => onChange({ ...d, grupo: e.target.value })} />
+            </div>
+            <div className={styles.inputGroup}>
+              <label>Salón</label>
+              <input type="text" className={styles.textInput}
+                value={d.salon} placeholder={autoSalon || "Salón"}
+                onChange={e => onChange({ ...d, salon: e.target.value })} />
             </div>
           </div>
 
-          {/* Cortes */}
           <div className={styles.cortesSection}>
             <div className={styles.sectionHeader}>
-              <span className={styles.sectionLabel}>Notas por corte</span>
+              <span className={styles.sectionLabel}>Cortes y evaluaciones</span>
               {d.cortes.length < 5 && (
                 <button className={styles.addBtn} onClick={addCorte}>+ Corte</button>
               )}
@@ -234,7 +323,6 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius }) {
             )}
           </div>
 
-          {/* Repetición */}
           {perdio && (
             <div className={styles.repSection}>
               <div className={styles.sectionHeader}>
@@ -254,8 +342,7 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius }) {
                   <div className={styles.inputGroup}>
                     <label>Nota perdida</label>
                     <input type="number" min={0} max={NOTA_MAX} className={styles.notaInput}
-                      value={rep.notaAnterior} placeholder="—" readOnly
-                      style={{ opacity: 0.6 }} />
+                      value={rep.notaAnterior} placeholder="—" readOnly style={{ opacity: 0.6 }} />
                   </div>
                   <div className={styles.inputGroup}>
                     <label>Nota nueva /{NOTA_MAX}</label>
@@ -266,8 +353,7 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius }) {
                   {rep.notaNueva !== "" && (
                     <div className={styles.inputGroup}>
                       <label>Resultado</label>
-                      <span className={styles.repBadge}
-                        style={{ color: colorNota(rep.notaNueva) }}>
+                      <span className={styles.repBadge} style={{ color: colorNota(rep.notaNueva) }}>
                         {Number(rep.notaNueva) >= NOTA_PASS ? "✓ Aprobó" : "✗ Perdió"}
                       </span>
                     </div>
@@ -283,13 +369,30 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius }) {
   );
 }
 
-// ── Vista principal ───────────────────────────────────────────────────────
-export default function CursandoView({ malla, cursandoData, onSave, user }) {
+export default function CursandoView({ malla, cursandoData, onSave, user, horarioData }) {
   const [data, setData]   = useState(cursandoData || {});
   const [saved, setSaved] = useState(false);
 
-  // Solo materias en estado "cursando"
-  const materiasActuales = malla.flatMap(s => s.materias).filter(m => m.estado === "cursando");
+  const horarioClases = horarioData?.clases || [];
+  const materiaMap = useMemo(() => {
+    const all = malla.flatMap(s => s.materias);
+    return Object.fromEntries(all.map(m => [m.id, m]));
+  }, [malla]);
+
+  const materiasCursando = useMemo(() => {
+    const manual = malla.flatMap(s => s.materias).filter(m => m.estado === "cursando");
+    const manualIds = new Set(manual.map(m => m.id));
+    const fromHorario = horarioClases
+      .map(c => c.materiaId)
+      .filter((id, i, arr) => arr.indexOf(id) === i)
+      .filter(id => !manualIds.has(id) && materiaMap[id]);
+    const horarioMaterias = fromHorario.map(id => materiaMap[id]);
+    return [...manual, ...horarioMaterias];
+  }, [malla, horarioClases, materiaMap]);
+
+  const getHorarioForMateria = (materiaId) => {
+    return horarioClases.find(c => c.materiaId === materiaId);
+  };
 
   const handleChange = (id, val) => {
     setData(prev => ({ ...prev, [id]: val }));
@@ -301,22 +404,19 @@ export default function CursandoView({ malla, cursandoData, onSave, user }) {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const ponderado = calcPonderado(materiasActuales, data);
-
+  const ponderado = calcPonderado(materiasCursando, data);
   const colors       = user?.themeColors || {};
   const borderRadius = user?.borderRadius ?? 12;
-
-  const totalCreditosCursando = materiasActuales.reduce((a, m) => a + m.creditos, 0);
+  const totalCreditos = materiasCursando.reduce((a, m) => a + m.creditos, 0);
 
   return (
     <div className={styles.wrap}>
-      {/* Header */}
       <div className={styles.header}>
         <div>
           <h2 className={styles.title}>Semestre actual</h2>
           <p className={styles.subtitle}>
-            {materiasActuales.length} materia{materiasActuales.length !== 1 ? "s" : ""} cursando
-            · {totalCreditosCursando} créditos
+            {materiasCursando.length} materia{materiasCursando.length !== 1 ? "s" : ""} cursando
+            · {totalCreditos} créditos
           </p>
         </div>
         <button
@@ -327,12 +427,8 @@ export default function CursandoView({ malla, cursandoData, onSave, user }) {
         </button>
       </div>
 
-      {/* Banner ponderado */}
       {ponderado && (
-        <div
-          className={styles.ponderadoBanner}
-          style={{ borderColor: colorNota(ponderado.valor) }}
-        >
+        <div className={styles.ponderadoBanner} style={{ borderColor: colorNota(ponderado.valor) }}>
           <div>
             <p className={styles.ponderadoLabel}>Ponderado semestral</p>
             <p className={styles.ponderadoFormula}>
@@ -351,18 +447,16 @@ export default function CursandoView({ malla, cursandoData, onSave, user }) {
         </div>
       )}
 
-      {/* Sin materias cursando */}
-      {materiasActuales.length === 0 && (
+      {materiasCursando.length === 0 && (
         <div className={styles.emptyState}>
           <span className={styles.emptyIcon}>◉</span>
           <p>No tienes materias en estado <strong>Cursando</strong>.</p>
-          <p>Ve a la <strong>Malla</strong> y cambia el estado de tus materias actuales.</p>
+          <p>Ve a la <strong>Malla</strong> y cambia el estado, o agrega clases en <strong>Horario</strong>.</p>
         </div>
       )}
 
-      {/* Cards */}
       <div className={styles.cardsList}>
-        {materiasActuales.map(mat => (
+        {materiasCursando.map(mat => (
           <MateriaCard
             key={mat.id}
             materia={mat}
@@ -370,12 +464,12 @@ export default function CursandoView({ malla, cursandoData, onSave, user }) {
             onChange={val => handleChange(mat.id, val)}
             colors={colors}
             borderRadius={borderRadius}
+            horarioClase={getHorarioForMateria(mat.id)}
           />
         ))}
       </div>
 
-      {/* Resumen tabla */}
-      {materiasActuales.length > 0 && (
+      {materiasCursando.length > 0 && (
         <div className={styles.resumenTable}>
           <h3 className={styles.resumenTitle}>Resumen ponderado</h3>
           <div className={styles.tableWrap}>
@@ -390,10 +484,11 @@ export default function CursandoView({ malla, cursandoData, onSave, user }) {
                 </tr>
               </thead>
               <tbody>
-                {materiasActuales.map(m => {
-                  const notaFinal = calcNotaFinal(data[m.id]?.cortes || []);
-                  const pond = notaFinal !== null ? (Number(notaFinal) * m.creditos).toFixed(1) : null;
-                  const paso = notaFinal !== null && Number(notaFinal) >= NOTA_PASS;
+                {materiasCursando.map(m => {
+                  const d = data[m.id];
+                  const nf = calcNotaFinal(d?.cortes || migrateCortes([]));
+                  const pond = nf !== null ? (Number(nf) * m.creditos).toFixed(1) : null;
+                  const paso = nf !== null && Number(nf) >= NOTA_PASS;
                   return (
                     <tr key={m.id}>
                       <td>
@@ -401,14 +496,14 @@ export default function CursandoView({ malla, cursandoData, onSave, user }) {
                         <span className={styles.tableNombre}>{m.nombre}</span>
                       </td>
                       <td className={styles.tableCenter}>{m.creditos}</td>
-                      <td className={styles.tableCenter} style={{ color: notaFinal ? colorNota(notaFinal) : "var(--text-muted)" }}>
-                        {notaFinal ?? "—"}
+                      <td className={styles.tableCenter} style={{ color: nf ? colorNota(nf) : "var(--text-muted)" }}>
+                        {nf ?? "—"}
                       </td>
                       <td className={styles.tableCenter} style={{ color: "var(--accent)" }}>
                         {pond ?? "—"}
                       </td>
                       <td className={styles.tableCenter}>
-                        {notaFinal !== null
+                        {nf !== null
                           ? <span className={styles.tableBadge} style={{ color: paso ? "#6ec88a" : "#e07070", background: paso ? "rgba(110,200,138,0.1)" : "rgba(224,112,112,0.1)" }}>
                               {paso ? "Aprueba" : "Pierde"}
                             </span>

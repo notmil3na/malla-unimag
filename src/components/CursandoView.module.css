@@ -107,17 +107,68 @@
   letter-spacing: 0.08em; color: #e07070;
 }
 
-.corteRow {
-  display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap;
-  padding: 10px 12px;
+/* ── Corte section (nuevo) ────────────────────────── */
+.corteSection {
   background: var(--surface); border: 1px solid var(--border);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-sm); overflow: hidden;
+}
+.corteHeader {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; gap: 12px;
+  background: var(--surface2); border-bottom: 1px solid var(--border);
+}
+.corteHeaderLeft { display: flex; align-items: center; gap: 10px; flex: 1; }
+.corteHeaderRight { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.corteNameInput {
+  background: transparent; border: none; border-bottom: 1px solid transparent;
+  color: var(--text); font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  outline: none; padding: 2px 4px; min-width: 80px; max-width: 160px;
+}
+.corteNameInput:focus { border-bottom-color: var(--accent); }
+.corteNotaBadge {
+  font-family: var(--font-display); font-size: 14px; font-weight: 600;
+  padding: 2px 8px; border-radius: 5px;
+  background: rgba(var(--accent-rgb), 0.08);
+}
+
+.itemsList {
+  padding: 10px 14px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.itemsEmpty {
+  font-size: 12px; color: var(--text-muted); font-style: italic;
+  padding: 4px 0;
+}
+
+.itemRow {
+  display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap;
+  padding: 8px 10px;
+  background: var(--surface2); border: 1px solid var(--border);
   border-radius: var(--radius-sm);
 }
-.corteLabel { font-size: 12px; font-weight: 600; color: var(--text-muted); min-width: 56px; margin-bottom: 2px; }
+.itemNameInput {
+  background: transparent; border: none; border-bottom: 1px solid var(--border);
+  color: var(--text); font-family: var(--font-body); font-size: 12px; font-weight: 500;
+  outline: none; padding: 2px 4px; flex: 1; min-width: 80px;
+}
+.itemNameInput:focus { border-bottom-color: var(--accent); }
 
-.corteInputs { display: flex; gap: 10px; flex-wrap: wrap; flex: 1; align-items: flex-end; }
+.addItemBtn {
+  background: transparent; border: 1px dashed var(--border);
+  border-radius: var(--radius-sm); color: var(--text-muted);
+  font-family: var(--font-body); font-size: 11px;
+  padding: 5px 10px; cursor: pointer; transition: all 0.15s;
+  text-align: center;
+}
+.addItemBtn:hover { border-color: var(--accent); color: var(--accent); }
+
+.pesoHint {
+  font-size: 10px; padding: 2px 14px 6px;
+}
+
+.pesoUnit {
+  font-size: 11px; color: var(--text-muted); align-self: flex-end; padding-bottom: 8px;
+}
 
 /* ── Nota final row ───────────────────────────────── */
 .notaFinalRow {
