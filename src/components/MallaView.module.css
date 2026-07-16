@@ -50,8 +50,10 @@
 
 .downloadBtn {
   background: var(--surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--border);
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   color: var(--text);
   font-family: var(--font-body);
   font-size: calc(12px * var(--fs, 1));
@@ -91,9 +93,12 @@
 .semesterWidget {
   margin-bottom: 20px;
   padding: 14px 16px;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, transparent), var(--surface));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, transparent), var(--surface));
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -152,8 +157,10 @@
   margin-bottom: 24px;
   padding: 10px 14px;
   background: var(--surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 .legendHint {
@@ -243,9 +250,13 @@
   bottom: 24px; right: 24px;
   width: 340px;
   background: var(--surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
   animation: slideUp 0.25s ease;
   z-index: 100;
 }
@@ -301,7 +312,7 @@
 .estadoBtn {
   font-family: var(--font-body); font-size: 12px; font-weight: 500;
   background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 8px; color: var(--text-muted);
+  border-radius: var(--radius-sm); color: var(--text-muted);
   padding: 6px 10px; cursor: pointer;
   transition: all 0.15s;
 }
@@ -314,7 +325,7 @@
   padding: 7px 10px;
   background: var(--surface2);
   border: 1px solid;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   opacity: 0.8;
 }
 
@@ -337,8 +348,10 @@
   margin: 8px 0 16px;
   padding: 12px 14px;
   background: var(--surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
 }
 
 .matriculablesToggle {
@@ -372,9 +385,12 @@
 .matriculablesPanel {
   margin-bottom: 20px;
   padding: 14px 16px;
-  background: linear-gradient(135deg, color-mix(in srgb, #6eb5c8 8%, transparent), var(--surface));
+  background: linear-gradient(135deg, color-mix(in srgb, #6eb5c8 10%, transparent), var(--surface));
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid color-mix(in srgb, #6eb5c8 35%, var(--border));
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
 }
 
 .matriculablesPanelHeader {
@@ -410,8 +426,8 @@
   padding: 10px 12px;
   background: var(--surface2);
   border: 1px solid var(--border);
-  border-left: 3px solid #6eb5c8;
-  border-radius: 8px;
+  border-left: 4px solid #6eb5c8;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-family: var(--font-body);
   transition: border-color 0.15s, background 0.15s;

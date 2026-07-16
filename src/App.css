@@ -7,35 +7,60 @@
   --font-display: 'DM Serif Display', Georgia, serif;
   --font-body: 'DM Sans', system-ui, sans-serif;
 
-  --bg:       #0d0c12;
-  --surface:  #17151f;
-  --surface2: #1f1c29;
-  --border:   #2d2938;
-  --text:     #f2efe6;
-  --text-muted: #8a86a3;
+  --bg:       #0e0a18;
+  --surface:  rgba(255,255,255,0.045);
+  --surface2: rgba(255,255,255,0.075);
+  --border:   rgba(255,255,255,0.10);
+  --text:     #f4f1fb;
+  --text-muted: #9b93b8;
 
   --accent:     #c8a96e;
   --accent2:    #8b6f3a;
   --accent-rgb: 200,169,110;
+
+  /* Aurora mesh (mística, sutil) */
+  --aurora-1: rgba(168,110,220,0.32);
+  --aurora-2: rgba(255,140,110,0.22);
+  --aurora-3: rgba(210,60,150,0.22);
+  --aurora-4: rgba(100,150,230,0.16);
+
+  --glass-blur: 22px;
+  --radius-xl: 26px;
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --shadow-soft: 0 8px 32px rgba(0,0,0,0.35);
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.45);
+
+  /* Alias de compatibilidad (usados en algunos módulos) */
+  --card: var(--surface);
+  --line: var(--border);
 
   color-scheme: dark;
 }
 
 /* ── Light theme ──────────────────────────────────── */
 [data-theme="light"] {
-  --bg:       #f7f5f0;
-  --surface:  #ffffff;
-  --surface2: #efece4;
-  --border:   #ddd7c9;
-  --text:     #1c1a22;
-  --text-muted: #736d82;
+  --bg:       #f8f4fc;
+  --surface:  rgba(255,255,255,0.62);
+  --surface2: rgba(255,255,255,0.42);
+  --border:   rgba(120,90,160,0.16);
+  --text:     #241f33;
+  --text-muted: #756c8f;
+
+  --aurora-1: rgba(180,130,230,0.35);
+  --aurora-2: rgba(255,175,130,0.32);
+  --aurora-3: rgba(240,110,170,0.28);
+  --aurora-4: rgba(140,180,240,0.22);
+
+  --shadow-soft: 0 8px 28px rgba(120,90,160,0.14);
+  --shadow-lg: 0 20px 50px rgba(120,90,160,0.18);
 
   color-scheme: light;
 }
 
 html, body {
   height: 100%;
-  background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
   transition: background 0.35s ease, color 0.35s ease;
@@ -44,6 +69,14 @@ html, body {
 
 body {
   position: relative;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse 55% 50% at 12% 18%, var(--aurora-1), transparent 60%),
+    radial-gradient(ellipse 50% 45% at 88% 12%, var(--aurora-2), transparent 60%),
+    radial-gradient(ellipse 55% 50% at 80% 88%, var(--aurora-3), transparent 60%),
+    radial-gradient(ellipse 50% 45% at 15% 90%, var(--aurora-4), transparent 60%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
 }
 
 /* Textura sutil, consistente en toda la app (no solo Login) */

@@ -16,7 +16,7 @@
 .viewToggle {
   display: flex;
   background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 9px; padding: 3px; gap: 3px;
+  border-radius: var(--radius-sm); padding: 3px; gap: 3px;
 }
 .toggleBtn {
   background: transparent; border: none; border-radius: 6px;
@@ -28,18 +28,20 @@
 
 /* Save button */
 .saveBtn {
-  background: var(--accent); color: #0e0e14;
-  border: none; border-radius: 9px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #14101f;
+  border: none; border-radius: var(--radius-sm);
   font-family: var(--font-body); font-size: 13px; font-weight: 600;
   padding: 9px 20px; cursor: pointer; transition: all 0.2s;
 }
-.saveBtn:hover { opacity: 0.85; transform: translateY(-1px); }
+.saveBtn:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.35); }
 .saveBtnDone { background: #6ec88a !important; }
 
 /* ── Global banner ────────────────────────────────── */
 .globalBanner {
   display: flex; align-items: center; justify-content: space-between;
-  background: var(--surface); border: 1px solid; border-radius: 14px;
+  background: var(--surface); border: 1px solid; border-radius: var(--radius-md);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   padding: 16px 22px; margin-bottom: 24px;
 }
 .globalLabel { font-size: 14px; font-weight: 600; color: var(--text); }
@@ -54,8 +56,10 @@
   margin-bottom: 18px;
   padding: 12px 14px;
   background: var(--surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 
 .desiredToggle {
@@ -92,8 +96,10 @@
 .desiredInput {
   width: 100px;
   background: var(--surface2);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: var(--text);
   font-family: var(--font-display);
   font-size: 16px;
@@ -105,9 +111,11 @@
   margin-bottom: 20px;
   padding: 16px 18px;
   background: var(--surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--border);
   border-left: 3px solid var(--accent);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 
 .projectionWarn {
@@ -171,8 +179,10 @@
   gap: 10px;
   padding: 8px 10px;
   background: var(--surface2);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .projectionNombre {
@@ -197,7 +207,9 @@
 /* ── Semester card ────────────────────────────────── */
 .semCard {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 14px; margin-bottom: 18px; overflow: hidden;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-md); margin-bottom: 18px; overflow: hidden;
 }
 
 .semHeader {
@@ -205,6 +217,8 @@
   padding: 14px 20px;
   border-bottom: 1px solid var(--border);
   background: var(--surface2);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 
 .semTitle { display: flex; align-items: baseline; gap: 10px; }
@@ -222,6 +236,8 @@
   padding: 12px 20px;
   border-top: 1px solid var(--border);
   background: var(--surface2);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   font-size: 12px; color: var(--text-muted);
 }
 .semFooterResult { font-size: 16px; margin-left: 4px; }
@@ -263,8 +279,10 @@
 
 .letterSelect {
   background: var(--surface2);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: var(--text);
   font-family: var(--font-body);
   font-size: 13px;
@@ -273,7 +291,7 @@
   min-width: 160px;
   cursor: pointer;
 }
-.letterSelect:focus { border-color: var(--accent); }
+.letterSelect:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
 
 /* ── Field groups ─────────────────────────────────── */
 .cursandoFields,
@@ -290,21 +308,21 @@
 
 .textInput {
   background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 8px; color: var(--text);
+  border-radius: var(--radius-sm); color: var(--text);
   font-family: var(--font-body); font-size: 13px;
   padding: 8px 12px; outline: none; width: 100%;
   transition: border-color 0.2s;
 }
-.textInput:focus { border-color: var(--accent); }
+.textInput:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
 
 .gradeInput {
   background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 8px; color: var(--text);
+  border-radius: var(--radius-sm); color: var(--text);
   font-family: var(--font-display); font-size: 16px;
   padding: 8px 12px; outline: none; width: 100px;
   transition: border-color 0.2s; text-align: center;
 }
-.gradeInput:focus { border-color: var(--accent); }
+.gradeInput:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
 
 .gradeWrap { display: flex; align-items: center; gap: 8px; }
 
@@ -319,7 +337,7 @@
 .repeticionSection {
   width: 100%;
   border: 1px solid rgba(224,112,112,0.25);
-  border-radius: 10px; padding: 12px 14px;
+  border-radius: var(--radius-sm); padding: 12px 14px;
   background: rgba(224,112,112,0.04);
   display: flex; flex-direction: column; gap: 10px;
 }
@@ -329,7 +347,7 @@
 
 .addBtn {
   background: transparent; border: 1px solid var(--border);
-  border-radius: 7px; color: var(--accent);
+  border-radius: var(--radius-sm); color: var(--accent);
   font-family: var(--font-body); font-size: 11px; font-weight: 600;
   padding: 5px 10px; cursor: pointer; transition: all 0.15s;
 }
@@ -351,7 +369,9 @@
 .resumenRow {
   display: flex; gap: 0;
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 14px; overflow: hidden;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-md); overflow: hidden;
 }
 
 .resumenLeft { flex: 1; padding: 16px 20px; }
@@ -386,6 +406,8 @@
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 4px; padding: 16px;
   background: var(--surface2);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 
 .resumenPondLabel { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
@@ -395,7 +417,9 @@
 .resumenTotal {
   display: flex; align-items: center; justify-content: space-between;
   background: var(--surface); border: 2px solid;
-  border-radius: 14px; padding: 18px 24px;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-md); padding: 18px 24px;
   font-size: 15px; font-weight: 600; color: var(--text);
 }
 .resumenTotalVal { font-family: var(--font-display); font-size: 32px; font-weight: 400; }

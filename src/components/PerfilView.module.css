@@ -6,8 +6,10 @@
 
 .careerCard {
   background: var(--surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 18px 20px;
   margin-bottom: 20px;
 }
@@ -36,8 +38,10 @@
   gap: 4px;
   padding: 12px 14px;
   background: var(--surface2);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 
 .careerLabel {
@@ -82,7 +86,9 @@
 /* ── Card (datos personales) ──────────────────────── */
 .card {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 18px; padding: 28px 28px 24px;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-lg); padding: 28px 28px 24px;
 }
 
 .avatarSection {
@@ -143,7 +149,7 @@
 .field input,
 .selectInput {
   background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 10px; color: var(--text);
+  border-radius: var(--radius-sm); color: var(--text);
   font-family: var(--font-body); font-size: 14px;
   padding: 10px 14px; outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -167,22 +173,24 @@
   font-size: 11px; color: var(--accent);
   background: rgba(var(--accent-rgb), 0.08);
   border: 1px solid rgba(var(--accent-rgb), 0.2);
-  border-radius: 7px; padding: 7px 10px; line-height: 1.5;
+  border-radius: var(--radius-sm); padding: 7px 10px; line-height: 1.5;
 }
 
 .btn {
-  background: var(--accent); color: #0e0e14;
-  border: none; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #14101f;
+  border: none; border-radius: var(--radius-sm);
   font-family: var(--font-body); font-size: 14px; font-weight: 600;
   padding: 12px 24px; cursor: pointer; transition: all 0.2s;
 }
-.btn:hover { opacity: 0.85; transform: translateY(-1px); }
+.btn:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.35); }
 .btnSaved { background: #6ec88a !important; }
 
 /* ── Cursando column ──────────────────────────────── */
 .cursandoCol {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 18px; overflow: hidden;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-lg); overflow: hidden;
   display: flex; flex-direction: column;
 }
 
@@ -190,6 +198,8 @@
   display: flex; align-items: center; justify-content: space-between;
   padding: 18px 20px; border-bottom: 1px solid var(--border);
   background: var(--surface2);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 .cursandoTitle {
   font-size: 13px; font-weight: 700; color: var(--text);
@@ -241,6 +251,8 @@
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 20px;
   background: var(--surface2);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   font-size: 12px; font-weight: 600; color: var(--text-muted);
 }
 .cursandoTotalVal {
@@ -250,7 +262,7 @@
 
 @media (max-width: 900px) {
   .wrap { padding: 18px 14px; }
-  .card { padding: 18px 14px 16px; border-radius: 14px; }
+  .card { padding: 18px 14px 16px; border-radius: var(--radius-md); }
   .formGrid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
   .avatarSection { gap: 12px; margin-bottom: 14px; }
   .avatar, .avatarImg, .avatarInitial { width: 64px; height: 64px; }

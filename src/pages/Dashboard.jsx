@@ -163,7 +163,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
   const tabs = [
     { id: "malla",    label: "Malla",        icon: "⬡" },
     { id: "cursando", label: "Semestre",      icon: "◉" },
-    { id: "horario",  label: "Horario",       icon: "📅" },
+    { id: "horario",  label: "Horario",       icon: "▦" },
     { id: "notas",    label: "Notas",         icon: "◑" },
     { id: "perfil",   label: "Mi Perfil",     icon: "◎" },
     { id: "tema",     label: "Personalizar",  icon: "◈" },

@@ -3,12 +3,19 @@ import { APP_THEMES } from "../App";
 import styles from "./TemaView.module.css";
 
 const MALLA_PRESETS = [
-  { name: "Ámbar oscuro",    colors: { cursando: "#c8a96e", aprobada: "#6ec88a", faltante: "#3a3a52" }, borderRadius: 12 },
-  { name: "Océano",          colors: { cursando: "#6eb5c8", aprobada: "#6ec8b4", faltante: "#2a3a4a" }, borderRadius: 8 },
-  { name: "Rosa pastel",     colors: { cursando: "#c8154b", aprobada: "#9bc86e", faltante: "#3a2a3a" }, borderRadius: 16 },
-  { name: "Noche eléctrica", colors: { cursando: "#a86ec8", aprobada: "#6e8bc8", faltante: "#1a1a2e" }, borderRadius: 4 },
-  { name: "Minimalista",     colors: { cursando: "#e0e0e0", aprobada: "#ffffff", faltante: "#2a2a2a" }, borderRadius: 0 },
+  { name: "Aurora",          colors: { cursando: "#B882E8", aprobada: "#6EC8A8", faltante: "#1E1A2E" }, borderRadius: 12 },
+  { name: "Océano profundo", colors: { cursando: "#6BA3E8", aprobada: "#6EC8B4", faltante: "#1A2234" }, borderRadius: 10 },
+  { name: "Jardín",          colors: { cursando: "#D4A84B", aprobada: "#6EC88A", faltante: "#1E2418" }, borderRadius: 14 },
+  { name: "Crepúsculo",      colors: { cursando: "#E8946B", aprobada: "#E8C86B", faltante: "#2A1E1A" }, borderRadius: 8 },
+  { name: "Hielo",           colors: { cursando: "#A0C8E8", aprobada: "#E0E8F0", faltante: "#1A1E28" }, borderRadius: 16 },
 ];
+
+function isLightColor(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return (r * 299 + g * 587 + b * 114) / 1000 > 160;
+}
 
 // Fuentes elegibles con muestra de texto
 export const FONT_OPTIONS = [
@@ -134,7 +141,7 @@ export default function TemaView({ user, onUpdate }) {
                   onChange={e => setColors({ ...colors, [f.key]: e.target.value })}
                   className={styles.colorPicker} />
                 <span className={styles.colorHex}>{colors[f.key]}</span>
-                <div className={styles.colorPreviewCard} style={{ background: colors[f.key], borderRadius }}>
+                <div className={styles.colorPreviewCard} style={{ background: colors[f.key], borderRadius, color: isLightColor(colors[f.key]) ? "#1a1520" : "#f0edf8" }}>
                   <span>Vista previa</span>
                 </div>
               </div>
