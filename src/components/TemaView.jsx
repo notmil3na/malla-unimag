@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { APP_THEMES } from "../App";
 import styles from "./TemaView.module.css";
+import { IconSun, IconMoon, IconCheck } from "./Icons";
 
 const MALLA_PRESETS = [
   { name: "Aurora",          colors: { cursando: "#B882E8", aprobada: "#6EC8A8", faltante: "#1E1A2E" }, borderRadius: 12 },
@@ -65,13 +66,13 @@ export default function TemaView({ user, onUpdate }) {
         <h3 className={styles.sectionTitle}>Modo de pantalla</h3>
         <div className={styles.modeRow}>
           {[
-            { id: "dark",  icon: "🌙", label: "Oscuro" },
-            { id: "light", icon: "☀️",  label: "Claro"  },
+            { id: "dark",  Icon: IconMoon, label: "Oscuro" },
+            { id: "light", Icon: IconSun,  label: "Claro"  },
           ].map(m => (
             <button key={m.id}
               className={`${styles.modeBtn} ${appMode === m.id ? styles.modeBtnActive : ""}`}
               onClick={() => setAppMode(m.id)}>
-              <span className={styles.modeIcon}>{m.icon}</span>
+              <span className={styles.modeIcon}><m.Icon size={18} /></span>
               <span>{m.label}</span>
             </button>
           ))}
@@ -89,7 +90,7 @@ export default function TemaView({ user, onUpdate }) {
               style={{ "--t-accent": t.accent }}>
               <span className={styles.appThemeDot} style={{ background: t.accent }} />
               <span>{t.name}</span>
-              {appTheme === key && <span className={styles.appThemeCheck}>✓</span>}
+              {appTheme === key && <span className={styles.appThemeCheck}><IconCheck size={13} /></span>}
             </button>
           ))}
         </div>
@@ -106,7 +107,7 @@ export default function TemaView({ user, onUpdate }) {
               style={{ fontFamily: `'${f.value}', system-ui, sans-serif` }}>
               <span className={styles.fontOptionName}>{f.label}</span>
               <span className={styles.fontOptionSample}>{f.sample}</span>
-              {fontBody === f.value && <span className={styles.fontOptionCheck}>✓</span>}
+               {fontBody === f.value && <span className={styles.fontOptionCheck}><IconCheck size={13} /></span>}
             </button>
           ))}
         </div>
@@ -202,7 +203,7 @@ export default function TemaView({ user, onUpdate }) {
       </section>
 
       <button className={`${styles.btn} ${saved ? styles.btnSaved : ""}`} onClick={handleSave}>
-        {saved ? "✓ Cambios aplicados" : "Aplicar y guardar"}
+         {saved ? <><IconCheck size={12} /> Cambios aplicados</> : "Aplicar y guardar"}
       </button>
     </div>
   );

@@ -147,10 +147,11 @@
 /* ── Modal ────────────────────────────────────────── */
 .modalOverlay {
   position: fixed; inset: 0; z-index: 200;
-  background: color-mix(in srgb, var(--surface) 65%, transparent);
-  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.65);
   display: flex; align-items: center; justify-content: center;
-  padding: 20px; animation: fadeIn 0.15s ease;
+  padding: 16px; animation: fadeIn 0.15s ease;
+  overflow-y: auto;
+  min-height: 100dvh;
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -285,13 +286,35 @@
   .layout { grid-template-columns: 1fr; }
   .sidebar { position: static; }
   .calCell { min-height: 52px; }
+  .modal { max-width: 100%; }
 }
 
 @media (max-width: 480px) {
   .wrap { padding: 14px 10px; }
   .title { font-size: 20px; }
+  .header { flex-direction: column; align-items: stretch; }
+  .addBtn { text-align: center; }
+  .calNav { padding: 10px 12px; }
+  .navTitle { font-size: 14px; }
+  .calCell { min-height: 42px; padding: 3px; }
+  .calCellEmpty { min-height: 42px; }
+  .calDayNum { font-size: 11px; }
+  .calDayHeader { font-size: 9px; padding: 7px 0; }
   .tipoGrid { grid-template-columns: repeat(2, 1fr); }
   .formRow2 { flex-direction: column; }
-  .calCell { min-height: 44px; padding: 4px; }
-  .calDayNum { font-size: 11px; }
+  .selectedDayPanel { padding: 10px 12px; }
+  .selectedEvento { gap: 6px; }
+  .eventoBadgeTitle { font-size: 11px; }
+  .eventoBadgeMateria { font-size: 9px; }
+  .eventoBadgeHora, .eventoBadgeLugar { font-size: 9px; }
+  .sidebarTitle { font-size: 10px; padding: 10px 12px; }
+  .sidebarItem { padding: 8px 12px; gap: 8px; }
+  .sidebarItemTitle { font-size: 11px; }
+  .sidebarItemMateria { font-size: 9px; }
+  .sidebarItemDate { font-size: 9px; }
+  .modal { max-width: 100%; margin: 0 4px; }
+  .modalHeader { padding: 16px 16px 12px; }
+  .modalTitle { font-size: 17px; }
+  .modalBody { padding: 16px; gap: 12px; }
+  .modalFooter { padding: 12px 16px; }
 }

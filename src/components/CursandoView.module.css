@@ -301,8 +301,24 @@
   .title { font-size: 20px; }
   .ponderadoVal { font-size: 26px; }
   .ponderadoMax { font-size: 13px; }
-  .cardBody { padding: 10px; }
+  .cardBody { padding: 10px; gap: 14px; }
+  .cardMeta { padding: 10px 12px; }
+  .cardNombre { font-size: 13px; }
+  .cardRight { padding: 10px 12px; }
+  .notaNum { font-size: 22px; }
   .notaInput, .pesoInput { width: 72px; font-size: 14px; }
   .equivBadge { font-size: 12px; }
   .table th, .table td { padding: 8px 6px; font-size: 11px; }
+  .corteHeader { padding: 8px 10px; gap: 8px; }
+  .corteNameInput { min-width: 60px; max-width: 120px; font-size: 12px; }
+  .corteNotaBadge { font-size: 12px; padding: 2px 6px; }
+  .itemRow { padding: 6px 8px; gap: 6px; }
+  .itemNameInput { min-width: 60px; font-size: 11px; }
+  .notaInput { width: 68px; }
+  .itemsList { padding: 8px 10px; gap: 5px; }
+  .notaFinalRow { padding: 10px 12px; gap: 8px; }
+  .notaFinalVal { font-size: 18px; }
+  .notaFinalBadge { margin-left: 0; font-size: 11px; }
+  .repRow { padding: 8px; }
+  .addBtn { font-size: 10px; padding: 4px 8px; }
 }

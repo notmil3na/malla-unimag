@@ -2,6 +2,7 @@ import { useState } from "react";
 import { CORTES, saveUser, dbRowToUser } from "../App";
 import { supabase } from "../supabase";
 import styles from "./Login.module.css";
+import { IconCheck, IconChevronRight } from "../components/Icons";
 
 const DEFAULT_THEME_COLORS = {
   cursando: "#c8a96e",
@@ -116,7 +117,7 @@ export default function Login({ onLogin }) {
           </button>
         </div>
 
-        {success && <p className={styles.successMsg}>✓ {success}</p>}
+         {success && <p className={styles.successMsg}><IconCheck size={13} /> {success}</p>}
         {error   && <p className={styles.error}>{error}</p>}
 
         {tab === "login" && (
@@ -130,7 +131,7 @@ export default function Login({ onLogin }) {
               <input type="password" value={form.password} onChange={set("password")} placeholder="••••••" autoComplete="current-password" />
             </div>
             <button type="submit" className={styles.btn} disabled={loading}>
-              {loading ? "Cargando..." : "Entrar →"}
+               {loading ? "Cargando..." : <><IconChevronRight size={13} /> Entrar</>}
             </button>
           </form>
         )}
@@ -199,7 +200,7 @@ export default function Login({ onLogin }) {
             </div>
 
             <button type="submit" className={styles.btn} disabled={loading}>
-              {loading ? "Creando cuenta..." : "Crear cuenta →"}
+               {loading ? "Creando cuenta..." : <><IconChevronRight size={13} /> Crear cuenta</>}
             </button>
           </form>
         )}

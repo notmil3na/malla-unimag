@@ -1,5 +1,6 @@
 import { APP_THEMES } from "../App";
 import styles from "./Sidebar.module.css";
+import { IconStar, IconSun, IconMoon, IconLogout } from "./Icons";
 
 export default function Sidebar({ user, tabs, activeTab, onTabChange, onLogout, onUpdateUser }) {
   const initial = user.name ? user.name[0].toUpperCase() : "U";
@@ -16,11 +17,11 @@ export default function Sidebar({ user, tabs, activeTab, onTabChange, onLogout, 
       {/* Brand + mode toggle */}
       <div className={styles.brandRow}>
         <div className={styles.brand}>
-          <span className={styles.brandIcon}>✦</span>
+          <span className={styles.brandIcon}><IconStar size={20} /></span>
           <span className={styles.brandText}>MiMalla</span>
         </div>
         <button className={styles.modeToggle} onClick={toggleMode} title={mode === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
-          {mode === "dark" ? "☀️" : "🌙"}
+          {mode === "dark" ? <IconSun size={16} /> : <IconMoon size={16} />}
         </button>
       </div>
 
@@ -47,20 +48,25 @@ export default function Sidebar({ user, tabs, activeTab, onTabChange, onLogout, 
 
       {/* Nav */}
       <nav className={styles.nav}>
-        {tabs.map(t => (
-          <button
-            key={t.id}
-            className={`${styles.navBtn} ${activeTab === t.id ? styles.active : ""}`}
-            onClick={() => onTabChange(t.id)}
-          >
-            <span className={styles.navIcon}>{t.icon}</span>
-            <span>{t.label}</span>
-          </button>
-        ))}
+        {tabs.map(t => {
+          const IconComp = t.icon;
+          return (
+            <button
+              key={t.id}
+              className={`${styles.navBtn} ${activeTab === t.id ? styles.active : ""}`}
+              onClick={() => onTabChange(t.id)}
+            >
+              <span className={styles.navIcon}>
+                {IconComp ? <IconComp size={16} /> : t.icon}
+              </span>
+              <span>{t.label}</span>
+            </button>
+          );
+        })}
       </nav>
 
       <button className={styles.logout} onClick={onLogout}>
-        <span>⎋</span> Cerrar sesión
+        <IconLogout size={14} /> Cerrar sesión
       </button>
     </aside>
   );

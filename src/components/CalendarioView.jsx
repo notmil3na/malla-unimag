@@ -1,17 +1,21 @@
 import { useState, useMemo, useCallback } from "react";
 import styles from "./CalendarioView.module.css";
 import { SEMESTER_START, SEMESTER_END } from "../utils/semesterCountdown.js";
+import {
+  IconExamen, IconQuiz, IconTarea, IconProyecto, IconEvento,
+  IconInicio, IconFin, IconClose, IconEdit, IconChevronLeft, IconChevronRight, IconPlus
+} from "./Icons";
 
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const DIAS_CORTOS = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
 const TIPO_EVENTO = [
-  { id: "examen",      label: "Examen",       icon: "📝", color: "#E87098" },
-  { id: "quiz",        label: "Quiz",          icon: "❓", color: "#B882E8" },
-  { id: "tarea",       label: "Tarea",         icon: "📌", color: "#6BA3E8" },
-  { id: "proyecto",    label: "Proyecto",      icon: "📁", color: "#E8946B" },
-  { id: "evento",      label: "Evento",        icon: "🎯", color: "#6EC8A8" },
-  { id: "inicio_semestre", label: "Inicio semestre", icon: "🟢", color: "#6EC88A" },
-  { id: "fin_semestre", label: "Fin semestre",  icon: "🔴", color: "#e07070" },
+  { id: "examen",      label: "Examen",       Icon: IconExamen, color: "#E87098" },
+  { id: "quiz",        label: "Quiz",          Icon: IconQuiz, color: "#B882E8" },
+  { id: "tarea",       label: "Tarea",         Icon: IconTarea, color: "#6BA3E8" },
+  { id: "proyecto",    label: "Proyecto",      Icon: IconProyecto, color: "#E8946B" },
+  { id: "evento",      label: "Evento",        Icon: IconEvento, color: "#6EC8A8" },
+  { id: "inicio_semestre", label: "Inicio semestre", Icon: IconInicio, color: "#6EC88A" },
+  { id: "fin_semestre", label: "Fin semestre",  Icon: IconFin, color: "#e07070" },
 ];
 
 function uuid() {
@@ -45,7 +49,7 @@ function EventoBadge({ evento, materias }) {
   const mat = materias.find(m => m.id === evento.materiaId);
   return (
     <div className={styles.eventoBadge} style={{ "--ev-color": tipo.color }}>
-      <span className={styles.eventoIcon}>{tipo.icon}</span>
+      <span className={styles.eventoIcon}><tipo.Icon size={14} /></span>
       <div className={styles.eventoBadgeInfo}>
         <span className={styles.eventoBadgeTitle}>{evento.titulo || tipo.label}</span>
         {mat && <span className={styles.eventoBadgeMateria}>{mat.id} - {mat.nombre}</span>}
@@ -84,7 +88,7 @@ function EventoModal({ onClose, onSave, evento, materias, cortes }) {
       <div className={styles.modal} onClick={e => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <h3 className={styles.modalTitle}>{evento?.id ? "Editar" : "Nuevo"} evento</h3>
-          <button className={styles.modalClose} onClick={onClose}>✕</button>
+          <button className={styles.modalClose} onClick={onClose}><IconClose size={14} /></button>
         </div>
         <div className={styles.modalBody}>
           <div className={styles.formRow}>
@@ -97,7 +101,7 @@ function EventoModal({ onClose, onSave, evento, materias, cortes }) {
                     style={{ "--t-color": t.color }}
                     onClick={() => update("tipo", t.id)}
                   >
-                    <span>{t.icon}</span> {t.label}
+                    <span><t.Icon size={13} /></span> {t.label}
                   </button>
                 ))}
               </div>
@@ -179,7 +183,7 @@ function EventoModal({ onClose, onSave, evento, materias, cortes }) {
                     <div key={tema.id} className={styles.temaRow}>
                       <input type="text" className={styles.textInput} value={tema.nombre}
                         placeholder="Tema..." onChange={e => updateTema(i, "nombre", e.target.value)} />
-                      <button className={styles.removeBtn} onClick={() => removeTema(i)}>✕</button>
+                      <button className={styles.removeBtn} onClick={() => removeTema(i)}>×</button>
                     </div>
                   ))}
                   <button className={styles.addItemBtn} onClick={addTema}>+ Tema</button>
@@ -307,9 +311,9 @@ export default function CalendarioView({ malla, calendarioData, onSave, user, ho
       <div className={styles.layout}>
         <div className={styles.calendarPanel}>
           <div className={styles.calNav}>
-            <button className={styles.navBtn} onClick={prevMonth}>◀</button>
+            <button className={styles.navBtn} onClick={prevMonth}><IconChevronLeft size={12} /></button>
             <span className={styles.navTitle}>{MESES[month]} {year}</span>
-            <button className={styles.navBtn} onClick={nextMonth}>▶</button>
+            <button className={styles.navBtn} onClick={nextMonth}><IconChevronRight size={12} /></button>
           </div>
 
           <div className={styles.calGrid}>
@@ -358,8 +362,8 @@ export default function CalendarioView({ malla, calendarioData, onSave, user, ho
                 <div key={ev.id} className={styles.selectedEvento}>
                   <EventoBadge evento={ev} materias={allMaterias} />
                   <div className={styles.selectedEventoActions}>
-                    <button className={styles.editBtn} onClick={() => { setModalEvent(ev); setShowModal(true); }}>✏️</button>
-                    <button className={styles.deleteBtn} onClick={() => handleDeleteEvento(ev.id)}>🗑️</button>
+                    <button className={styles.editBtn} onClick={() => { setModalEvent(ev); setShowModal(true); }}><IconEdit size={13} /></button>
+                    <button className={styles.deleteBtn} onClick={() => handleDeleteEvento(ev.id)}><IconClose size={13} /></button>
                   </div>
                 </div>
               ))}
@@ -388,7 +392,7 @@ export default function CalendarioView({ malla, calendarioData, onSave, user, ho
                       {ev.horaInicio ? ` · ${ev.horaInicio}` : ""}
                     </span>
                   </div>
-                  <span className={styles.sidebarItemIcon}>{tipo.icon}</span>
+                   <span className={styles.sidebarItemIcon}><tipo.Icon size={13} /></span>
                 </div>
               );
             })}

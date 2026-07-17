@@ -1,22 +1,27 @@
 import { useState, useEffect } from "react";
 import { canEnrollMateria } from "../utils/gradeHelpers.js";
 import styles from "./HorarioView.module.css";
+import {
+  IconMar, IconCienaga, IconSierra, IconInnovacion, IconBloque, IconHangar,
+  IconLocation, IconTrash, IconExternalLink, IconEdit, IconClose,
+  IconSchedule, IconStar, IconCheck
+} from "./Icons";
 
 // ── Edificios y salones ───────────────────────────────────────────────────
 const EDIFICIOS = [
-  { id:"mar_caribe", nombre:"Mar Caribe", icon:"🌊", lados:["Norte","Sur"],
+  { id:"mar_caribe", nombre:"Mar Caribe", IconComp:IconMar, lados:["Norte","Sur"],
     salones: Array.from({length:28},(_,i)=>`${100*(Math.floor(i/7)+1)+(i%7+1)}`), },
-  { id:"cienaga_grande", nombre:"Ciénaga Grande", icon:"🐊", lados:["Norte","Sur"],
+  { id:"cienaga_grande", nombre:"Ciénaga Grande", IconComp:IconCienaga, lados:["Norte","Sur"],
     salones: Array.from({length:18},(_,i)=>`${100*(Math.floor(i/6)+1)+(i%6+1)}`), },
-  { id:"sierra_nevada", nombre:"Sierra Nevada", icon:"⛰️", lados:["Norte","Sur"],
+  { id:"sierra_nevada", nombre:"Sierra Nevada", IconComp:IconSierra, lados:["Norte","Sur"],
     salones: Array.from({length:18},(_,i)=>`${100*(Math.floor(i/6)+1)+(i%6+1)}`), },
-  { id:"edf_innovacion", nombre:"Edificio de Innovación y Emprendimiento", icon:"🔬", lados:null,
+  { id:"edf_innovacion", nombre:"Edificio de Innovación y Emprendimiento", IconComp:IconInnovacion, lados:null,
     salones:["Lab. de Mecánica I"], },
-  { id:"bloque_3", nombre:"Bloque 3", icon:"🧱", lados:null,
+  { id:"bloque_3", nombre:"Bloque 3", IconComp:IconBloque, lados:null,
     salones: Array.from({length:8},(_,i)=>`${i+1}`), },
-  { id:"bloque_8", nombre:"Bloque 8", icon:"🧱", lados:null,
+  { id:"bloque_8", nombre:"Bloque 8", IconComp:IconBloque, lados:null,
     salones: Array.from({length:8},(_,i)=>`${i+1}`), },
-  { id:"hangar_a", nombre:"Hangar A", icon:"🔬", lados:null,
+  { id:"hangar_a", nombre:"Hangar A", IconComp:IconHangar, lados:null,
     salones:["Lab. Modelado y Simulación", "Lab. Redes"], },
 ];
 
@@ -181,7 +186,7 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
       <div className={styles.modal} onClick={e=>e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <h3 className={styles.modalTitle}>{editando?"Editar clase":"Nueva clase"}</h3>
-          <button className={styles.modalClose} onClick={onClose}>✕</button>
+          <button className={styles.modalClose} onClick={onClose}><IconClose size={14} /></button>
         </div>
         <div className={styles.modalBody}>
           <div className={styles.formField}>
@@ -280,7 +285,7 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
               )}
             </div>
           )}
-          {salonLabel && <div className={styles.salonPreview}>📍 {salonLabel}</div>}
+          {salonLabel && <div className={styles.salonPreview}><IconLocation size={12} /> {salonLabel}</div>}
 
           {/* Segundo día toggle */}
           <div className={styles.formField}>
@@ -327,7 +332,7 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
                   <button key={edif.id}
                     className={`${styles.edificioBtn} ${form.edificio2===edif.id?styles.edificioBtnActive:""}`}
                     onClick={()=>setForm(f=>({...f,edificio2:edif.id,lado2:"",salon2:""}))}>
-                    <span>{edif.icon}</span><span>{edif.nombre}</span>
+                    <span>{edif.IconComp ? <edif.IconComp size={14} /> : null}</span><span>{edif.nombre}</span>
                   </button>
                 ))}
               </div>
@@ -369,7 +374,7 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
                 )}
               </div>
             )}
-            {salonLabel2 && <div className={styles.salonPreview}>📍 {salonLabel2}</div>}
+            {salonLabel2 && <div className={styles.salonPreview}><IconLocation size={12} /> {salonLabel2}</div>}
           </>)}
 
           <div className={styles.formField}>
@@ -379,7 +384,7 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
           </div>
         </div>
         <div className={styles.modalFooter}>
-          {editando && <button className={styles.deleteBtn} onClick={onDelete}>🗑 Eliminar</button>}
+          {editando && <button className={styles.deleteBtn} onClick={onDelete}><IconTrash size={12} /> Eliminar</button>}
           <button className={styles.btnSecondary} onClick={onClose}>Cancelar</button>
           <button className={styles.btnPrimary} onClick={handleSave}>
             {editando?"Guardar cambios":"Añadir clase"}
@@ -462,11 +467,11 @@ function MiniHorario({ opcion, priority, colorMap, materiasRef, diasActivos, onE
           <button className={styles.miniActionBtn}
             title={clases.length ? "Transferir a horario: este será tu horario del semestre" : "Agrega clases antes de transferir"}
             disabled={!clases.length}
-            onClick={e=>{ e.stopPropagation(); if(clases.length) onTransfer(); }}>📤</button>
+            onClick={e=>{ e.stopPropagation(); if(clases.length) onTransfer(); }}><IconExternalLink size={13} /></button>
           <button className={styles.miniActionBtn} title="Renombrar"
-            onClick={e=>{ e.stopPropagation(); setEditingName(true); }}>✎</button>
+            onClick={e=>{ e.stopPropagation(); setEditingName(true); }}><IconEdit size={13} /></button>
           <button className={`${styles.miniActionBtn} ${styles.miniActionBtnDanger}`}
-            title="Eliminar opción" onClick={e=>{ e.stopPropagation(); onDelete(); }}>🗑</button>
+            title="Eliminar opción" onClick={e=>{ e.stopPropagation(); onDelete(); }}><IconTrash size={12} /></button>
         </div>
       </div>
 
@@ -665,7 +670,7 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
       {/* Opciones en grid mini */}
       {opciones.length === 0 ? (
         <div className={styles.planEmptyState}>
-          <span className={styles.planEmptyIcon}>🗓️</span>
+          <span className={styles.planEmptyIcon}><IconSchedule size={36} /></span>
           <p style={{fontWeight:600,marginBottom:6}}>Aún no tienes opciones de horario</p>
           <p style={{fontSize:13}}>Crea varias opciones y compara cuál te acomoda mejor.</p>
           <button className={styles.planAddBtn} style={{marginTop:16}} onClick={addOpcion}>
@@ -720,7 +725,7 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
           <div className={styles.modal} onClick={e=>e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h3 className={styles.modalTitle}>Transferir a horario</h3>
-              <button className={styles.modalClose} onClick={()=>setConfirmTransferIdx(null)}>✕</button>
+              <button className={styles.modalClose} onClick={()=>setConfirmTransferIdx(null)}><IconClose size={14} /></button>
             </div>
             <div className={styles.modalBody}>
               <p>
@@ -816,11 +821,11 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
       {/* Mode toggle */}
       <div className={styles.modeBar}>
         <div className={styles.modeToggleGroup}>
-          {[{id:"horario",label:"🗓 Mi horario"},{id:"planificador",label:"✦ Planificar"}].map(m=>(
+          {[{id:"horario",label:"Mi horario",IconComp:IconSchedule},{id:"planificador",label:"Planificar",IconComp:IconStar}].map(m=>(
             <button key={m.id}
               className={`${styles.modeToggleBtn} ${mode===m.id?styles.modeToggleBtnActive:""}`}
               onClick={()=>setMode(m.id)}>
-              {m.label}
+              <m.IconComp size={13} /> {m.label}
             </button>
           ))}
         </div>
@@ -853,7 +858,7 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
 
         {materiasActuales.length===0 && (
           <div className={styles.emptyState}>
-            <span className={styles.emptyIcon}>📅</span>
+            <span className={styles.emptyIcon}><IconSchedule size={36} /></span>
             <p>No tienes materias en estado <strong>Cursando</strong>.</p>
             <p>Ve a la <strong>Malla</strong> y cambia el estado de tus materias actuales.</p>
           </div>

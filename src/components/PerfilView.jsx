@@ -2,6 +2,7 @@ import { useState } from "react";
 import { CORTES, corteForSemester } from "../App";
 import { calcCareerTime, estimateGraduation } from "../utils/careerProgress.js";
 import styles from "./PerfilView.module.css";
+import { IconCamera, IconWarning, IconSemester, IconCheck } from "./Icons";
 
 const UNIVERSITIES = {
   "Universidad del Magdalena": ["Ingeniería de Sistemas", "Hotelería y Turismo"],
@@ -107,7 +108,7 @@ export default function PerfilView({ user, onUpdate, onMallaReset, malla }) {
               }
               <label className={styles.avatarEdit} title="Cambiar foto">
                 <input type="file" accept="image/*" onChange={handlePhoto} hidden />
-                📷
+                 <IconCamera size={28} />
               </label>
             </div>
             <div>
@@ -180,14 +181,14 @@ export default function PerfilView({ user, onUpdate, onMallaReset, malla }) {
               />
               {Number(form.semester) !== user.semester && Number(form.semester) >= 1 && Number(form.semester) <= 12 && (
                 <p className={styles.semesterHint}>
-                  ⚠️ Al guardar, los semestres anteriores al {form.semester} se marcarán como aprobados automáticamente.
+                   <IconWarning size={13} /> Al guardar, los semestres anteriores al {form.semester} se marcarán como aprobados automáticamente.
                 </p>
               )}
             </div>
           </div>
 
           <button className={`${styles.btn} ${saved ? styles.btnSaved : ""}`} onClick={handleSave}>
-            {saved ? "✓ Guardado" : "Guardar cambios"}
+             {saved ? <><IconCheck size={12} /> Guardado</> : "Guardar cambios"}
           </button>
         </div>
 
@@ -203,7 +204,7 @@ export default function PerfilView({ user, onUpdate, onMallaReset, malla }) {
 
           {corteActual && (
             <div className={styles.corteChip}>
-              📅 Corte actual: <strong>{corteActual}</strong>
+               <IconSemester size={13} /> Corte actual: <strong>{corteActual}</strong>
             </div>
           )}
 

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import styles from "./CursandoView.module.css";
+import { IconCheck, IconX, IconUser, IconPlus, IconClose, IconChevronUp, IconChevronDown, IconSemester } from "./Icons";
 
 const NOTA_MIN  = 0;
 const NOTA_MAX  = 500;
@@ -97,7 +98,7 @@ function CorteItemRow({ item, idx, onChange, onRemove, canRemove }) {
         />
       </div>
       {canRemove && (
-        <button className={styles.removeBtn} onClick={onRemove} title="Eliminar item">✕</button>
+        <button className={styles.removeBtn} onClick={onRemove} title="Eliminar item"><IconClose size={11} /></button>
       )}
     </div>
   );
@@ -148,7 +149,7 @@ function CorteRow({ corte, idx, onChange, onRemove, canRemove }) {
             </span>
           )}
           {canRemove && (
-            <button className={styles.removeBtn} onClick={onRemove} title="Eliminar corte">✕</button>
+            <button className={styles.removeBtn} onClick={onRemove} title="Eliminar corte"><IconClose size={11} /></button>
           )}
         </div>
       </div>
@@ -165,12 +166,12 @@ function CorteRow({ corte, idx, onChange, onRemove, canRemove }) {
             canRemove={(corte.items || []).length > 1}
           />
         ))}
-        <button className={styles.addItemBtn} onClick={addItem}>+ Evaluar</button>
+        <button className={styles.addItemBtn} onClick={addItem}><IconPlus size={11} /> Evaluar</button>
       </div>
 
       {totalPeso > 0 && totalPeso !== 100 && (
         <p className={styles.pesoHint} style={{ color: totalPeso > 100 ? "#e07070" : "var(--text-muted)" }}>
-          Pesos suman {totalPeso}% {totalPeso !== 100 ? "(debería ser 100%)" : "✓"}
+          Pesos suman {totalPeso}% {totalPeso !== 100 ? "(debería ser 100%)" : <IconCheck size={13} />}
         </p>
       )}
     </div>
@@ -243,7 +244,7 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius, horarioCla
           <p className={styles.cardNombre}>{materia.nombre}</p>
           {(d.profesor || d.grupo || autoProf) && (
             <p className={styles.cardSub}>
-              {d.profesor || autoProf ? <span>👤 {d.profesor || autoProf}</span> : null}
+              {d.profesor || autoProf ? <span><IconUser size={11} /> {d.profesor || autoProf}</span> : null}
               {(d.grupo || autoGrupo) ? <span>· Grupo {d.grupo || autoGrupo}</span> : null}
             </p>
           )}
@@ -258,7 +259,7 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius, horarioCla
           ) : (
             <span className={styles.notaEmpty}>Sin notas</span>
           )}
-          <span className={styles.expandIcon}>{expanded ? "▲" : "▼"}</span>
+           <span className={styles.expandIcon}>{expanded ? <IconChevronUp size={10} /> : <IconChevronDown size={10} />}</span>
         </div>
       </div>
 
@@ -289,7 +290,7 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius, horarioCla
             <div className={styles.sectionHeader}>
               <span className={styles.sectionLabel}>Cortes y evaluaciones</span>
               {d.cortes.length < 5 && (
-                <button className={styles.addBtn} onClick={addCorte}>+ Corte</button>
+                 <button className={styles.addBtn} onClick={addCorte}><IconPlus size={11} /> Corte</button>
               )}
             </div>
             {d.cortes.map((c, i) => (
@@ -317,7 +318,7 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius, horarioCla
                     color: cardColor,
                   }}
                 >
-                  {paso ? "✓ Aprueba" : "✗ Pierde"}
+                   {paso ? <><IconCheck size={12} /> Aprueba</> : <><IconX size={12} /> Pierde</>}
                 </span>
               </div>
             )}
@@ -327,7 +328,7 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius, horarioCla
             <div className={styles.repSection}>
               <div className={styles.sectionHeader}>
                 <span className={styles.sectionLabelRed}>↺ Materia perdida — Repeticiones</span>
-                <button className={styles.addBtn} onClick={addRepeticion}>+ Repetición</button>
+                 <button className={styles.addBtn} onClick={addRepeticion}><IconPlus size={11} /> Repetición</button>
               </div>
               {(d.repeticiones || []).length === 0 && (
                 <p className={styles.repEmpty}>Si repetiste esta materia, añade los resultados aquí.</p>
@@ -354,11 +355,11 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius, horarioCla
                     <div className={styles.inputGroup}>
                       <label>Resultado</label>
                       <span className={styles.repBadge} style={{ color: colorNota(rep.notaNueva) }}>
-                        {Number(rep.notaNueva) >= NOTA_PASS ? "✓ Aprobó" : "✗ Perdió"}
+                         {Number(rep.notaNueva) >= NOTA_PASS ? <><IconCheck size={12} /> Aprobó</> : <><IconX size={12} /> Perdió</>}
                       </span>
                     </div>
                   )}
-                  <button className={styles.removeBtn} onClick={() => removeRep(i)}>✕</button>
+                   <button className={styles.removeBtn} onClick={() => removeRep(i)}><IconClose size={11} /></button>
                 </div>
               ))}
             </div>
@@ -423,7 +424,7 @@ export default function CursandoView({ malla, cursandoData, onSave, user, horari
           className={`${styles.saveBtn} ${saved ? styles.saveBtnDone : ""}`}
           onClick={handleSave}
         >
-          {saved ? "✓ Guardado" : "Guardar"}
+           {saved ? <><IconCheck size={13} /> Guardado</> : "Guardar"}
         </button>
       </div>
 
@@ -449,7 +450,7 @@ export default function CursandoView({ malla, cursandoData, onSave, user, horari
 
       {materiasCursando.length === 0 && (
         <div className={styles.emptyState}>
-          <span className={styles.emptyIcon}>◉</span>
+           <span className={styles.emptyIcon}><IconSemester size={32} /></span>
           <p>No tienes materias en estado <strong>Cursando</strong>.</p>
           <p>Ve a la <strong>Malla</strong> y cambia el estado, o agrega clases en <strong>Horario</strong>.</p>
         </div>

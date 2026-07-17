@@ -10,6 +10,7 @@ import {
   sanitizeNumericGrade,
 } from "../utils/gradeHelpers.js";
 import { projectDesiredAverage } from "../utils/careerProgress.js";
+import { IconCheck, IconX, IconClose } from "./Icons";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function calcPonderado(materias, notasMap, semestreById) {
@@ -96,8 +97,8 @@ function GradeBadge({ mat, semestre, nota }) {
   if (!passed && !failed) return null;
 
   const label = isEnglishLetterGrade(mat, semestre)
-    ? (passed ? "✓ Aprobado" : "✗ Insuficiente")
-    : (passed ? "✓ Aprobó" : "✗ Asignatura perdida");
+    ? <>{passed ? <IconCheck size={11} /> : <IconX size={11} />} {passed ? "Aprobado" : "Insuficiente"}</>
+    : <>{passed ? <IconCheck size={11} /> : <IconX size={11} />} {passed ? "Aprobó" : "Asignatura perdida"}</>;
 
   return (
     <span className={`${styles.gradeBadge} ${passed ? styles.gradeBadgePass : styles.gradeBadgeFail}`}>
@@ -213,7 +214,7 @@ function MateriaRow({ mat, semestre, notaData, onChange, colorAprobada, colorCur
                         <GradeBadge mat={mat} semestre={semestre} nota={it.nota} />
                       </div>
                     </div>
-                    <button type="button" className={styles.removeBtn} onClick={() => removeIntento(idx)}>✕</button>
+                     <button type="button" className={styles.removeBtn} onClick={() => removeIntento(idx)}><IconClose size={11} /></button>
                   </div>
                 ))}
               </div>
@@ -300,7 +301,7 @@ export default function NotasView({ malla, notas, onSave, user }) {
             </button>
           </div>
           <button className={`${styles.saveBtn} ${savedMsg ? styles.saveBtnDone : ""}`} onClick={handleSave}>
-            {savedMsg ? "✓ Guardado" : "Guardar"}
+             {savedMsg ? <><IconCheck size={12} /> Guardado</> : "Guardar"}
           </button>
         </div>
       </div>
@@ -474,7 +475,7 @@ export default function NotasView({ malla, notas, onSave, user }) {
                             <span className={`${styles.resumenNota} ${passed ? styles.resumenPass : styles.resumenFail}`}>
                               {formatNotaResumen(m, nota)}
                               {failed && lastApproved && (
-                                <span className={styles.resumenRetake}> → {formatNotaResumen(m, lastApproved.nota)} ✓</span>
+                                 <span className={styles.resumenRetake}> → {formatNotaResumen(m, lastApproved.nota)} <IconCheck size={10} /></span>
                               )}
                             </span>
                           ) : (

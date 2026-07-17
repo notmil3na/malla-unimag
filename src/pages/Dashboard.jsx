@@ -3,6 +3,10 @@ import Sidebar from "../components/Sidebar";
 import { getMallaByCareer } from "../data/malla.js";
 import { supabase } from "../supabase";
 import styles from "./Dashboard.module.css";
+import {
+  IconSchedule, IconCalendar, IconClipboard, IconSemester,
+  IconGrades, IconMalla, IconUser, IconPaint
+} from "../components/Icons";
 
 const MallaView        = lazy(() => import("../components/MallaView"));
 const CursandoView     = lazy(() => import("../components/CursandoView"));
@@ -235,14 +239,14 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
   }, [user.username]);
 
   const tabs = useMemo(() => [
-    { id: "horario",      label: "Horario",       icon: "▦" },
-    { id: "calendario",   label: "Calendario",     icon: "📅" },
-    { id: "asignaciones", label: "Asignaciones",   icon: "📋" },
-    { id: "cursando",     label: "Semestre",       icon: "◉" },
-    { id: "notas",        label: "Notas",          icon: "◑" },
-    { id: "malla",        label: "Malla",          icon: "⬡" },
-    { id: "perfil",       label: "Mi Perfil",      icon: "◎" },
-    { id: "tema",         label: "Personalizar",   icon: "◈" },
+    { id: "horario",      label: "Horario",       icon: IconSchedule },
+    { id: "calendario",   label: "Calendario",     icon: IconCalendar },
+    { id: "asignaciones", label: "Asignaciones",   icon: IconClipboard },
+    { id: "cursando",     label: "Semestre",       icon: IconSemester },
+    { id: "notas",        label: "Notas",          icon: IconGrades },
+    { id: "malla",        label: "Malla",          icon: IconMalla },
+    { id: "perfil",       label: "Mi Perfil",      icon: IconUser },
+    { id: "tema",         label: "Personalizar",   icon: IconPaint },
   ], []);
 
   if (!loaded) {

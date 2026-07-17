@@ -3,6 +3,7 @@ import { MALLA, ESTADOS } from "../data/malla.js";
 import { getSemesterCountdown, SEMESTER_CORTE } from "../utils/semesterCountdown.js";
 import { canEnrollMateria } from "../utils/gradeHelpers.js";
 import { buildMallaTxt, downloadTxt } from "../utils/mallaExport.js";
+import { IconChevronRight, IconClose, IconLightbulb } from "./Icons";
 import { getObligatorias } from "../utils/careerProgress.js";
 import MateriaCard from "./MateriaCard";
 import styles from "./MallaView.module.css";
@@ -189,7 +190,7 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
 
       {/* Legend */}
       <div className={styles.legend}>
-        <span className={styles.legendHint}>💡 Haz clic en una materia para ver prerequisitos</span>
+        <span className={styles.legendHint}><IconLightbulb size={13} /> Haz clic en una materia para ver prerequisitos</span>
         <div className={styles.legendItems}>
           {Object.entries(ESTADOS).map(([k, v]) => (
             <div key={k} className={styles.legendItem}>
@@ -324,7 +325,7 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
               setSelected(null);
               setHighlightedPrereqs([]);
               setHighlightedUnlocks([]);
-            }}>✕</button>
+            }}><IconClose size={14} /></button>
           </div>
           <div className={styles.detailBody}>
             <div className={styles.detailSection}>

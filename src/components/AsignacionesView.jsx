@@ -1,14 +1,17 @@
 import { useState, useMemo } from "react";
 import styles from "./AsignacionesView.module.css";
+import {
+  IconExamen, IconQuiz, IconTarea, IconProyecto, IconClose, IconEdit, IconTrash, IconClipboard, IconCheck, IconChevronUp, IconChevronDown
+} from "./Icons";
 
 const NOTA_MAX = 500;
 const NOTA_PASS = 300;
 
 const TIPO_INFO = {
-  examen:   { label: "Examen",   icon: "📝", color: "#E87098" },
-  quiz:     { label: "Quiz",     icon: "❓", color: "#B882E8" },
-  tarea:    { label: "Tarea",    icon: "📌", color: "#6BA3E8" },
-  proyecto: { label: "Proyecto", icon: "📁", color: "#E8946B" },
+  examen:   { label: "Examen",   Icon: IconExamen, color: "#E87098" },
+  quiz:     { label: "Quiz",     Icon: IconQuiz, color: "#B882E8" },
+  tarea:    { label: "Tarea",    Icon: IconTarea, color: "#6BA3E8" },
+  proyecto: { label: "Proyecto", Icon: IconProyecto, color: "#E8946B" },
 };
 
 function uuid() {
@@ -102,18 +105,18 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onSyncCalendar,
         <div className={styles.cardAccent} style={{ background: info.color }} />
         <div className={styles.cardBody}>
           <div className={styles.cardTop}>
-            <span className={styles.cardTipo} style={{ color: info.color }}>{info.icon} {info.label}</span>
-            {item.fechaExamen && <span className={styles.cardFecha}>📅 {item.fechaExamen}</span>}
-            {item.fechaEntrega && <span className={styles.cardFecha}>📅 Entrega: {item.fechaEntrega}</span>}
+            <span className={styles.cardTipo} style={{ color: info.color }}><info.Icon size={11} /> {info.label}</span>
+            {item.fechaExamen && <span className={styles.cardFecha}>{item.fechaExamen}</span>}
+            {item.fechaEntrega && <span className={styles.cardFecha}>Entrega: {item.fechaEntrega}</span>}
           </div>
           <p className={styles.cardTitle}>{item.titulo || info.label}</p>
           {mat && <p className={styles.cardMateria}>{mat.id} — {mat.nombre}</p>}
           <div className={styles.cardMeta}>
-            {isExamenQuiz && item.valoracion && <span className={styles.cardMetaItem}>⚖️ {item.valoracion}%</span>}
-            {isExamenQuiz && item.esBinas && <span className={styles.cardMetaItem}>👥 Binas</span>}
-            {item.lugar && <span className={styles.cardMetaItem}>📍 {item.lugar}</span>}
+            {isExamenQuiz && item.valoracion && <span className={styles.cardMetaItem}>{item.valoracion}%</span>}
+            {isExamenQuiz && item.esBinas && <span className={styles.cardMetaItem}>Binas</span>}
+            {item.lugar && <span className={styles.cardMetaItem}>▪ {item.lugar}</span>}
             {item.temas?.length > 0 && (
-              <span className={styles.cardMetaItem}>📋 {temasDone}/{temasTotal} temas</span>
+              <span className={styles.cardMetaItem}>☰ {temasDone}/{temasTotal} temas</span>
             )}
           </div>
         </div>
@@ -126,7 +129,7 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onSyncCalendar,
           ) : (
             <span className={styles.cardPendiente}>Pendiente</span>
           )}
-          <span className={styles.expandIcon}>{expanded ? "▲" : "▼"}</span>
+          <span className={styles.expandIcon}>{expanded ? <IconChevronUp size={10} /> : <IconChevronDown size={10} />}</span>
         </div>
       </div>
 
@@ -164,12 +167,14 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onSyncCalendar,
                 {temasSorted.map((tema, i) => (
                   <div key={tema.id} className={`${styles.temaRow} ${tema.estudiado ? styles.temaRowDone : ""}`}
                     onClick={() => toggleTema(item.temas.indexOf(tema))}>
-                    <span className={styles.temaCheck}>{tema.estudiado ? "☑" : "☐"}</span>
+                    <span className={styles.temaCheck} onClick={e => e.stopPropagation()}>
+                      {tema.estudiado ? <IconCheck size={13} /> : <span className={styles.temaCheckEmpty} />}
+                    </span>
                     <input type="text" className={styles.temaInput} value={tema.nombre}
                       placeholder="Tema..."
                       onClick={e => e.stopPropagation()}
                       onChange={e => updateTema(item.temas.indexOf(tema), e.target.value)} />
-                    <button className={styles.removeBtn} onClick={e => { e.stopPropagation(); removeTema(item.temas.indexOf(tema)); }}>✕</button>
+                    <button className={styles.removeBtn} onClick={e => { e.stopPropagation(); removeTema(item.temas.indexOf(tema)); }}><IconClose size={11} /></button>
                   </div>
                 ))}
                 <button className={styles.addItemBtn} onClick={addTema}>+ Tema</button>
@@ -178,7 +183,7 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onSyncCalendar,
           )}
 
           <div className={styles.cardActions}>
-            <button className={styles.deleteBtn} onClick={() => onDelete(item.id)}>🗑️ Eliminar</button>
+            <button className={styles.deleteBtn} onClick={() => onDelete(item.id)}><IconTrash size={11} /> Eliminar</button>
           </div>
         </div>
       )}
@@ -267,11 +272,11 @@ export default function AsignacionesView({ malla, asignacionesData, onSave, user
             <button className={`${styles.filterBtn} ${filterTipo === "todos" ? styles.filterBtnActive : ""}`}
               onClick={() => setFilterTipo("todos")}>Todos</button>
             {Object.entries(TIPO_INFO).map(([key, val]) => (
-              <button key={key} className={`${styles.filterBtn} ${filterTipo === key ? styles.filterBtnActive : ""}`}
-                style={{ "--f-color": val.color }}
-                onClick={() => setFilterTipo(key)}>
-                {val.icon} {val.label}
-              </button>
+                <button key={key} className={`${styles.filterBtn} ${filterTipo === key ? styles.filterBtnActive : ""}`}
+                  style={{ "--f-color": val.color }}
+                  onClick={() => setFilterTipo(key)}>
+                  <val.Icon size={10} /> {val.label}
+                </button>
             ))}
           </div>
         </div>
@@ -286,7 +291,7 @@ export default function AsignacionesView({ malla, asignacionesData, onSave, user
 
       {filteredItems.length === 0 && (
         <div className={styles.emptyState}>
-          <span className={styles.emptyIcon}>📋</span>
+          <span className={styles.emptyIcon}><IconClipboard size={32} /></span>
           <p>No hay asignaciones {filterTipo !== "todos" || filterMateria !== "todas" ? "con estos filtros" : "registradas"}</p>
           <p>Haz clic en <strong>+ Asignación</strong> para agregar una.</p>
         </div>
@@ -331,7 +336,7 @@ function AddModal({ onClose, onSave, materias }) {
       <div className={styles.modal} onClick={e => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <h3 className={styles.modalTitle}>Nueva asignación</h3>
-          <button className={styles.modalClose} onClick={onClose}>✕</button>
+          <button className={styles.modalClose} onClick={onClose}><IconClose size={14} /></button>
         </div>
         <div className={styles.modalBody}>
           <div className={styles.formField}>
@@ -340,7 +345,7 @@ function AddModal({ onClose, onSave, materias }) {
               {Object.entries(TIPO_INFO).map(([key, val]) => (
                 <button key={key} className={`${styles.tipoBtn} ${form.tipo === key ? styles.tipoBtnActive : ""}`}
                   style={{ "--t-color": val.color }} onClick={() => update("tipo", key)}>
-                  <span>{val.icon}</span> {val.label}
+                  <span><val.Icon size={11} /></span> {val.label}
                 </button>
               ))}
             </div>
@@ -396,7 +401,7 @@ function AddModal({ onClose, onSave, materias }) {
                     <div key={tema.id} className={styles.temaRow}>
                       <input type="text" className={styles.textInput} value={tema.nombre}
                         placeholder="Tema..." onChange={e => updateTema(i, e.target.value)} />
-                      <button className={styles.removeBtn} onClick={() => removeTema(i)}>✕</button>
+                      <button className={styles.removeBtn} onClick={() => removeTema(i)}><IconClose size={11} /></button>
                     </div>
                   ))}
                   <button className={styles.addItemBtn} onClick={addTema}>+ Tema</button>
