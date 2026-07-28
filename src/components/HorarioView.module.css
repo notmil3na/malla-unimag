@@ -133,7 +133,7 @@
 /* ── Modal ────────────────────────────────────────── */
 .modalOverlay {
   position: fixed; inset: 0; z-index: 200;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.25);
   display: flex; align-items: center; justify-content: center;
   padding: 16px;
   animation: fadeIn 0.15s ease;
@@ -143,14 +143,47 @@
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .modal {
-  background: var(--surface); border: 1px solid var(--border);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+  background: var(--modal-bg); border: 1px solid var(--modal-border);
   border-radius: var(--radius-lg); width: 100%; max-width: 540px;
   max-height: 90vh; overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
   animation: slideUp 0.2s ease;
 }
+.modal, .modal * { color: var(--modal-text); }
+.modal .modalHeader { border-bottom-color: var(--modal-border); background: var(--modal-bg2); }
+.modal .modalTitle { color: var(--modal-text); }
+.modal .modalClose { color: var(--modal-muted); }
+.modal .modalClose:hover { background: rgba(255,255,255,0.06); }
+[data-theme="light"] .modal .modalClose:hover { background: rgba(0,0,0,0.05); }
+.modal .modalFooter { border-top-color: var(--modal-border); }
+.modal .textInput,
+.modal .select,
+.modal .textarea {
+  background: var(--modal-bg2); border-color: var(--modal-border); color: var(--modal-text);
+}
+.modal .textInput:focus,
+.modal .select:focus,
+.modal .textarea:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
+}
+.modal .formField label { color: var(--modal-muted); }
+.modal .btnSecondary {
+  background: var(--modal-bg2); border-color: var(--modal-border); color: var(--modal-muted);
+}
+.modal .btnSecondary:hover { border-color: var(--modal-muted); color: var(--modal-text); }
+.modal .edificioGrid .edificioBtn {
+  background: var(--modal-bg2); border-color: var(--modal-border); color: var(--modal-muted);
+}
+.modal .edificioBtn:hover { border-color: var(--accent); color: var(--modal-text); }
+.modal .edificioBtnActive {
+  border-color: var(--accent) !important; color: var(--accent) !important;
+  background: color-mix(in srgb, var(--accent) 12%, var(--modal-bg)) !important;
+}
+.modal .removeBtn { color: var(--modal-muted); }
+.modal .removeBtn:hover { color: #e07070; background: rgba(224,112,112,0.08); }
+.modal .deleteBtn { color: #e07070; }
+.modal .deleteBtn:hover { background: rgba(224,112,112,0.08); }
+.modal .deleteHint { color: var(--modal-muted); }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
 .modalHeader {

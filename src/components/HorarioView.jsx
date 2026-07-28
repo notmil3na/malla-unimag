@@ -864,37 +864,61 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
           </div>
         )}
 
-        {diasActivos.length>0 && (
-          <div className={styles.gridWrap}>
-            <div className={styles.grid} style={{"--num-dias":diasActivos.length}}>
-              <div className={styles.horaCol}>
-                <div className={styles.horaColHeader}/>
-                {LEGACY_HORAS.map(h=>( <div key={h} className={styles.horaCell}>{h}</div> ))}
+        {diasActivos.length>0 && (() => {
+          const claseIdxs = data.clases.flatMap(c => {
+            const s = horaIdx(c.horaInicio), e = horaIdx(c.horaFin);
+            if (s < 0 || e <= s) return [];
+            const set = new Set();
+            for (let i = s; i < e; i++) set.add(i);
+            return [...set];
+          });
+          const usedSet = new Set(claseIdxs);
+          if (usedSet.size === 0) {
+            return (
+              <div className={styles.emptyState}>
+                <span className={styles.emptyIcon}><IconSchedule size={36} /></span>
+                <p>No hay clases en el horario.</p>
+                <p>Haz clic en <strong>+ Añadir clase</strong> para comenzar.</p>
               </div>
-              {diasActivos.map(dia=>(
-                <div key={dia.id} className={styles.diaCol}>
-                  <div className={styles.diaHeader}>{dia.label}</div>
-                  <div className={styles.diaBody}>
-                    {LEGACY_HORAS.map(h=>( <div key={h} className={styles.horaLine}/> ))}
-                    {data.clases.filter(c=>c.dia===dia.id).map((clase,i)=>{
-                      const globalIdx=data.clases.indexOf(clase);
-                      const start=horaIdx(clase.horaInicio), end=horaIdx(clase.horaFin);
-                      if(start<0||end<=start) return null;
-                      const materia=materiasActuales.find(m=>m.id===clase.materiaId);
-                      return (
-                        <ClaseBloque key={i} clase={clase} materia={materia}
-                          color={colorMap[clase.materiaId]||"var(--accent)"}
-                          horaStart={start} duracion={end-start}
-                          onClick={()=>{ setEditando(buildEditando(data.clases, globalIdx)); setShowModal(true); }}
-                        />
-                      );
-                    })}
-                  </div>
+            );
+          }
+          const minUsed = Math.min(...usedSet);
+          const maxUsed = Math.max(...usedSet);
+          const visStart = Math.max(0, minUsed - 1);
+          const visEnd = Math.min(LEGACY_HORAS.length - 1, maxUsed + 1);
+          const visHoras = LEGACY_HORAS.slice(visStart, visEnd + 1);
+          return (
+            <div className={styles.gridWrap}>
+              <div className={styles.grid} style={{"--num-dias":diasActivos.length}}>
+                <div className={styles.horaCol}>
+                  <div className={styles.horaColHeader}/>
+                  {visHoras.map((h, i) => <div key={h} className={styles.horaCell}>{h}</div>)}
                 </div>
-              ))}
+                {diasActivos.map(dia=>(
+                  <div key={dia.id} className={styles.diaCol}>
+                    <div className={styles.diaHeader}>{dia.label}</div>
+                    <div className={styles.diaBody}>
+                      {visHoras.map(h => <div key={h} className={styles.horaLine}/>)}
+                      {data.clases.filter(c=>c.dia===dia.id).map((clase,i)=>{
+                        const globalIdx=data.clases.indexOf(clase);
+                        const start=horaIdx(clase.horaInicio), end=horaIdx(clase.horaFin);
+                        if(start<0||end<=start) return null;
+                        const materia=materiasActuales.find(m=>m.id===clase.materiaId);
+                        return (
+                          <ClaseBloque key={i} clase={clase} materia={materia}
+                            color={colorMap[clase.materiaId]||"var(--accent)"}
+                            horaStart={start - visStart} duracion={end-start}
+                            onClick={()=>{ setEditando(buildEditando(data.clases, globalIdx)); setShowModal(true); }}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </>)}
 
       {/* ── MODO PLANIFICADOR ── */}

@@ -31,6 +31,16 @@ function parseISODate(s) {
   return new Date(y, m - 1, d);
 }
 
+const MESES_CORTOS = ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+function formatTime(h) {
+  if (!h) return "";
+  const [hh, mm] = h.split(":").map(Number);
+  const period = hh >= 12 ? "p.m." : "a.m.";
+  const h12 = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
+  return mm === 0 ? `${h12} ${period}` : `${h12}:${String(mm).padStart(2, "0")} ${period}`;
+}
+
 function sameDay(a, b) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
@@ -53,7 +63,7 @@ function EventoBadge({ evento, materias }) {
       <div className={styles.eventoBadgeInfo}>
         <span className={styles.eventoBadgeTitle}>{evento.titulo || tipo.label}</span>
         {mat && <span className={styles.eventoBadgeMateria}>{mat.id} - {mat.nombre}</span>}
-        {evento.horaInicio && <span className={styles.eventoBadgeHora}>{evento.horaInicio}{evento.horaFin ? ` – ${evento.horaFin}` : ""}</span>}
+        {evento.horaInicio && <span className={styles.eventoBadgeHora}>{formatTime(evento.horaInicio)}{evento.horaFin ? ` – ${formatTime(evento.horaFin)}` : ""}</span>}
         {evento.lugar && <span className={styles.eventoBadgeLugar}>{evento.lugar}</span>}
       </div>
     </div>
@@ -388,8 +398,8 @@ export default function CalendarioView({ malla, calendarioData, onSave, user, ho
                     <span className={styles.sidebarItemTitle}>{ev.titulo || tipo.label}</span>
                     {mat && <span className={styles.sidebarItemMateria}>{mat.id}</span>}
                     <span className={styles.sidebarItemDate}>
-                      {fecha.getDate()} {MESES[fecha.getMonth()].slice(0, 3)}
-                      {ev.horaInicio ? ` · ${ev.horaInicio}` : ""}
+                      {fecha.getDate()} {MESES_CORTOS[fecha.getMonth()]}
+                      {ev.horaInicio ? ` · ${formatTime(ev.horaInicio)}` : ""}
                     </span>
                   </div>
                    <span className={styles.sidebarItemIcon}><tipo.Icon size={13} /></span>

@@ -4,8 +4,23 @@ import {
   IconExamen, IconQuiz, IconTarea, IconProyecto, IconClose, IconEdit, IconTrash, IconClipboard, IconCheck, IconChevronUp, IconChevronDown
 } from "./Icons";
 
-const NOTA_MAX = 500;
-const NOTA_PASS = 300;
+const NOTA_PASS_PCT = 0.6;
+
+const MESES_CORTOS = ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+function formatDate(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${d} ${MESES_CORTOS[m]}`;
+}
+
+function formatTime(h) {
+  if (!h) return "";
+  const [hh, mm] = h.split(":").map(Number);
+  const period = hh >= 12 ? "p.m." : "a.m.";
+  const h12 = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
+  return mm === 0 ? `${h12} ${period}` : `${h12}:${String(mm).padStart(2, "0")} ${period}`;
+}
 
 const TIPO_INFO = {
   examen:   { label: "Examen",   Icon: IconExamen, color: "#E87098" },
@@ -72,6 +87,7 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onSyncCalendar,
   };
 
   const handleGrade = (nota) => {
+    const val = Number(item.valoracion) || 100;
     const updated = { ...item, nota: nota === "" ? undefined : Number(nota) };
     onUpdate(updated);
     if (isExamenQuiz && nota !== "" && item.corteIdx !== undefined && item.materiaId) {
@@ -80,10 +96,10 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onSyncCalendar,
       if (cursando) {
         const cortes = migrateCortes(cursando.cortes);
         if (cortes[corteIdx]) {
-          const existingItemIdx = cortes[corteIdx].items.findIndex(
-            it => it.nombre === `${info.label}: ${item.titulo || item.materiaId}`
-          );
-          const newItem = { nombre: `${info.label}: ${item.titulo || item.materiaId}`, nota: Number(nota), peso: Number(item.valoracion) || 30 };
+          const nombre = `${info.label}${item.titulo ? `: ${item.titulo}` : ""}`;
+          const existingItemIdx = cortes[corteIdx].items.findIndex(it => it.nombre === nombre);
+          const corteNota = (Number(nota) / val) * 500;
+          const newItem = { nombre, nota: corteNota, peso: val };
           if (existingItemIdx >= 0) {
             cortes[corteIdx].items[existingItemIdx] = newItem;
           } else {
@@ -106,13 +122,13 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onSyncCalendar,
         <div className={styles.cardBody}>
           <div className={styles.cardTop}>
             <span className={styles.cardTipo} style={{ color: info.color }}><info.Icon size={11} /> {info.label}</span>
-            {item.fechaExamen && <span className={styles.cardFecha}>{item.fechaExamen}</span>}
-            {item.fechaEntrega && <span className={styles.cardFecha}>Entrega: {item.fechaEntrega}</span>}
+            {item.fechaExamen && <span className={styles.cardFecha}>{formatDate(item.fechaExamen)}</span>}
+            {item.fechaEntrega && <span className={styles.cardFecha}>Entrega: {formatDate(item.fechaEntrega)}</span>}
           </div>
           <p className={styles.cardTitle}>{item.titulo || info.label}</p>
           {mat && <p className={styles.cardMateria}>{mat.id} — {mat.nombre}</p>}
           <div className={styles.cardMeta}>
-            {isExamenQuiz && item.valoracion && <span className={styles.cardMetaItem}>{item.valoracion}%</span>}
+            {isExamenQuiz && item.valoracion && <span className={styles.cardMetaItem}> vale {item.valoracion} pts</span>}
             {isExamenQuiz && item.esBinas && <span className={styles.cardMetaItem}>Binas</span>}
             {item.lugar && <span className={styles.cardMetaItem}>▪ {item.lugar}</span>}
             {item.temas?.length > 0 && (
@@ -122,9 +138,9 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onSyncCalendar,
         </div>
         <div className={styles.cardRight}>
           {item.nota !== undefined && item.nota !== null ? (
-            <span className={styles.cardNota} style={{ color: item.nota >= NOTA_PASS ? "#6ec88a" : "#e07070" }}>
+            <span className={styles.cardNota} style={{ color: (item.nota / (Number(item.valoracion) || 100)) >= NOTA_PASS_PCT ? "#6ec88a" : "#e07070" }}>
               {item.nota}
-              <span className={styles.cardNotaMax}>/{NOTA_MAX}</span>
+              <span className={styles.cardNotaMax}>/{item.valoracion || "?"}</span>
             </span>
           ) : (
             <span className={styles.cardPendiente}>Pendiente</span>
@@ -142,16 +158,16 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onSyncCalendar,
           {isExamenQuiz && (
             <div className={styles.gradeRow}>
               <div className={styles.formField}>
-                <label>Nota obtenida /{NOTA_MAX}</label>
-                <input type="number" min={0} max={NOTA_MAX} step="0.1"
+                <label>Nota /{item.valoracion || "?"}</label>
+                <input type="number" min={0} max={Number(item.valoracion) || 500} step="0.1"
                   className={styles.gradeInput} value={item.nota ?? ""}
                   placeholder="—" onChange={e => handleGrade(e.target.value)} />
               </div>
               {item.nota !== undefined && item.nota !== null && (
                 <span className={styles.gradeBadge}
-                  style={{ color: item.nota >= NOTA_PASS ? "#6ec88a" : "#e07070",
-                    background: item.nota >= NOTA_PASS ? "rgba(110,200,138,0.15)" : "rgba(224,112,112,0.15)" }}>
-                  = {(item.nota / 100).toFixed(2)} /5.0
+                  style={{ color: (item.nota / (Number(item.valoracion) || 100)) >= NOTA_PASS_PCT ? "#6ec88a" : "#e07070",
+                    background: (item.nota / (Number(item.valoracion) || 100)) >= NOTA_PASS_PCT ? "rgba(110,200,138,0.15)" : "rgba(224,112,112,0.15)" }}>
+                  = {(item.nota / (Number(item.valoracion) || 100) * 5).toFixed(2)} /5.0
                 </span>
               )}
             </div>
@@ -218,7 +234,7 @@ export default function AsignacionesView({ malla, asignacionesData, onSave, user
     if ((newItem.tipo === "examen" || newItem.tipo === "quiz") && newItem.fechaExamen && newItem.materiaId) {
       const evts = calendarioData?.eventos || [];
       const calEvent = {
-        id: uuid(), tipo: newItem.tipo, titulo: newItem.titulo || newItem.tipo,
+        id: uuid(), tipo: newItem.tipo, titulo: newItem.titulo || TIPO_INFO[newItem.tipo]?.label || newItem.tipo,
         fecha: newItem.fechaExamen, horaInicio: newItem.horaExamen || "",
         materiaId: newItem.materiaId, lugar: newItem.lugar || "",
         assignmentId: newItem.id,
@@ -312,13 +328,13 @@ export default function AsignacionesView({ malla, asignacionesData, onSave, user
       </div>
 
       {showModal && (
-        <AddModal onClose={() => setShowModal(false)} onSave={handleAdd} materias={cursandoMaterias} />
+        <AddModal onClose={() => setShowModal(false)} onSave={handleAdd} materias={cursandoMaterias} cortesData={cursandoData} />
       )}
     </div>
   );
 }
 
-function AddModal({ onClose, onSave, materias }) {
+function AddModal({ onClose, onSave, materias, cortesData }) {
   const [form, setForm] = useState({
     tipo: "examen", titulo: "", materiaId: "", fechaExamen: "", horaExamen: "",
     fechaEntrega: "", lugar: "", descripcion: "", valoracion: "", esBinas: false,
@@ -326,6 +342,16 @@ function AddModal({ onClose, onSave, materias }) {
   });
   const update = (f, v) => setForm(p => ({ ...p, [f]: v }));
   const isExamenQuiz = form.tipo === "examen" || form.tipo === "quiz";
+
+  const cortesMateria = useMemo(() => {
+    if (!form.materiaId || !cortesData?.[form.materiaId]) return [];
+    const cur = cortesData[form.materiaId];
+    return migrateCortes(cur.cortes);
+  }, [form.materiaId, cortesData]);
+
+  const handleMateriaChange = (materiaId) => {
+    setForm(p => ({ ...p, materiaId, corteIdx: 0 }));
+  };
 
   const addTema = () => update("temas", [...form.temas, { id: uuid(), nombre: "", estudiado: false }]);
   const updateTema = (i, val) => { const t = [...form.temas]; t[i] = { ...t[i], nombre: val }; update("temas", t); };
@@ -353,18 +379,28 @@ function AddModal({ onClose, onSave, materias }) {
 
           <div className={styles.formRow2}>
             <div className={styles.formField}>
-              <label>Título</label>
-              <input type="text" className={styles.textInput} value={form.titulo}
-                placeholder="Nombre de la asignación" onChange={e => update("titulo", e.target.value)} />
-            </div>
-            <div className={styles.formField}>
               <label>Materia</label>
-              <select className={styles.select} value={form.materiaId} onChange={e => update("materiaId", e.target.value)}>
+              <select className={styles.select} value={form.materiaId} onChange={e => handleMateriaChange(e.target.value)}>
                 <option value="">Seleccionar...</option>
                 {materias.map(m => <option key={m.id} value={m.id}>{m.id} - {m.nombre}</option>)}
               </select>
             </div>
+            {isExamenQuiz && (
+              <div className={styles.formField}>
+                <label>Título (opcional)</label>
+                <input type="text" className={styles.textInput} value={form.titulo}
+                  placeholder={TIPO_INFO[form.tipo]?.label || "Nombre"} onChange={e => update("titulo", e.target.value)} />
+              </div>
+            )}
           </div>
+
+          {!isExamenQuiz && (
+            <div className={styles.formField}>
+              <label>Título (opcional)</label>
+              <input type="text" className={styles.textInput} value={form.titulo}
+                placeholder={TIPO_INFO[form.tipo]?.label || "Nombre"} onChange={e => update("titulo", e.target.value)} />
+            </div>
+          )}
 
           {isExamenQuiz && (
             <>
@@ -382,9 +418,9 @@ function AddModal({ onClose, onSave, materias }) {
               </div>
               <div className={styles.formRow2}>
                 <div className={styles.formField}>
-                  <label>Valoración %</label>
-                  <input type="number" min={1} max={100} className={styles.textInput}
-                    value={form.valoracion} placeholder="30" onChange={e => update("valoracion", e.target.value)} />
+                  <label>Puntos máximos</label>
+                  <input type="number" min={1} className={styles.textInput}
+                    value={form.valoracion} placeholder="100" onChange={e => update("valoracion", e.target.value)} />
                 </div>
                 <div className={styles.formField}>
                   <label>En binas</label>
@@ -393,6 +429,19 @@ function AddModal({ onClose, onSave, materias }) {
                     {form.esBinas ? "Sí" : "No"}
                   </button>
                 </div>
+              </div>
+              <div className={styles.formField}>
+                <label>Corte</label>
+                <select className={styles.select} value={form.corteIdx} onChange={e => update("corteIdx", Number(e.target.value))}>
+                  {cortesMateria.length > 0 ? cortesMateria.map((c, i) => (
+                    <option key={i} value={i}>{c.nombre} ({c.peso}%)</option>
+                  )) : (
+                    <option value={0}>Corte 1</option>
+                  )}
+                </select>
+                <span className={styles.formHint}>
+                  La nota se sumará automáticamente al acumulado de este corte en "Semestre"
+                </span>
               </div>
               <div className={styles.formField}>
                 <label>Temas evaluados</label>
