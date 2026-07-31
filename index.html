@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="MiMalla – Plan de estudios, horarios, notas, asignaciones y colaboración de tu semestre." />
-    <meta name="theme-color" content="#221731" />
+    <meta name="theme-color" content="#0e0a18" />
     <title>MiMalla – Plan de Estudios</title>
     <script>
       // Aplicar el tema guardado ANTES del primer pintado (evita el flash de tema
@@ -28,10 +28,9 @@
           r.style.setProperty("--accent2", c[1]);
           r.style.setProperty("--accent-rgb", c[2]);
           if (s && s.fontBody) r.style.setProperty("--font-body", "'" + s.fontBody + "', system-ui, sans-serif");
-          // theme-color = color sólido más cercano al tope del gradiente
-          // (base + aurora disuelta en la franja del status bar).
+          // theme-color = el mismo color base del fondo (--bg) según el modo.
           var tc = document.querySelector('meta[name="theme-color"]');
-          if (tc) tc.content = mode === "light" ? "#ece1f8" : "#221731";
+          if (tc) tc.content = mode === "light" ? "#f8f4fc" : "#0e0a18";
         } catch (e) {}
       })();
     </script>

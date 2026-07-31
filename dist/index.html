@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="MiMalla – Plan de estudios, horarios, notas, asignaciones y colaboración de tu semestre." />
-    <meta name="theme-color" content="#221731" />
+    <meta name="theme-color" content="#0e0a18" />
     <title>MiMalla – Plan de Estudios</title>
     <script>
       // Aplicar el tema guardado ANTES del primer pintado (evita el flash de tema
@@ -28,10 +28,9 @@
           r.style.setProperty("--accent2", c[1]);
           r.style.setProperty("--accent-rgb", c[2]);
           if (s && s.fontBody) r.style.setProperty("--font-body", "'" + s.fontBody + "', system-ui, sans-serif");
-          // theme-color = color sólido más cercano al tope del gradiente
-          // (base + aurora disuelta en la franja del status bar).
+          // theme-color = el mismo color base del fondo (--bg) según el modo.
           var tc = document.querySelector('meta[name="theme-color"]');
-          if (tc) tc.content = mode === "light" ? "#ece1f8" : "#221731";
+          if (tc) tc.content = mode === "light" ? "#f8f4fc" : "#0e0a18";
         } catch (e) {}
       })();
     </script>
@@ -43,10 +42,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="MiMalla" />
-    <script type="module" crossorigin src="/assets/index-d193d90b.js"></script>
+    <script type="module" crossorigin src="/assets/index-ca9fb902.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor-27d6d7f2.js">
     <link rel="modulepreload" crossorigin href="/assets/supabase-d6c5b1b5.js">
-    <link rel="stylesheet" href="/assets/index-6329e2d4.css">
+    <link rel="stylesheet" href="/assets/index-e33bd8d2.css">
   </head>
   <body>
     <div class="aurora" aria-hidden="true"></div>
