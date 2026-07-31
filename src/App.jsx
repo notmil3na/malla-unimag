@@ -76,12 +76,9 @@ export function applyTheme(themeKey, mode, fontBody) {
   root.style.setProperty("--accent",     t.accent);
   root.style.setProperty("--accent2",    t.accent2);
   root.style.setProperty("--accent-rgb", t.accentRgb);
-  // Mantener la barra de estado del navegador alineada con el fondo base
-  // de la app (mismo valor hex que --bg, sin transparencias).
-  const themeColor = m === "light" ? "#f8f4fc" : "#0e0a18";
-  document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => {
-    meta.content = themeColor;
-  });
+  // Sin meta theme-color a propósito: en Safari iOS (pestaña normal) un
+  // theme-color fuerza una banda sólida opaca en la barra de estado. El tint
+  // de las barras lo da el background-color del html/body (var(--bg)).
   if (fontBody) {
     root.style.setProperty("--font-body", `'${fontBody}', system-ui, sans-serif`);
   } else {
