@@ -6,21 +6,23 @@ const NOTA_MIN  = 0;
 const NOTA_MAX  = 500;
 const NOTA_PASS = 300;
 
+const PESOS_DEFAULT = [150, 150, 200];
+
 function migrateCortes(cortes) {
   if (!cortes || cortes.length === 0) {
-    return [
-      { nombre: "Corte 1", peso: 33, items: [] },
-      { nombre: "Corte 2", peso: 33, items: [] },
-      { nombre: "Corte 3", peso: 34, items: [] },
-    ];
+    return PESOS_DEFAULT.map((peso, i) => ({ nombre: `Corte ${i + 1}`, peso, items: [] }));
   }
+  const legacyPct = cortes.reduce((s, c) => s + (parseFloat(c.peso) || 0), 0) === 100;
   return cortes.map((c, i) => {
-    if (c.items) return c;
+    if (c.items) {
+      return legacyPct ? { ...c, peso: PESOS_DEFAULT[i] ?? c.peso } : c;
+    }
+    const peso = legacyPct ? (PESOS_DEFAULT[i] ?? c.peso) : parseFloat(c.peso) || 100;
     return {
       nombre: c.nombre || `Corte ${i + 1}`,
-      peso: c.peso || 33,
+      peso,
       items: c.nota !== "" && c.nota !== undefined
-        ? [{ nombre: "Evaluación", nota: c.nota, peso: 100 }]
+        ? [{ nombre: "Evaluación", nota: Math.round((Number(c.nota) / 500) * peso), notaMax: peso }]
         : [],
     };
   });
@@ -28,33 +30,25 @@ function migrateCortes(cortes) {
 
 function calcCorteNota(items) {
   if (!items || items.length === 0) return null;
-  let sumProd = 0, sumPeso = 0;
-  items.forEach(({ nota, peso, notaMax }) => {
+  let suma = 0, contados = 0;
+  items.forEach(({ nota }) => {
     const n = parseFloat(nota);
-    const p = parseFloat(peso);
-    if (!isNaN(n) && !isNaN(p) && p > 0) {
-      const max = parseFloat(notaMax);
-      const n500 = !isNaN(max) && max > 0 ? (n / max) * 500 : n;
-      sumProd += n500 * p;
-      sumPeso += p;
-    }
+    if (!isNaN(n)) { suma += n; contados++; }
   });
-  if (sumPeso === 0) return null;
-  return Number((sumProd / sumPeso).toFixed(1));
+  return contados > 0 ? Number(suma.toFixed(1)) : null;
 }
 
 function calcNotaFinal(cortes) {
-  let sumProd = 0, sumPeso = 0;
+  if (!cortes || cortes.length === 0) return null;
+  let sumaPts = 0, sumaPeso = 0;
   cortes.forEach((c) => {
-    const notaCorte = calcCorteNota(c.items);
     const p = parseFloat(c.peso);
-    if (notaCorte !== null && !isNaN(p) && p > 0) {
-      sumProd += notaCorte * p;
-      sumPeso += p;
-    }
+    if (!isNaN(p) && p > 0) sumaPeso += p;
+    const pts = calcCorteNota(c.items);
+    if (pts !== null) sumaPts += pts;
   });
-  if (sumPeso === 0) return null;
-  return (sumProd / sumPeso).toFixed(1);
+  if (sumaPeso === 0) return null;
+  return Number(((sumaPts / sumaPeso) * 500).toFixed(1));
 }
 
 function colorNota(nota) {
@@ -73,7 +67,7 @@ function calcPonderado(materias, cursandoData) {
   return sumCred > 0 ? { valor: (sumPond / sumCred).toFixed(1), creditos: sumCred } : null;
 }
 
-function CorteItemRow({ item, idx, onChange, onRemove, canRemove }) {
+function CorteItemRow({ item, idx, onChange, onRemove, max }) {
   return (
     <div className={styles.itemRow}>
       <input
@@ -84,34 +78,24 @@ function CorteItemRow({ item, idx, onChange, onRemove, canRemove }) {
         onChange={e => onChange({ ...item, nombre: e.target.value })}
       />
       <div className={styles.inputGroup}>
-        <label>Nota /{item.notaMax || NOTA_MAX}</label>
+        <label>Nota /{item.notaMax || max}</label>
         <input
-          type="number" min={NOTA_MIN} max={item.notaMax || NOTA_MAX} step="0.1"
+          type="number" min={NOTA_MIN} max={item.notaMax || max} step="0.1"
           className={styles.notaInput}
           value={item.nota}
           placeholder="—"
           onChange={e => onChange({ ...item, nota: e.target.value })}
         />
       </div>
-      <div className={styles.inputGroup}>
-        <label>Peso %</label>
-        <input
-          type="number" min={1} max={100}
-          className={styles.pesoInput}
-          value={item.peso}
-          onChange={e => onChange({ ...item, peso: e.target.value })}
-        />
-      </div>
-      {canRemove && (
-        <button className={styles.removeBtn} onClick={onRemove} title="Eliminar item"><IconClose size={11} /></button>
-      )}
+      <button className={styles.removeBtn} onClick={onRemove} title="Eliminar item"><IconClose size={11} /></button>
     </div>
   );
 }
 
 function CorteRow({ corte, idx, onChange, onRemove, canRemove }) {
   const corteNota = calcCorteNota(corte.items);
-  const totalPeso = (corte.items || []).reduce((s, it) => s + (parseFloat(it.peso) || 0), 0);
+  const cortePeso = parseFloat(corte.peso) || 0;
+  const cortePct = corteNota !== null && cortePeso > 0 ? (corteNota / cortePeso) * 500 : null;
 
   const updateItem = (i, val) => {
     const items = [...(corte.items || [])];
@@ -119,7 +103,7 @@ function CorteRow({ corte, idx, onChange, onRemove, canRemove }) {
     onChange({ ...corte, items });
   };
   const addItem = () => {
-    onChange({ ...corte, items: [...(corte.items || []), { nombre: "", nota: "", peso: 50 }] });
+    onChange({ ...corte, items: [...(corte.items || []), { nombre: "", nota: "" }] });
   };
   const removeItem = (i) => {
     onChange({ ...corte, items: (corte.items || []).filter((_, idx) => idx !== i) });
@@ -137,20 +121,19 @@ function CorteRow({ corte, idx, onChange, onRemove, canRemove }) {
             onChange={e => onChange({ ...corte, nombre: e.target.value })}
           />
           <div className={styles.inputGroup}>
-            <label>Peso</label>
+            <label>Puntos</label>
             <input
-              type="number" min={1} max={100}
+              type="number" min={1} max={500}
               className={styles.pesoInput}
               value={corte.peso}
               onChange={e => onChange({ ...corte, peso: e.target.value })}
             />
-            <span className={styles.pesoUnit}>%</span>
           </div>
         </div>
         <div className={styles.corteHeaderRight}>
           {corteNota !== null && (
-            <span className={styles.corteNotaBadge} style={{ color: colorNota(corteNota) }}>
-              {corteNota} /{NOTA_MAX}
+            <span className={styles.corteNotaBadge} style={{ color: colorNota(cortePct) }}>
+              {corteNota} /{cortePeso || "—"}
             </span>
           )}
           {canRemove && (
@@ -166,19 +149,13 @@ function CorteRow({ corte, idx, onChange, onRemove, canRemove }) {
         {(corte.items || []).map((item, i) => (
           <CorteItemRow
             key={i} item={item} idx={i}
+            max={cortePeso || 500}
             onChange={val => updateItem(i, val)}
             onRemove={() => removeItem(i)}
-            canRemove={(corte.items || []).length > 1}
           />
         ))}
         <button className={styles.addItemBtn} onClick={addItem}><IconPlus size={11} /> Evaluar</button>
       </div>
-
-      {totalPeso > 0 && totalPeso !== 100 && (
-        <p className={styles.pesoHint} style={{ color: totalPeso > 100 ? "#e07070" : "var(--text-muted)" }}>
-          Pesos suman {totalPeso}% {totalPeso !== 100 ? "(debería ser 100%)" : <IconCheck size={13} />}
-        </p>
-      )}
     </div>
   );
 }
@@ -205,7 +182,7 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius, horarioCla
   };
   const addCorte = () => {
     if (d.cortes.length >= 5) return;
-    onChange({ ...d, cortes: [...d.cortes, { nombre: `Corte ${d.cortes.length + 1}`, peso: 20, items: [] }] });
+    onChange({ ...d, cortes: [...d.cortes, { nombre: `Corte ${d.cortes.length + 1}`, peso: 100, items: [] }] });
   };
   const removeCorte = (i) => {
     onChange({ ...d, cortes: d.cortes.filter((_, idx) => idx !== i) });
@@ -306,6 +283,14 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius, horarioCla
                 canRemove={d.cortes.length > 1}
               />
             ))}
+            {(() => {
+              const sp = d.cortes.reduce((s, c) => s + (parseFloat(c.peso) || 0), 0);
+              return sp > 0 && sp !== 500 ? (
+                <p className={styles.pesoHint} style={{ color: sp > 500 ? "#e07070" : "var(--text-muted)" }}>
+                  Los cortes suman {sp} puntos (debería ser 500)
+                </p>
+              ) : null;
+            })()}
             {notaFinal !== null && (
               <div className={styles.notaFinalRow}>
                 <span className={styles.notaFinalLabel}>Nota definitiva</span>

@@ -53,38 +53,48 @@ function uuid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+const PESOS_DEFAULT = [150, 150, 200];
+
 function calcCorteNota(items) {
   if (!items || items.length === 0) return null;
-  let sumProd = 0, sumPeso = 0;
-  items.forEach(({ nota, peso, notaMax }) => {
-    const n = parseFloat(nota), p = parseFloat(peso);
-    if (!isNaN(n) && !isNaN(p) && p > 0) {
-      const max = parseFloat(notaMax);
-      const n500 = !isNaN(max) && max > 0 ? (n / max) * 500 : n;
-      sumProd += n500 * p;
-      sumPeso += p;
-    }
+  let suma = 0, contados = 0;
+  items.forEach(({ nota }) => {
+    const n = parseFloat(nota);
+    if (!isNaN(n)) { suma += n; contados++; }
   });
-  return sumPeso > 0 ? Number((sumProd / sumPeso).toFixed(1)) : null;
+  return contados > 0 ? Number(suma.toFixed(1)) : null;
 }
 
 function calcNotaFinal(cortes) {
-  let sumProd = 0, sumPeso = 0;
+  if (!cortes || cortes.length === 0) return null;
+  let sumaPts = 0, sumaPeso = 0;
   cortes.forEach((c) => {
-    const nc = calcCorteNota(c.items);
     const p = parseFloat(c.peso);
-    if (nc !== null && !isNaN(p) && p > 0) { sumProd += nc * p; sumPeso += p; }
+    if (!isNaN(p) && p > 0) sumaPeso += p;
+    const pts = calcCorteNota(c.items);
+    if (pts !== null) sumaPts += pts;
   });
-  return sumPeso > 0 ? (sumProd / sumPeso).toFixed(1) : null;
+  if (sumaPeso === 0) return null;
+  return Number(((sumaPts / sumaPeso) * 500).toFixed(1));
 }
 
 function migrateCortes(cortes) {
   if (!cortes || cortes.length === 0) {
-    return [{ nombre: "Corte 1", peso: 33, items: [] }, { nombre: "Corte 2", peso: 33, items: [] }, { nombre: "Corte 3", peso: 34, items: [] }];
+    return PESOS_DEFAULT.map((peso, i) => ({ nombre: `Corte ${i + 1}`, peso, items: [] }));
   }
+  const legacyPct = cortes.reduce((s, c) => s + (parseFloat(c.peso) || 0), 0) === 100;
   return cortes.map((c, i) => {
-    if (c.items) return c;
-    return { nombre: c.nombre || `Corte ${i + 1}`, peso: c.peso || 33, items: c.nota !== "" && c.nota !== undefined ? [{ nombre: "Evaluación", nota: c.nota, peso: 100 }] : [] };
+    if (c.items) {
+      return legacyPct ? { ...c, peso: PESOS_DEFAULT[i] ?? c.peso } : c;
+    }
+    const peso = legacyPct ? (PESOS_DEFAULT[i] ?? c.peso) : parseFloat(c.peso) || 100;
+    return {
+      nombre: c.nombre || `Corte ${i + 1}`,
+      peso,
+      items: c.nota !== "" && c.nota !== undefined
+        ? [{ nombre: "Evaluación", nota: Math.round((Number(c.nota) / 500) * peso), notaMax: peso }]
+        : [],
+    };
   });
 }
 
@@ -124,7 +134,7 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onSyncCalendar,
         if (nota === "") {
           cortes[corteIdx].items = (cortes[corteIdx].items || []).filter(it => it.nombre !== nombre);
         } else {
-          const newItem = { nombre, nota: Number(nota), notaMax: val, peso: val };
+          const newItem = { nombre, nota: Number(nota), notaMax: val };
           const existingItemIdx = cortes[corteIdx].items.findIndex(it => it.nombre === nombre);
           if (existingItemIdx >= 0) {
             cortes[corteIdx].items[existingItemIdx] = newItem;
@@ -477,7 +487,7 @@ function AddModal({ onClose, onSave, materias, cortesData }) {
                 <label>Corte</label>
                 <select className={styles.select} value={form.corteIdx} onChange={e => update("corteIdx", Number(e.target.value))}>
                   {cortesMateria.length > 0 ? cortesMateria.map((c, i) => (
-                    <option key={i} value={i}>{c.nombre} ({c.peso}%)</option>
+                    <option key={i} value={i}>{c.nombre} ({c.peso} pts)</option>
                   )) : (
                     <option value={0}>Corte 1</option>
                   )}
