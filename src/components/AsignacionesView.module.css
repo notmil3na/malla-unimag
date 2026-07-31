@@ -175,18 +175,18 @@
 /* ── Modal ────────────────────────────────────────── */
 .modalOverlay {
   position: fixed; inset: 0; z-index: 200;
-  background: rgba(0, 0, 0, 0.25);
-  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.42);
+  display: flex;
   padding: 16px; animation: fadeIn 0.15s ease;
   overflow-y: auto;
-  min-height: 100dvh;
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .modal {
+  margin: auto;
   background: var(--modal-bg); border: 1px solid var(--modal-border);
   border-radius: var(--radius-lg); width: 100%; max-width: 540px;
-  max-height: 90vh; overflow-y: auto;
+  max-height: none;
   box-shadow: 0 20px 60px rgba(0,0,0,0.18);
   animation: slideUp 0.2s ease;
 }

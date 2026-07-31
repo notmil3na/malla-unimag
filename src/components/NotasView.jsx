@@ -9,8 +9,8 @@ import {
   isValidNumericGrade,
   sanitizeNumericGrade,
 } from "../utils/gradeHelpers.js";
-import { projectDesiredAverage } from "../utils/careerProgress.js";
-import { IconCheck, IconX, IconClose } from "./Icons";
+import { projectDesiredAverage, calcGlobalPond, simulateFailMateria } from "../utils/careerProgress.js";
+import { IconCheck, IconX, IconClose, IconWarning } from "./Icons";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function calcPonderado(materias, notasMap, semestreById) {
@@ -27,30 +27,6 @@ function calcPonderado(materias, notasMap, semestreById) {
   });
   if (sumCred === 0) return null;
   return { valor: sumPond / sumCred, creditos: sumCred, sumPond };
-}
-
-function calcGlobal(allMaterias, notasMap, semestreById) {
-  let sumPond = 0, sumCred = 0;
-  allMaterias.forEach((m) => {
-    const n = notasMap[m.id];
-    if (!n) return;
-    const sem = semestreById.get(m.id);
-    if (isEnglishLetterGrade(m, sem)) return;
-
-    if (isValidNumericGrade(n.nota)) {
-      sumPond += Number(n.nota) * m.creditos;
-      sumCred += m.creditos;
-    }
-
-    (n.intentos || []).forEach((it) => {
-      if (isValidNumericGrade(it.nota)) {
-        sumPond += Number(it.nota) * m.creditos;
-        sumCred += m.creditos;
-      }
-    });
-  });
-  if (sumCred === 0) return null;
-  return { valor: sumPond / sumCred, creditos: sumCred };
 }
 
 function buildSemestreMap(malla) {
@@ -233,6 +209,10 @@ export default function NotasView({ malla, notas, onSave, user }) {
   const [view, setView]             = useState("semestres");
   const [showDesiredMode, setShowDesiredMode] = useState(false);
   const [desiredAvg, setDesiredAvg]           = useState("");
+  const [showFailSim, setShowFailSim]         = useState(false);
+  const [failSimId, setFailSimId]             = useState("");
+  const [failGrade, setFailGrade]             = useState("200");
+  const [retakeGrade, setRetakeGrade]         = useState("400");
 
   const colors = user.themeColors || {};
   const colorA = colors.aprobada || "#6ec88a";
@@ -257,7 +237,7 @@ export default function NotasView({ malla, notas, onSave, user }) {
   );
 
   const allMaterias = malla.flatMap((s) => s.materias);
-  const globalPond  = calcGlobal(allMaterias, localNotas, semestreById);
+  const globalPond  = calcGlobalPond(malla, localNotas);
 
   const totalCreditos = allMaterias.reduce((a, m) => a + m.creditos, 0);
   const creditosAprobados = allMaterias.reduce((acc, m) => {
@@ -282,6 +262,25 @@ export default function NotasView({ malla, notas, onSave, user }) {
 
   const projection = showDesiredMode && desiredAvg !== ""
     ? projectDesiredAverage(malla, localNotas, desiredAvg)
+    : null;
+
+  // Solo las materias que se están cursando ahora (no las ya aprobadas).
+  const simulables = allMaterias
+    .filter((m) => {
+      if (m.estado !== "cursando") return false;
+      const n = localNotas[m.id];
+      if (!n) return false;
+      if (isEnglishLetterGrade(m, semestreById.get(m.id))) return false;
+      if (isValidNumericGrade(n.nota)) return true;
+      return (n.intentos || []).some((it) => isValidNumericGrade(it.nota));
+    })
+    .sort((a, b) => (semestreById.get(a.id) ?? 99) - (semestreById.get(b.id) ?? 99));
+
+  const failSim = showFailSim && failSimId
+    ? simulateFailMateria(malla, localNotas, failSimId, {
+        failedGrade: failGrade !== "" ? Number(failGrade) : undefined,
+        retakeGrade: retakeGrade !== "" ? Number(retakeGrade) : undefined,
+      })
     : null;
 
   return (
@@ -396,6 +395,107 @@ export default function NotasView({ malla, notas, onSave, user }) {
                 ))}
             </>
           )}
+        </div>
+      )}
+
+      <div className={styles.desiredBar}>
+        <label className={styles.desiredToggle}>
+          <input
+            type="checkbox"
+            checked={showFailSim}
+            onChange={(e) => {
+              setShowFailSim(e.target.checked);
+              if (!e.target.checked) setFailSimId("");
+            }}
+          />
+          <span>¿Qué pasa si repruebo esta materia?</span>
+        </label>
+        {showFailSim && (
+          <div className={styles.failSimWrap}>
+            <select
+              className={styles.failSimSelect}
+              value={failSimId}
+              onChange={(e) => setFailSimId(e.target.value)}
+            >
+              <option value="">Elige una materia…</option>
+              {simulables.map((m) => {
+                const n = localNotas[m.id];
+                const notaActual = isValidNumericGrade(n.nota)
+                  ? n.nota
+                  : (n.intentos || []).find((it) => isValidNumericGrade(it.nota))?.nota;
+                return (
+                  <option key={m.id} value={m.id}>
+                    {m.id} · {m.nombre} (actual: {notaActual ?? "—"})
+                  </option>
+                );
+              })}
+            </select>
+            {failSimId && (
+              <>
+                <label className={styles.desiredInputLabel}>Nota de pérdida</label>
+                <input
+                  className={styles.desiredInput}
+                  type="number"
+                  min="0"
+                  max={MAX_GRADE}
+                  value={failGrade}
+                  onChange={(e) => setFailGrade(e.target.value)}
+                  placeholder="200"
+                />
+                <label className={styles.desiredInputLabel}>Habilitación</label>
+                <input
+                  className={styles.desiredInput}
+                  type="number"
+                  min="0"
+                  max={MAX_GRADE}
+                  value={retakeGrade}
+                  onChange={(e) => setRetakeGrade(e.target.value)}
+                  placeholder="400"
+                />
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {failSim && (
+        <div className={`${styles.projectionPanel} ${failSim.delta !== null && failSim.delta < 0 ? styles.projectionWarn : ""}`}>
+          <div className={styles.projectionHeader}>
+            <h3 className={styles.projectionTitle}>
+              <IconWarning size={13} /> Simulación de repitencia
+            </h3>
+            <span className={styles.projectionCurrent}>
+              {failSim.materia.id} · <strong>{failSim.materia.nombre}</strong>
+            </span>
+          </div>
+          {failSim.hasNota ? (
+            <>
+              <div className={styles.failSimRow}>
+                <div className={styles.failSimAvg}>
+                  <span className={styles.failSimLabel}>Promedio actual</span>
+                  <strong>{failSim.currentAvg !== null ? failSim.currentAvg.toFixed(1) : "—"}</strong>
+                </div>
+                <span className={styles.failSimArrow}>→</span>
+                <div className={styles.failSimAvg}>
+                  <span className={styles.failSimLabel}>Si repruebas</span>
+                  <strong>{failSim.newAvg !== null ? failSim.newAvg.toFixed(1) : "—"}</strong>
+                </div>
+              </div>
+              {failSim.delta !== null && (
+                <p className={styles.failSimDelta}>
+                  Cambio: <strong>{failSim.delta > 0 ? "+" : ""}{failSim.delta.toFixed(2)}</strong> puntos
+                  <span className={failSim.delta < 0 ? styles.failSimDeltaNeg : styles.failSimDeltaPos}>
+                    {failSim.delta < 0 ? " · baja tu promedio" : " · sube tu promedio"}
+                  </span>
+                </p>
+              )}
+            </>
+          ) : (
+            <p className={styles.projectionMessage}>Esta materia aún no tiene nota registrada.</p>
+          )}
+          <p className={styles.failSimHint}>
+            En este modelo, la nota perdida ({failSim.simulatedFailedGrade}) y la habilitación ({failSim.simulatedRetakeGrade}) cuentan ambas en el ponderado global.
+          </p>
         </div>
       )}
 

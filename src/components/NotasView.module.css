@@ -460,3 +460,71 @@
   .letterSelect { min-width: 0; width: 100%; }
   .resumenTotalVal { font-size: 22px; }
 }
+
+/* ── Simulador: ¿qué pasa si repruebo? ───────────────── */
+.failSimWrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.failSimSelect {
+  min-width: 240px;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+
+.failSimRow {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 0;
+}
+
+.failSimAvg {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.failSimAvg strong {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.failSimLabel {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.failSimArrow {
+  font-size: 20px;
+  color: var(--accent);
+}
+
+.failSimDelta {
+  font-size: 13px;
+  margin: 0 0 8px;
+  color: var(--text);
+}
+
+.failSimDeltaNeg { color: #e07070; font-weight: 600; }
+.failSimDeltaPos { color: #6ec88a; font-weight: 600; }
+
+.failSimHint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}

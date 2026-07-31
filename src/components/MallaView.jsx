@@ -3,7 +3,7 @@ import { MALLA, ESTADOS } from "../data/malla.js";
 import { getSemesterCountdown, SEMESTER_CORTE } from "../utils/semesterCountdown.js";
 import { canEnrollMateria } from "../utils/gradeHelpers.js";
 import { buildMallaTxt, downloadTxt } from "../utils/mallaExport.js";
-import { IconChevronRight, IconClose, IconLightbulb } from "./Icons";
+import { IconChevronRight, IconClose, IconLightbulb, IconWarning } from "./Icons";
 import { getObligatorias } from "../utils/careerProgress.js";
 import MateriaCard from "./MateriaCard";
 import styles from "./MallaView.module.css";
@@ -108,6 +108,42 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
   }), [obligatorias]);
   const progress = stats.total > 0 ? Math.round((stats.aprobadas / stats.total) * 100) : 0;
 
+  const creditStats = useMemo(() => {
+    const total = obligatorias.reduce((a, m) => a + m.creditos, 0);
+    const aprobados = obligatorias
+      .filter((m) => m.estado === "aprobada")
+      .reduce((a, m) => a + m.creditos, 0);
+    const cursando = obligatorias
+      .filter((m) => m.estado === "cursando")
+      .reduce((a, m) => a + m.creditos, 0);
+    const pct = total > 0 ? Math.round((aprobados / total) * 100) : 0;
+    return { total, aprobados, cursando, pct };
+  }, [obligatorias]);
+
+  const pendingPrereqs = useMemo(() => {
+    const alerts = [];
+    obligatorias.forEach((m) => {
+      if (m.estado !== "faltante") return;
+      const missing = (m.prereqs || []).filter(
+        (pid) => materiaById.get(pid)?.estado !== "aprobada"
+      );
+      if (missing.length > 0) {
+        alerts.push({
+          materia: m,
+          missing: missing.map((pid) => materiaById.get(pid)?.nombre || pid),
+        });
+      }
+    });
+    return alerts;
+  }, [obligatorias, materiaById]);
+
+  const selectedMissingPrereqs = useMemo(() => {
+    if (!selected) return [];
+    return (selected.prereqs || []).filter(
+      (pid) => materiaById.get(pid)?.estado !== "aprobada"
+    );
+  }, [selected, materiaById]);
+
   const handleDownload = () => {
     const content = buildMallaTxt({ user, malla, notas: notas || {} });
     const safeName = (user.username || "estudiante").replace(/[^\w.-]/g, "_");
@@ -155,6 +191,30 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
           <div className={styles.progressFill} style={{ width: `${progress}%`, background: colors.aprobada || "#6ec88a" }} />
         </div>
       </div>
+
+      <div className={styles.progressWrap}>
+        <div className={styles.progressInfo}>
+          <span>Progreso por créditos</span>
+          <span>{creditStats.aprobados} / {creditStats.total} cr · {creditStats.pct}%</span>
+        </div>
+        <div className={styles.progressBar}>
+          <div className={styles.progressFill} style={{ width: `${creditStats.pct}%`, background: "var(--accent)" }} />
+        </div>
+        {creditStats.cursando > 0 && (
+          <div className={styles.progressInfo}>
+            <span>En curso ahora</span><span>{creditStats.cursando} cr</span>
+          </div>
+        )}
+      </div>
+
+      {pendingPrereqs.length > 0 && (
+        <div className={styles.prereqAlertBanner}>
+          <IconWarning size={16} />
+          <div className={styles.prereqAlertText}>
+            <strong>{pendingPrereqs.length} materias bloqueadas</strong> por prerequisitos sin aprobar. Aprueba las materias previas para habilitarlas.
+          </div>
+        </div>
+      )}
 
       <div className={styles.semesterWidget}>
         <div className={styles.semesterWidgetTop}>
@@ -328,6 +388,16 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
             }}><IconClose size={14} /></button>
           </div>
           <div className={styles.detailBody}>
+            {selectedMissingPrereqs.length > 0 && (
+              <div className={styles.prereqAlertDetail}>
+                <IconWarning size={14} />
+                <span>
+                  <strong>Prerequisito(s) pendiente(s):</strong>{" "}
+                  {selectedMissingPrereqs.map((pid) => materiaById.get(pid)?.nombre || pid).join(", ")}.
+                  Aún no deberías cursar esta materia.
+                </span>
+              </div>
+            )}
             <div className={styles.detailSection}>
               <p className={styles.detailSectionLabel}>Cambiar estado:</p>
               <div className={styles.estadoBtns}>

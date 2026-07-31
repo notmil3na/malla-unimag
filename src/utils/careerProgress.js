@@ -20,6 +20,75 @@ export function buildSemestreMap(malla) {
   return map;
 }
 
+// Promedio ponderado global acumulado. La definitiva de cada materia y cada
+// intento/habilitación registrado cuentan por igual en la suma ponderada.
+export function calcGlobalPond(malla, notas) {
+  const semestreById = buildSemestreMap(malla);
+  const allMaterias = malla.flatMap((s) => s.materias);
+  let sumPond = 0, sumCred = 0;
+  allMaterias.forEach((m) => {
+    const n = notas[m.id];
+    if (!n) return;
+    const sem = semestreById.get(m.id);
+    if (isEnglishLetterGrade(m, sem)) return;
+
+    if (isValidNumericGrade(n.nota)) {
+      sumPond += Number(n.nota) * m.creditos;
+      sumCred += m.creditos;
+    }
+
+    (n.intentos || []).forEach((it) => {
+      if (isValidNumericGrade(it.nota)) {
+        sumPond += Number(it.nota) * m.creditos;
+        sumCred += m.creditos;
+      }
+    });
+  });
+  if (sumCred === 0) return null;
+  return { valor: sumPond / sumCred, creditos: sumCred, sumPond, sumCred };
+}
+
+// Simulador "¿qué pasa si repruebo esto?": proyecta el GPA ponderado si la
+// definitiva de una materia pasa a ser una nota de pérdida y se agrega una
+// habilitación aprobatoria (ambas cuentan en el ponderado).
+export function simulateFailMateria(malla, notas, materiaId, opts = {}) {
+  const failedGrade = opts.failedGrade !== undefined ? opts.failedGrade : 200;
+  const retakeGrade = opts.retakeGrade !== undefined ? opts.retakeGrade : 400;
+  const materia = malla.flatMap((s) => s.materias).find((m) => m.id === materiaId);
+  if (!materia) return null;
+
+  const current = calcGlobalPond(malla, notas);
+
+  const currentRecord = notas[materiaId] || {};
+  const simulated = { ...notas, [materiaId]: {
+    ...currentRecord,
+    nota: failedGrade,
+    intentos: [
+      ...(currentRecord.intentos || []),
+      { nota: retakeGrade, semestre: "repetida (simulación)" },
+    ],
+  } };
+  const after = calcGlobalPond(malla, simulated);
+
+  const hasNota = isValidNumericGrade(currentRecord.nota);
+
+  return {
+    materia,
+    currentAvg: current?.valor ?? null,
+    newAvg: after?.valor ?? null,
+    delta:
+      current?.valor !== undefined && after?.valor !== undefined
+        ? after.valor - current.valor
+        : null,
+    currentCred: current?.creditos ?? 0,
+    newCred: after?.creditos ?? 0,
+    hasNota,
+    simulatedFailedGrade: failedGrade,
+    simulatedRetakeGrade: retakeGrade,
+    pesoMateria: materia.creditos,
+  };
+}
+
 export function calcCareerTime(user) {
   const ingresoIdx = CORTES.indexOf(user.ingresoCorte || "");
   const currentCorte = corteForSemester(user.ingresoCorte, Number(user.semester) || 1);

@@ -1,11 +1,21 @@
 import { useState, useEffect } from "react";
-import { canEnrollMateria } from "../utils/gradeHelpers.js";
+import {
+  HORAS_FORM,
+  LEGACY_HORAS,
+  ACCENT_COLORS,
+  normalizeHora,
+  toViewHora,
+  horaIdx,
+  findConflicts,
+  formatRangoHora,
+} from "../utils/horarioHelpers.js";
 import styles from "./HorarioView.module.css";
 import {
   IconMar, IconCienaga, IconSierra, IconInnovacion, IconBloque, IconHangar,
   IconLocation, IconTrash, IconExternalLink, IconEdit, IconClose,
-  IconSchedule, IconStar, IconCheck
+  IconSchedule, IconStar, IconCheck, IconWarning, IconDownload
 } from "./Icons";
+import HorarioExport from "./HorarioExport";
 
 // ── Edificios y salones ───────────────────────────────────────────────────
 const EDIFICIOS = [
@@ -38,22 +48,9 @@ function saveCustomSalones(obj) {
   try { localStorage.setItem(CUSTOM_SALONES_KEY, JSON.stringify(obj)); } catch {}
 }
 
-const HORAS_FORM = [
-  "06:00 a. m.","07:00 a. m.","08:00 a. m.","09:00 a. m.","10:00 a. m.","11:00 a. m.",
-  "12:00 p. m.","01:00 p. m.","02:00 p. m.","03:00 p. m.","04:00 p. m.","05:00 p. m.",
-  "06:00 p. m.","07:00 p. m.","08:00 p. m.","09:00 p. m.","10:00 p. m.",
-];
-const LEGACY_HORAS = [
-  "06:00","07:00","08:00","09:00","10:00","11:00",
-  "12:00","1:00","2:00","3:00","4:00","5:00","6:00","7:00","8:00","9:00","10:00",
-];
 const TODOS_DIAS = [
   {id:"L",label:"Lunes"},{id:"M",label:"Martes"},{id:"X",label:"Miércoles"},
   {id:"J",label:"Jueves"},{id:"V",label:"Viernes"},{id:"S",label:"Sábado"},
-];
-const ACCENT_COLORS = [
-  "#B882E8","#6BA3E8","#E87098","#6EC8A8","#E8946B","#EECE7B",
-  "#82B8E8","#E882B8","#82E8B8","#E8B882",
 ];
 
 // ── helpers ───────────────────────────────────────────────────────────────
@@ -63,18 +60,6 @@ function buildSalonLabel(edificioId, lado, salon) {
   if (!ed.lados) return `${ed.nombre} — ${salon}`;
   return `${ed.nombre} ${lado} ${salon}`;
 }
-function normalizeHora(hora) {
-  if (!hora) return hora;
-  if (HORAS_FORM.includes(hora)) return hora;
-  const idx = LEGACY_HORAS.indexOf(hora);
-  return idx>=0 ? HORAS_FORM[idx] : hora;
-}
-function toViewHora(hora) {
-  const n = normalizeHora(hora);
-  const idx = HORAS_FORM.indexOf(n);
-  return idx>=0 ? LEGACY_HORAS[idx] : hora;
-}
-function horaIdx(h) { return HORAS_FORM.indexOf(normalizeHora(h)); }
 
 // Dado un arreglo de clases y el índice en el que se hizo click, arma el
 // objeto que precarga el modal: si la clase tiene "pairId" y existe su
@@ -108,8 +93,24 @@ function buildEditando(clases, idx) {
   };
 }
 
-// ── ClaseModal (unchanged) ────────────────────────────────────────────────
-function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editando, onDelete, onNotify }) {
+// ── Detección de choques persistente ──────────────────────────────────────
+function computeConflictIdxs(clases) {
+  const set = new Set();
+  for (let i = 0; i < clases.length; i++) {
+    for (let j = i + 1; j < clases.length; j++) {
+      const a = clases[i], b = clases[j];
+      if (!a || !b || a.dia !== b.dia) continue;
+      const s1 = horaIdx(a.horaInicio), e1 = horaIdx(a.horaFin);
+      const s2 = horaIdx(b.horaInicio), e2 = horaIdx(b.horaFin);
+      if (s1 < 0 || e1 <= s1 || s2 < 0 || e2 <= s2) continue;
+      if (s1 < e2 && s2 < e1) { set.add(i); set.add(j); }
+    }
+  }
+  return set;
+}
+
+// ── ClaseModal ────────────────────────────────────────────────────────────
+function ClaseModal({ materiasDisponibles, allMaterias, existingClases, editIdxSet, prefill, diasActivos, onSave, onClose, editando, onDelete, onNotify }) {
   const [form, setForm] = useState(editando ? {
     materiaId: editando.materiaId||"", grupo: editando.grupo||"", profesor: editando.profesor||"",
     dia: editando.dia||diasActivos[0]||"L",
@@ -123,15 +124,38 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
     edificio2: editando.edificio2||"", lado2: editando.lado2||"", salon2: editando.salon2||"",
     notas: editando.notas||"",
   } : {
-    materiaId: materiasDisponibles[0]?.id||"", dia: diasActivos[0]||"L",
-    horaInicio:"07:00 a. m.", horaFin:"09:00 a. m.",
-    edificio:"", lado:"", salon:"", grupo:"", profesor:"",
-    segundoDiaActivo:false, dia2:"", horaInicio2:"07:00 a. m.", horaFin2:"09:00 a. m.",
-    edificio2:"", lado2:"", salon2:"", notas:"",
+    materiaId: prefill?.materiaId
+      || materiasDisponibles.find((m) => !m.prereqBlocked)?.id
+      || materiasDisponibles[0]?.id || "",
+    dia: prefill?.dia || diasActivos[0] || "L",
+    horaInicio: normalizeHora(prefill?.horaInicio) || "07:00 a. m.",
+    horaFin: normalizeHora(prefill?.horaFin) || "09:00 a. m.",
+    edificio: "", lado: "", salon: "", grupo: "", profesor: "",
+    segundoDiaActivo: false, dia2: "", horaInicio2: "07:00 a. m.", horaFin2: "09:00 a. m.",
+    edificio2: "", lado2: "", salon2: "", notas: "",
   });
   const [customSalones, setCustomSalones] = useState(()=>getCustomSalones());
   const [otroValue, setOtroValue] = useState("");
   const [otroValue2, setOtroValue2] = useState("");
+
+  const materiaById = new Map((allMaterias || []).map((m) => [m.id, m]));
+
+  // Choques en vivo: comparar el horario actual del formulario contra las
+  // clases existentes (excluyendo las que se están editando).
+  const pendingClases = [
+    { dia: form.dia, horaInicio: form.horaInicio, horaFin: form.horaFin },
+    ...(form.segundoDiaActivo && form.dia2 && form.horaInicio2 && form.horaFin2
+      ? [{ dia: form.dia2, horaInicio: form.horaInicio2, horaFin: form.horaFin2 }]
+      : []),
+  ].filter((c) => c.dia && horaIdx(c.horaInicio) >= 0 && horaIdx(c.horaFin) > horaIdx(c.horaInicio));
+
+  const exclude = editIdxSet && editIdxSet.length ? new Set(editIdxSet) : null;
+  const baseClases = (existingClases || []).filter((_, i) => !exclude || !exclude.has(i));
+  const conflicts = findConflicts(baseClases, pendingClases);
+  const conflictClaseIdxs = conflicts.map((c) => baseClases.indexOf(c.clase));
+
+  const selectedMateria = materiasDisponibles.find((m) => m.id === form.materiaId);
+  const blockedSelected = selectedMateria?.prereqBlocked;
 
   const commitOtro = (which) => {
     const val = (which===1?otroValue:otroValue2).trim();
@@ -155,6 +179,10 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
 
   const handleSave = () => {
     if (!form.materiaId||!form.dia||!form.horaInicio||!form.horaFin) return;
+    if (blockedSelected) {
+      onNotify?.("Esa materia tiene prerequisitos pendientes");
+      return;
+    }
     const s=HORAS_FORM.indexOf(form.horaInicio), e=HORAS_FORM.indexOf(form.horaFin);
     if (s<0||e<=s){ onNotify?.("Horario inválido"); return; }
     if (form.segundoDiaActivo){
@@ -178,8 +206,12 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
       grupo:form.grupo, profesor:form.profesor, notas:form.notas,
       pairId,
     });
-    onSave({ clases });
+    onSave({ clases, conChoques: conflicts.length > 0 });
   };
+
+  const saveLabel = conflicts.length > 0
+    ? (editando ? "Guardar con choque" : "Añadir con choque")
+    : (editando ? "Guardar cambios" : "Añadir clase");
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
@@ -195,9 +227,19 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
               onChange={e=>setForm(f=>({...f,materiaId:e.target.value}))}>
               <option value="">— Selecciona —</option>
               {materiasDisponibles.map(m=>(
-                <option key={m.id} value={m.id}>{m.id} — {m.nombre}</option>
+                <option key={m.id} value={m.id} disabled={m.prereqBlocked}>
+                  {m.id} — {m.nombre}{m.prereqBlocked ? "  ⚠ prereq. pendiente" : ""}
+                </option>
               ))}
             </select>
+            {blockedSelected && (
+              <div className={styles.blockedHint}>
+                <IconWarning size={12} /> Esta materia requiere aprobar antes:{" "}
+                {selectedMateria.prereqs
+                  .map((pid) => materiaById.get(pid)?.id || pid)
+                  .join(", ")}
+              </div>
+            )}
           </div>
           <div className={styles.formRow}>
             <div className={styles.formField}>
@@ -234,6 +276,24 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
               </select>
             </div>
           </div>
+
+          {/* Choques detectados en vivo */}
+          {conflicts.length > 0 && (
+            <div className={styles.conflictPanel}>
+              <div className={styles.conflictTitle}><IconWarning size={13} /> Choque de horario detectado</div>
+              {conflicts.map((c, i) => (
+                <div key={i} className={styles.conflictRow}>
+                  <span className={styles.conflictClase}>{c.clase.materiaId}{c.clase.grupo?` - ${c.clase.grupo}`:""}</span>
+                  <span className={styles.conflictDetalle}>
+                    {TODOS_DIAS.find((d)=>d.id===c.clase.dia)?.label || c.clase.dia} · {formatRangoHora(c.clase)}
+                  </span>
+                </div>
+              ))}
+              <div className={styles.conflictHint}>
+                La clase se superpone con lo que ya tienes. Puedes guardarla igual, pero quedará marcada como choque.
+              </div>
+            </div>
+          )}
 
           {/* Edificio */}
           <div className={styles.formField}>
@@ -386,8 +446,9 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
         <div className={styles.modalFooter}>
           {editando && <button className={styles.deleteBtn} onClick={onDelete}><IconTrash size={12} /> Eliminar</button>}
           <button className={styles.btnSecondary} onClick={onClose}>Cancelar</button>
-          <button className={styles.btnPrimary} onClick={handleSave}>
-            {editando?"Guardar cambios":"Añadir clase"}
+          <button className={`${styles.btnPrimary} ${conflicts.length?styles.btnPrimaryWarn:""}`} onClick={handleSave}>
+            {conflicts.length > 0 && <IconWarning size={12} />}
+            {saveLabel}
           </button>
         </div>
       </div>
@@ -396,17 +457,17 @@ function ClaseModal({ materiasDisponibles, diasActivos, onSave, onClose, editand
 }
 
 // ── ClaseBloque (main view) ───────────────────────────────────────────────
-function ClaseBloque({ clase, materia, color, horaStart, duracion, onClick }) {
+function ClaseBloque({ clase, materia, color, horaStart, duracion, onClick, isConflict }) {
   const top=horaStart*64, height=duracion*64-4;
+  const showName = duracion >= 2;
   return (
-    <div className={styles.claseBloque}
+    <div className={`${styles.claseBloque} ${isConflict?styles.claseBloqueConflict:""}`}
       style={{top,height,"--clase-color":color}} onClick={onClick}
       title={`${materia?.id||clase.materiaId}${clase.grupo?` - ${clase.grupo}`:""}${clase.profesor?` · ${clase.profesor}`:""} | ${toViewHora(clase.horaInicio)}–${toViewHora(clase.horaFin)} | ${clase.salonLabel||""}`}>
-      <div className={styles.claseBloqueBar}/>
+      <div className={styles.claseAccent}/>
       <div className={styles.claseBloqueContent}>
-        <span className={styles.claseId}>
-          {materia?.id||clase.materiaId}{clase.grupo ? ` - ${clase.grupo}` : ""}
-        </span>
+        <span className={styles.claseId}>{materia?.id||clase.materiaId}{clase.grupo ? ` - ${clase.grupo}` : ""}</span>
+        {showName && materia?.nombre && <span className={styles.claseNombre}>{materia.nombre}</span>}
         {clase.profesor && <span className={styles.claseProfesor}>{clase.profesor}</span>}
         <span className={styles.claseHora}>{toViewHora(clase.horaInicio)}–{toViewHora(clase.horaFin)}</span>
         {clase.salonLabel && <span className={styles.claseSalon}>{clase.salonLabel}</span>}
@@ -435,6 +496,8 @@ function MiniHorario({ opcion, priority, colorMap, materiasRef, diasActivos, onE
   const maxH = usedHoras.length ? Math.min(LEGACY_HORAS.length-1, Math.max(...usedHoras)+1) : 9;
   const visHoras = LEGACY_HORAS.slice(minH, maxH+1);
   const CELL_H = 40;
+
+  const conflictSet = computeConflictIdxs(clases);
 
   const totalCred = [...new Set(clases.map(c=>c.materiaId))]
     .reduce((sum,id)=>{
@@ -492,15 +555,17 @@ function MiniHorario({ opcion, priority, colorMap, materiasRef, diasActivos, onE
               <div className={styles.miniDiaBody}>
                 {visHoras.map(h=>( <div key={h} className={styles.miniHoraLine}/> ))}
                 {clases.filter(c=>c.dia===dia.id).map((clase,i)=>{
+                  const globalIdx = opcion.clases.indexOf(clase);
                   const s=horaIdx(clase.horaInicio)-minH;
                   const dur=horaIdx(clase.horaFin)-horaIdx(clase.horaInicio);
                   if(s<0||dur<=0) return null;
                   const color=colorMap[clase.materiaId]||"var(--accent)";
                   const miniLabel = `${clase.materiaId}${clase.grupo?` - ${clase.grupo}`:""}`;
                   return (
-                    <div key={i} className={styles.miniBloqueAbs}
+                    <div key={i}
+                      className={`${styles.miniBloqueAbs} ${conflictSet.has(globalIdx)?styles.miniBloqueAbsConflict:""}`}
                       style={{top:s*CELL_H, height:dur*CELL_H-2,"--bloque-color":color}}
-                      onClick={e=>{ e.stopPropagation(); onEdit(buildEditando(opcion.clases, opcion.clases.indexOf(clase))); }}
+                      onClick={e=>{ e.stopPropagation(); onEdit(buildEditando(opcion.clases, globalIdx)); }}
                       title={`${miniLabel}${clase.profesor?` · ${clase.profesor}`:""} ${toViewHora(clase.horaInicio)}–${toViewHora(clase.horaFin)}`}>
                       <span className={styles.miniBloqueAbsId}>{miniLabel}</span>
                       <span className={styles.miniBloqueAbsHora}>{toViewHora(clase.horaInicio)}</span>
@@ -523,6 +588,9 @@ function MiniHorario({ opcion, priority, colorMap, materiasRef, diasActivos, onE
         <span className={styles.miniStat}>
           <strong>{[...new Set(clases.map(c=>c.dia))].length}</strong> días
         </span>
+        {conflictSet.size > 0 && (
+          <span className={styles.miniStatConflict}><IconWarning size={10} /> {conflictSet.size} choque{conflictSet.size>1?"s":""}</span>
+        )}
       </div>
       <div className={styles.planClaseAddRow}>
         <button className={styles.planClaseAddBtn}
@@ -538,11 +606,20 @@ function MiniHorario({ opcion, priority, colorMap, materiasRef, diasActivos, onE
 function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDias, onTransferToHorario, onEnrollMaterias }) {
   const allMaterias = malla.flatMap((s) => s.materias);
   const materiasActuales = allMaterias.filter((m) => m.estado === "cursando");
-  const materiasDisponibles = allMaterias.filter(
-    (m) => canEnrollMateria(m, allMaterias) || m.estado === "cursando"
-  );
-  // El colorMap debe cubrir TODAS las materias agendables aquí (no solo
-  // las que están en curso), o muchas terminan compartiendo el mismo color.
+  // Incluye materias con prerequisitos pendientes para marcarlas visualmente
+  // (no se pueden agendar hasta cumplir los prereqs).
+  const materiasDisponibles = allMaterias
+    .filter((m) => m.estado === "cursando" || m.estado === "faltante")
+    .map((m) => ({
+      ...m,
+      prereqBlocked:
+        m.estado === "faltante"
+        && m.prereqs?.length > 0
+        && m.prereqs.some((pid) => {
+          const p = allMaterias.find((x) => x.id === pid);
+          return p?.estado !== "aprobada";
+        }),
+    }));
   const coloreables = materiasDisponibles.length ? materiasDisponibles : materiasActuales;
   const colorMap = {};
   coloreables.forEach((m,i)=>{ colorMap[m.id]=ACCENT_COLORS[i%ACCENT_COLORS.length]; });
@@ -710,6 +787,11 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
       {modalState && (
         <ClaseModal
           materiasDisponibles={materiasDisponibles}
+          allMaterias={allMaterias}
+          existingClases={opciones[modalState.opcionIdx]?.clases || []}
+          editIdxSet={modalState.editando?.idx1!==undefined
+            ? [modalState.editando.idx1, modalState.editando.idx2].filter(i=>i!==undefined)
+            : []}
           diasActivos={diasActivos}
           editando={modalState.editando?.idx1!==undefined ? modalState.editando : null}
           onSave={handleSaveClase}
@@ -753,12 +835,17 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
   const [data, setData] = useState(horarioData || {dias:["L","M","X","J","V"],clases:[]});
   const [showModal, setShowModal] = useState(false);
   const [editando, setEditando] = useState(null);
+  const [modalPrefill, setModalPrefill] = useState(null);
+  const [showExport, setShowExport] = useState(false);
+  const [dragMateriaId, setDragMateriaId] = useState(null);
+  const [dragHover, setDragHover] = useState(null); // {dia, start, end}
 
   useEffect(() => {
     setData(horarioData || {dias:["L","M","X","J","V"],clases:[]});
   }, [horarioData]);
 
-  const materiasActuales = malla.flatMap(s=>s.materias).filter(m=>m.estado==="cursando");
+  const allMaterias = malla.flatMap(s=>s.materias);
+  const materiasActuales = allMaterias.filter(m=>m.estado==="cursando");
   const colorMap = {};
   materiasActuales.forEach((m,i)=>{ colorMap[m.id]=ACCENT_COLORS[i%ACCENT_COLORS.length]; });
 
@@ -782,8 +869,12 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
       clases=[...data.clases,...nuevasClases];
     }
     const updated={...data,clases};
-    setData(updated); onSave(updated); setShowModal(false); setEditando(null);
-    onNotify?.(editando?"Clase actualizada":"Clase agregada");
+    setData(updated); onSave(updated); setShowModal(false); setEditando(null); setModalPrefill(null);
+    onNotify?.(
+      clase?.conChoques
+        ? (editando?"Clase guardada con choque de horario":"Clase agregada con choque de horario")
+        : (editando?"Clase actualizada":"Clase agregada")
+    );
   };
 
   const handleDeleteClase=(indices)=>{
@@ -803,6 +894,78 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
 
   const diasActivos=TODOS_DIAS.filter(d=>data.dias.includes(d.id));
 
+  // Rango visible del horario + choques persistentes
+  const schedule = (() => {
+    const claseIdxs = data.clases.flatMap(c => {
+      const s = horaIdx(c.horaInicio), e = horaIdx(c.horaFin);
+      if (s < 0 || e <= s) return [];
+      const set = new Set();
+      for (let i = s; i < e; i++) set.add(i);
+      return [...set];
+    });
+    const usedSet = new Set(claseIdxs);
+    const minUsed = usedSet.size ? Math.min(...usedSet) : 1;
+    const maxUsed = usedSet.size ? Math.max(...usedSet) : 9;
+    const visStart = usedSet.size ? Math.max(0, minUsed - 1) : 1;
+    const visEnd = usedSet.size ? Math.min(LEGACY_HORAS.length - 1, maxUsed + 1) : 9;
+    return {
+      usedSet,
+      visStart,
+      visEnd,
+      visHoras: LEGACY_HORAS.slice(visStart, visEnd + 1),
+    };
+  })();
+  const conflictSet = (() => {
+    const set = new Set();
+    const cs = data.clases;
+    for (let i = 0; i < cs.length; i++) {
+      for (let j = i + 1; j < cs.length; j++) {
+        const a = cs[i], b = cs[j];
+        if (!a || !b || a.dia !== b.dia) continue;
+        const s1 = horaIdx(a.horaInicio), e1 = horaIdx(a.horaFin);
+        const s2 = horaIdx(b.horaInicio), e2 = horaIdx(b.horaFin);
+        if (s1 < 0 || e1 <= s1 || s2 < 0 || e2 <= s2) continue;
+        if (s1 < e2 && s2 < e1) { set.add(i); set.add(j); }
+      }
+    }
+    return set;
+  })();
+
+  const handleDragOver = (e, diaId) => {
+    if (!dragMateriaId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const h = Math.max(schedule.visStart, Math.min(schedule.visEnd, Math.floor(y / 64)));
+    const end = Math.min(h + 2, schedule.visEnd + 1);
+    setDragHover({ dia: diaId, start: h, end });
+  };
+
+  const handleDrop = (e, diaId) => {
+    e.preventDefault();
+    if (!dragMateriaId) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const h = Math.max(schedule.visStart, Math.min(schedule.visEnd, Math.floor(y / 64)));
+    const end = Math.min(h + 2, schedule.visEnd + 1);
+    setModalPrefill({
+      materiaId: dragMateriaId,
+      dia: diaId,
+      horaInicio: HORAS_FORM[h] || HORAS_FORM[schedule.visStart],
+      horaFin: HORAS_FORM[end] || HORAS_FORM[schedule.visEnd],
+    });
+    setEditando(null);
+    setShowModal(true);
+    setDragMateriaId(null);
+    setDragHover(null);
+  };
+
+  const clearDrag = () => {
+    setDragMateriaId(null);
+    setDragHover(null);
+  };
+
   return (
     <div className={styles.wrap}>
       {/* Header */}
@@ -811,11 +974,16 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
           <h2 className={styles.title}>Horario</h2>
           <p className={styles.subtitle}>Semestre actual · {materiasActuales.length} materias</p>
         </div>
-        {mode==="horario" && (
-          <button className={styles.addBtn} onClick={()=>{ setEditando(null); setShowModal(true); }}>
-            + Añadir clase
+        <div className={styles.headerActions}>
+          <button className={styles.exportBtn} onClick={()=>setShowExport(true)}>
+            <IconDownload size={13} /> Exportar
           </button>
-        )}
+          {mode==="horario" && (
+            <button className={styles.addBtn} onClick={()=>{ setEditando(null); setModalPrefill(null); setShowModal(true); }}>
+              + Añadir clase
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Mode toggle */}
@@ -845,14 +1013,27 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
         </div>
 
         {materiasActuales.length>0 && (
-          <div className={styles.legendRow}>
+          <div className={styles.legendRow} onDragOver={e=>e.preventDefault()} onDrop={e=>e.preventDefault()}>
+            <span className={styles.legendDragHint}>
+              <IconSchedule size={11} /> Arrastra una materia al horario para agendar
+            </span>
             {materiasActuales.map(m=>(
-              <div key={m.id} className={styles.legendItem}>
+              <div key={m.id} className={styles.legendItem}
+                draggable
+                title={`Arrastra ${m.id} a una franja del horario`}
+                onDragStart={(e)=>{ setDragMateriaId(m.id); e.dataTransfer.effectAllowed="move"; }}
+                onDragEnd={clearDrag}>
                 <span className={styles.legendDot} style={{background:colorMap[m.id]}}/>
                 <span className={styles.legendId}>{m.id}</span>
                 <span className={styles.legendNombre}>{m.nombre}</span>
               </div>
             ))}
+          </div>
+        )}
+
+        {conflictSet.size > 0 && (
+          <div className={styles.conflictBanner}>
+            <IconWarning size={13} /> Se detectaron <strong>{conflictSet.size}</strong> choque{conflictSet.size>1?"s":""} en tu horario
           </div>
         )}
 
@@ -865,40 +1046,43 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
         )}
 
         {diasActivos.length>0 && (() => {
-          const claseIdxs = data.clases.flatMap(c => {
-            const s = horaIdx(c.horaInicio), e = horaIdx(c.horaFin);
-            if (s < 0 || e <= s) return [];
-            const set = new Set();
-            for (let i = s; i < e; i++) set.add(i);
-            return [...set];
-          });
-          const usedSet = new Set(claseIdxs);
-          if (usedSet.size === 0) {
+          if (schedule.usedSet.size === 0) {
             return (
               <div className={styles.emptyState}>
                 <span className={styles.emptyIcon}><IconSchedule size={36} /></span>
                 <p>No hay clases en el horario.</p>
-                <p>Haz clic en <strong>+ Añadir clase</strong> para comenzar.</p>
+                <p>Haz clic en <strong>+ Añadir clase</strong> o arrastra una materia de la leyenda.</p>
               </div>
             );
           }
-          const minUsed = Math.min(...usedSet);
-          const maxUsed = Math.max(...usedSet);
-          const visStart = Math.max(0, minUsed - 1);
-          const visEnd = Math.min(LEGACY_HORAS.length - 1, maxUsed + 1);
-          const visHoras = LEGACY_HORAS.slice(visStart, visEnd + 1);
           return (
             <div className={styles.gridWrap}>
               <div className={styles.grid} style={{"--num-dias":diasActivos.length}}>
                 <div className={styles.horaCol}>
                   <div className={styles.horaColHeader}/>
-                  {visHoras.map((h, i) => <div key={h} className={styles.horaCell}>{h}</div>)}
+                  {schedule.visHoras.map((h, i) => <div key={h} className={styles.horaCell}>{h}</div>)}
                 </div>
                 {diasActivos.map(dia=>(
                   <div key={dia.id} className={styles.diaCol}>
                     <div className={styles.diaHeader}>{dia.label}</div>
-                    <div className={styles.diaBody}>
-                      {visHoras.map(h => <div key={h} className={styles.horaLine}/>)}
+                    <div className={styles.diaBody}
+                      onDragOver={(e)=>handleDragOver(e, dia.id)}
+                      onDrop={(e)=>handleDrop(e, dia.id)}
+                      onDragLeave={(e)=>{
+                        if (!e.currentTarget.contains(e.relatedTarget)) setDragHover(null);
+                      }}>
+                      {schedule.visHoras.map(h => <div key={h} className={styles.horaLine}/>)}
+                      {dragHover?.dia === dia.id && (
+                        <div className={styles.dropPreview}
+                          style={{
+                            top:(dragHover.start - schedule.visStart)*64,
+                            height:(dragHover.end - dragHover.start)*64,
+                          }}>
+                          <span className={styles.dropPreviewLabel}>
+                            <IconCheck size={11} /> Agendar aquí
+                          </span>
+                        </div>
+                      )}
                       {data.clases.filter(c=>c.dia===dia.id).map((clase,i)=>{
                         const globalIdx=data.clases.indexOf(clase);
                         const start=horaIdx(clase.horaInicio), end=horaIdx(clase.horaFin);
@@ -907,8 +1091,9 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
                         return (
                           <ClaseBloque key={i} clase={clase} materia={materia}
                             color={colorMap[clase.materiaId]||"var(--accent)"}
-                            horaStart={start - visStart} duracion={end-start}
-                            onClick={()=>{ setEditando(buildEditando(data.clases, globalIdx)); setShowModal(true); }}
+                            horaStart={start - schedule.visStart} duracion={end-start}
+                            isConflict={conflictSet.has(globalIdx)}
+                            onClick={()=>{ setEditando(buildEditando(data.clases, globalIdx)); setModalPrefill(null); setShowModal(true); }}
                           />
                         );
                       })}
@@ -939,12 +1124,27 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
       {showModal && (
         <ClaseModal
           materiasDisponibles={materiasActuales}
+          allMaterias={allMaterias}
+          existingClases={data.clases}
+          editIdxSet={editando?.idx1!==undefined ? [editando.idx1, editando.idx2].filter(i=>i!==undefined) : []}
+          prefill={modalPrefill}
           diasActivos={data.dias}
           editando={editando?.idx1!==undefined?editando:null}
           onSave={handleAddClase}
           onDelete={()=>handleDeleteClase([editando.idx1, editando.idx2].filter(i=>i!==undefined))}
           onNotify={onNotify}
-          onClose={()=>{ setShowModal(false); setEditando(null); }}
+          onClose={()=>{ setShowModal(false); setEditando(null); setModalPrefill(null); }}
+        />
+      )}
+
+      {/* Exportación */}
+      {showExport && (
+        <HorarioExport
+          user={user}
+          horarioData={data}
+          malla={malla}
+          onNotify={onNotify}
+          onClose={()=>setShowExport(false)}
         />
       )}
     </div>

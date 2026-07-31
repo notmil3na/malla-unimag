@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } fro
 import Sidebar from "../components/Sidebar";
 import { getMallaByCareer } from "../data/malla.js";
 import { supabase } from "../supabase";
+import { getPendingSaves, hasPendingSaves, queueSave, clearPendingSave } from "../utils/offlineQueue.js";
 import styles from "./Dashboard.module.css";
 import {
   IconSchedule, IconCalendar, IconClipboard, IconSemester,
@@ -136,7 +137,19 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
   const [tab, setTab]       = useState("horario");
   const [loaded, setLoaded] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
+  const [isOffline, setIsOffline] = useState(typeof navigator !== "undefined" ? !navigator.onLine : false);
+  const [pendingCount, setPendingCount] = useState(() =>
+    typeof localStorage !== "undefined" && hasPendingSaves()
+      ? Object.keys(getPendingSaves()).length
+      : 0
+  );
   const toastTimerRef = useRef(null);
+
+  const notify = useCallback((msg) => {
+    setToastMsg(msg);
+    window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => setToastMsg(""), 2200);
+  }, []);
 
   const baseMalla = useMemo(() => getMallaByCareer(user.career), [user.career]);
   const defaultMalla = useMemo(() => autoApply(baseMalla, user.semester || 1), [baseMalla, user.semester]);
@@ -149,11 +162,56 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
   const [calendarioData, setCalendarioData] = useState({ eventos: [] });
   const [asignacionesData, setAsignacionesData] = useState({ items: [] });
 
-  const notify = useCallback((msg) => {
-    setToastMsg(msg);
-    window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => setToastMsg(""), 2200);
-  }, []);
+  // Persistencia con tolerancia offline: si no hay red (o Supabase falla),
+  // la columna se encola en localStorage y se sincroniza al reconectar.
+  const persistColumn = useCallback(async (column, data, applyLocal) => {
+    applyLocal(data);
+    if (!navigator.onLine) {
+      queueSave(column, data);
+      setPendingCount(Object.keys(getPendingSaves()).length);
+      notify("Sin conexión: cambios guardados localmente. Se sincronizarán al reconectar.");
+      return;
+    }
+    const res = await saveUserData(user.username, { [column]: data });
+    if (!res.ok) {
+      queueSave(column, data);
+      setPendingCount(Object.keys(getPendingSaves()).length);
+      notify("Sin conexión: cambios guardados localmente. Se sincronizarán al reconectar.");
+    } else {
+      notify("Guardado correctamente");
+    }
+  }, [user.username, notify]);
+
+  // Sincronizar la cola pendiente al volver la conexión.
+  useEffect(() => {
+    const flush = async () => {
+      const pending = getPendingSaves();
+      const cols = Object.keys(pending);
+      if (cols.length === 0) return;
+      let okCount = 0;
+      for (const col of cols) {
+        const res = await saveUserData(user.username, { [col]: pending[col] });
+        if (res.ok) {
+          clearPendingSave(col);
+          okCount++;
+        }
+      }
+      setPendingCount(Object.keys(getPendingSaves()).length);
+      if (okCount > 0) notify(`${okCount} cambio(s) sincronizado(s) con la nube`);
+    };
+
+    const onOnline = () => { setIsOffline(false); flush(); };
+    const onOffline = () => { setIsOffline(true); };
+
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    if (navigator.onLine && hasPendingSaves()) flush();
+
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, [user.username, notify]);
 
   // Cargar datos desde Supabase al iniciar
   useEffect(() => {
@@ -174,46 +232,32 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
   }, [user.username]);
 
   const saveMalla = useCallback(async (data) => {
-    setMalla(data);
-    const res = await saveUserData(user.username, { malla: data });
-    notify(res.ok ? "Guardado correctamente" : "Error al guardar. Intenta de nuevo.");
-  }, [user.username, notify]);
+    await persistColumn("malla", data, setMalla);
+  }, [persistColumn]);
 
   const saveNotas = useCallback(async (data) => {
-    setNotas(data);
-    const res = await saveUserData(user.username, { notas: data });
-    notify(res.ok ? "Guardado correctamente" : "Error al guardar. Intenta de nuevo.");
-  }, [user.username, notify]);
+    await persistColumn("notas", data, setNotas);
+  }, [persistColumn]);
 
   const saveCursando = useCallback(async (data) => {
-    setCursandoData(data);
-    const res = await saveUserData(user.username, { cursando: data });
-    notify(res.ok ? "Guardado correctamente" : "Error al guardar. Intenta de nuevo.");
-  }, [user.username, notify]);
+    await persistColumn("cursando", data, setCursandoData);
+  }, [persistColumn]);
 
   const saveHorario = useCallback(async (data) => {
-    setHorarioData(data);
-    const res = await saveUserData(user.username, { horario: data });
-    notify(res.ok ? "Guardado correctamente" : "Error al guardar. Intenta de nuevo.");
-  }, [user.username, notify]);
+    await persistColumn("horario", data, setHorarioData);
+  }, [persistColumn]);
 
   const savePlan = useCallback(async (data) => {
-    setPlanData(data);
-    const res = await saveUserData(user.username, { plan: data });
-    notify(res.ok ? "Guardado correctamente" : "Error al guardar. Intenta de nuevo.");
-  }, [user.username, notify]);
+    await persistColumn("plan", data, setPlanData);
+  }, [persistColumn]);
 
   const saveCalendario = useCallback(async (data) => {
-    setCalendarioData(data);
-    const res = await saveUserData(user.username, { calendario: data });
-    notify(res.ok ? "Guardado correctamente" : "Error al guardar. Intenta de nuevo.");
-  }, [user.username, notify]);
+    await persistColumn("calendario", data, setCalendarioData);
+  }, [persistColumn]);
 
   const saveAsignaciones = useCallback(async (data) => {
-    setAsignacionesData(data);
-    const res = await saveUserData(user.username, { asignaciones: data });
-    notify(res.ok ? "Guardado correctamente" : "Error al guardar. Intenta de nuevo.");
-  }, [user.username, notify]);
+    await persistColumn("asignaciones", data, setAsignacionesData);
+  }, [persistColumn]);
 
   const handleMallaReset = useCallback((newSemester) => {
     const reset = autoApply(baseMalla, newSemester);
@@ -351,6 +395,14 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
       </main>
 
       {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
+      {(isOffline || pendingCount > 0) && (
+        <div className={styles.offlineBar}>
+          <span className={styles.offlineDot} />
+          {isOffline
+            ? "Sin conexión · los cambios se guardan localmente"
+            : `${pendingCount} cambio(s) pendiente(s) por sincronizar`}
+        </div>
+      )}
     </div>
   );
 }
