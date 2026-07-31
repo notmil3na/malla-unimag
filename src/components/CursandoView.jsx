@@ -70,6 +70,7 @@ function calcPonderado(materias, cursandoData) {
 function CorteItemRow({ item, idx, onChange, onRemove, max }) {
   return (
     <div className={styles.itemRow}>
+      <span className={styles.itemDot}>{idx + 1}</span>
       <input
         type="text"
         className={styles.itemNameInput}
@@ -109,10 +110,13 @@ function CorteRow({ corte, idx, onChange, onRemove, canRemove }) {
     onChange({ ...corte, items: (corte.items || []).filter((_, idx) => idx !== i) });
   };
 
+  const metaOk = corteNota !== null && cortePeso > 0 && corteNota >= cortePeso;
+
   return (
     <div className={styles.corteSection}>
       <div className={styles.corteHeader}>
         <div className={styles.corteHeaderLeft}>
+          <span className={styles.corteChip}>Corte</span>
           <input
             type="text"
             className={styles.corteNameInput}
@@ -120,8 +124,10 @@ function CorteRow({ corte, idx, onChange, onRemove, canRemove }) {
             placeholder={`Corte ${idx + 1}`}
             onChange={e => onChange({ ...corte, nombre: e.target.value })}
           />
+        </div>
+        <div className={styles.corteHeaderRight}>
           <div className={styles.inputGroup}>
-            <label>Puntos</label>
+            <label>Meta (pts)</label>
             <input
               type="number" min={1} max={500}
               className={styles.pesoInput}
@@ -129,22 +135,15 @@ function CorteRow({ corte, idx, onChange, onRemove, canRemove }) {
               onChange={e => onChange({ ...corte, peso: e.target.value })}
             />
           </div>
-        </div>
-        <div className={styles.corteHeaderRight}>
-          {corteNota !== null && (
-            <span className={styles.corteNotaBadge} style={{ color: colorNota(cortePct) }}>
-              {corteNota} /{cortePeso || "—"}
-            </span>
-          )}
           {canRemove && (
             <button className={styles.removeBtn} onClick={onRemove} title="Eliminar corte"><IconClose size={11} /></button>
           )}
         </div>
       </div>
 
-      <div className={styles.itemsList}>
+      <div className={styles.itemsPanel}>
         {(corte.items || []).length === 0 && (
-          <p className={styles.itemsEmpty}>Sin evaluaciones. Agrega un item para registrar notas.</p>
+          <p className={styles.itemsEmpty}>Sin evaluaciones. Agrega un ítem para registrar puntos.</p>
         )}
         {(corte.items || []).map((item, i) => (
           <CorteItemRow
@@ -156,6 +155,22 @@ function CorteRow({ corte, idx, onChange, onRemove, canRemove }) {
         ))}
         <button className={styles.addItemBtn} onClick={addItem}><IconPlus size={11} /> Evaluar</button>
       </div>
+
+      {corteNota !== null && (
+        <div className={styles.corteTotal} style={{ borderLeftColor: colorNota(cortePct) }}>
+          <span className={styles.corteTotalLabel}>Nota del corte</span>
+          <span className={styles.corteTotalVal} style={{ color: colorNota(cortePct) }}>
+            {corteNota}
+            <span className={styles.corteTotalMax}> / {cortePeso || "—"} pts</span>
+          </span>
+          <span
+            className={styles.corteTotalStatus}
+            style={{ background: colorNota(cortePct), color: colorNota(cortePct) === "#6ec88a" ? "#0e1526" : "#fff" }}
+          >
+            {metaOk ? "Meta alcanzada" : "Meta no alcanzada"}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
