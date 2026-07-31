@@ -264,15 +264,12 @@ export default function NotasView({ malla, notas, onSave, user }) {
     ? projectDesiredAverage(malla, localNotas, desiredAvg)
     : null;
 
-  // Solo las materias que se están cursando ahora (no las ya aprobadas).
+  // Todas las materias que se están cursando ahora (tengan o no nota aún).
   const simulables = allMaterias
     .filter((m) => {
       if (m.estado !== "cursando") return false;
-      const n = localNotas[m.id];
-      if (!n) return false;
       if (isEnglishLetterGrade(m, semestreById.get(m.id))) return false;
-      if (isValidNumericGrade(n.nota)) return true;
-      return (n.intentos || []).some((it) => isValidNumericGrade(it.nota));
+      return true;
     })
     .sort((a, b) => (semestreById.get(a.id) ?? 99) - (semestreById.get(b.id) ?? 99));
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import styles from "./UpdatePrompt.module.css";
+import { IconStar } from "./Icons";
 
 export default function UpdatePrompt() {
   const [show, setShow] = useState(false);
@@ -22,14 +23,13 @@ export default function UpdatePrompt() {
 
   return (
     <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Actualización disponible">
-      <div className={styles.card}>
-        <span className={styles.icon}>✦</span>
-        <h2 className={styles.title}>Actualización disponible</h2>
-        <p className={styles.text}>
-          Se descargó una nueva versión de MiMalla. Recarga la página para ver los últimos cambios.
-        </p>
-        <button className={styles.btn} onClick={reload}>Recargar ahora</button>
-      </div>
+      <div className={styles.logo}><IconStar size={30} /></div>
+      <h2 className={styles.title}>Actualización disponible</h2>
+      <p className={styles.text}>
+        Se descargó una nueva versión de MiMalla. Recarga la página para ver los últimos cambios.
+      </p>
+      <button className={styles.btn} onClick={reload}>Recargar ahora</button>
+      <p className={styles.note}>Tus datos están a salvo: solo se actualiza la interfaz.</p>
     </div>
   );
 }
