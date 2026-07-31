@@ -3,10 +3,30 @@ import styles from "./AsignacionesView.module.css";
 import {
   IconExamen, IconQuiz, IconTarea, IconProyecto, IconClose, IconEdit, IconTrash, IconClipboard, IconCheck, IconChevronUp, IconChevronDown
 } from "./Icons";
+import { HORAS_FORM } from "../utils/horarioHelpers";
+import { SEMESTER_CORTE } from "../utils/semesterCountdown";
 
 const NOTA_PASS_PCT = 0.6;
 
 const MESES_CORTOS = ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+const ANIO_SEMESTRE = Number(String(SEMESTER_CORTE).split("-")[0]);
+
+const DIAS = Array.from({ length: 31 }, (_, i) => i + 1);
+
+const HORA_OPTIONS = HORAS_FORM.map((h) => {
+  const [time, period] = h.split(" ");
+  const [hh, mm] = time.split(":");
+  let h24 = Number(hh);
+  if (period.startsWith("p") && h24 !== 12) h24 += 12;
+  if (period.startsWith("a") && h24 === 12) h24 = 0;
+  return { value: `${String(h24).padStart(2, "0")}:${mm}`, label: h };
+});
+
+function toISODate(dia, mes) {
+  if (!dia || !mes) return "";
+  return `${ANIO_SEMESTRE}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+}
 
 function formatDate(iso) {
   if (!iso) return "";
@@ -90,23 +110,25 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onSyncCalendar,
     const val = Number(item.valoracion) || 100;
     const updated = { ...item, nota: nota === "" ? undefined : Number(nota) };
     onUpdate(updated);
-    if (isExamenQuiz && nota !== "" && item.corteIdx !== undefined && item.materiaId) {
+    if (isExamenQuiz && item.corteIdx !== undefined && item.materiaId) {
       const corteIdx = item.corteIdx;
-      const cursando = cortesData[item.materiaId];
-      if (cursando) {
-        const cortes = migrateCortes(cursando.cortes);
-        if (cortes[corteIdx]) {
-          const nombre = `${info.label}${item.titulo ? `: ${item.titulo}` : ""}`;
-          const existingItemIdx = cortes[corteIdx].items.findIndex(it => it.nombre === nombre);
+      const nombre = `${info.label}${item.titulo ? `: ${item.titulo}` : ""}`;
+      const cursando = cortesData[item.materiaId] || { cortes: migrateCortes([]) };
+      const cortes = migrateCortes(cursando.cortes);
+      if (cortes[corteIdx]) {
+        if (nota === "") {
+          cortes[corteIdx].items = (cortes[corteIdx].items || []).filter(it => it.nombre !== nombre);
+        } else {
           const corteNota = (Number(nota) / val) * 500;
           const newItem = { nombre, nota: corteNota, peso: val };
+          const existingItemIdx = cortes[corteIdx].items.findIndex(it => it.nombre === nombre);
           if (existingItemIdx >= 0) {
             cortes[corteIdx].items[existingItemIdx] = newItem;
           } else {
             cortes[corteIdx].items.push(newItem);
           }
-          onSyncCalendar(item.materiaId, { ...cursando, cortes });
         }
+        onSyncCalendar(item.materiaId, { ...cursando, cortes });
       }
     }
   };
@@ -229,15 +251,19 @@ export default function AsignacionesView({ malla, asignacionesData, onSave, user
   const completedCount = items.filter(it => it.completada).length;
 
   const handleAdd = (newItem) => {
-    const updated = [...items, { ...newItem, id: uuid(), temas: newItem.temas || [], completada: false }];
+    const { diaExamen, mesExamen, diaEntrega, mesEntrega, ...rest } = newItem;
+    const fechaExamen = toISODate(diaExamen, mesExamen);
+    const fechaEntrega = toISODate(diaEntrega, mesEntrega);
+    const created = { ...rest, id: uuid(), temas: rest.temas || [], completada: false, fechaExamen, fechaEntrega };
+    const updated = [...items, created];
     onSave({ items: updated });
-    if ((newItem.tipo === "examen" || newItem.tipo === "quiz") && newItem.fechaExamen && newItem.materiaId) {
+    if ((rest.tipo === "examen" || rest.tipo === "quiz") && fechaExamen && rest.materiaId) {
       const evts = calendarioData?.eventos || [];
       const calEvent = {
-        id: uuid(), tipo: newItem.tipo, titulo: newItem.titulo || TIPO_INFO[newItem.tipo]?.label || newItem.tipo,
-        fecha: newItem.fechaExamen, horaInicio: newItem.horaExamen || "",
-        materiaId: newItem.materiaId, lugar: newItem.lugar || "",
-        assignmentId: newItem.id,
+        id: uuid(), tipo: rest.tipo, titulo: rest.titulo || TIPO_INFO[rest.tipo]?.label || rest.tipo,
+        fecha: fechaExamen, horaInicio: rest.horaExamen || "",
+        materiaId: rest.materiaId, lugar: rest.lugar || "",
+        assignmentId: created.id,
       };
       onSaveCalendario({ eventos: [...evts, calEvent] });
     }
@@ -336,8 +362,10 @@ export default function AsignacionesView({ malla, asignacionesData, onSave, user
 
 function AddModal({ onClose, onSave, materias, cortesData }) {
   const [form, setForm] = useState({
-    tipo: "examen", titulo: "", materiaId: "", fechaExamen: "", horaExamen: "",
-    fechaEntrega: "", lugar: "", descripcion: "", valoracion: "", esBinas: false,
+    tipo: "examen", titulo: "", materiaId: "",
+    diaExamen: "", mesExamen: "", horaExamen: "",
+    diaEntrega: "", mesEntrega: "",
+    lugar: "", descripcion: "", valoracion: "", esBinas: false,
     corteIdx: 0, temas: [],
   });
   const update = (f, v) => setForm(p => ({ ...p, [f]: v }));
@@ -407,13 +435,24 @@ function AddModal({ onClose, onSave, materias, cortesData }) {
               <div className={styles.formRow2}>
                 <div className={styles.formField}>
                   <label>Fecha de evaluación</label>
-                  <input type="date" className={styles.textInput} value={form.fechaExamen}
-                    onChange={e => update("fechaExamen", e.target.value)} />
+                  <div className={styles.dateRow}>
+                    <select className={styles.select} value={form.diaExamen} onChange={e => update("diaExamen", e.target.value)}>
+                      <option value="">Día</option>
+                      {DIAS.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                    <select className={styles.select} value={form.mesExamen} onChange={e => update("mesExamen", e.target.value)}>
+                      <option value="">Mes</option>
+                      {MESES_CORTOS.filter(Boolean).map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
+                    </select>
+                  </div>
+                  <span className={styles.formHint}>Año {ANIO_SEMESTRE} · semestre {SEMESTER_CORTE}</span>
                 </div>
                 <div className={styles.formField}>
                   <label>Hora</label>
-                  <input type="time" className={styles.textInput} value={form.horaExamen}
-                    onChange={e => update("horaExamen", e.target.value)} />
+                  <select className={styles.select} value={form.horaExamen} onChange={e => update("horaExamen", e.target.value)}>
+                    <option value="">—</option>
+                    {HORA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
                 </div>
               </div>
               <div className={styles.formRow2}>
@@ -464,8 +503,17 @@ function AddModal({ onClose, onSave, materias, cortesData }) {
               <div className={styles.formRow2}>
                 <div className={styles.formField}>
                   <label>Fecha de entrega</label>
-                  <input type="date" className={styles.textInput} value={form.fechaEntrega}
-                    onChange={e => update("fechaEntrega", e.target.value)} />
+                  <div className={styles.dateRow}>
+                    <select className={styles.select} value={form.diaEntrega} onChange={e => update("diaEntrega", e.target.value)}>
+                      <option value="">Día</option>
+                      {DIAS.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                    <select className={styles.select} value={form.mesEntrega} onChange={e => update("mesEntrega", e.target.value)}>
+                      <option value="">Mes</option>
+                      {MESES_CORTOS.filter(Boolean).map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
+                    </select>
+                  </div>
+                  <span className={styles.formHint}>Año {ANIO_SEMESTRE} · semestre {SEMESTER_CORTE}</span>
                 </div>
                 <div className={styles.formField}>
                   <label>Lugar</label>
