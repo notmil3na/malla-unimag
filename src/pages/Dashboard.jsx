@@ -6,7 +6,7 @@ import { getPendingSaves, hasPendingSaves, queueSave, clearPendingSave } from ".
 import styles from "./Dashboard.module.css";
 import {
   IconSchedule, IconCalendar, IconClipboard, IconSemester,
-  IconGrades, IconMalla, IconUser, IconPaint
+  IconGrades, IconMalla, IconUser, IconPaint, IconUsers
 } from "../components/Icons";
 
 const MallaView        = lazy(() => import("../components/MallaView"));
@@ -17,6 +17,7 @@ const PerfilView       = lazy(() => import("../components/PerfilView"));
 const TemaView         = lazy(() => import("../components/TemaView"));
 const CalendarioView   = lazy(() => import("../components/CalendarioView"));
 const AsignacionesView = lazy(() => import("../components/AsignacionesView"));
+const ColaboracionView = lazy(() => import("../components/ColaboracionView"));
 
 const DIA_MAP = { 0:"D", 1:"L", 2:"M", 3:"X", 4:"J", 5:"V", 6:"S" };
 const DIA_NAMES = { L:"Lunes", M:"Martes", X:"Miércoles", J:"Jueves", V:"Viernes", S:"Sábado" };
@@ -291,6 +292,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
     { id: "malla",        label: "Malla",          icon: IconMalla },
     { id: "perfil",       label: "Mi Perfil",      icon: IconUser },
     { id: "tema",         label: "Personalizar",   icon: IconPaint },
+    { id: "colaboracion", label: "Colaboración",   icon: IconUsers },
   ], []);
 
   if (!loaded) {
@@ -390,6 +392,14 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
         )}
         {tab === "tema" && (
           <TemaView user={user} onUpdate={onUpdateUser} />
+        )}
+        {tab === "colaboracion" && (
+          <ColaboracionView
+            user={user}
+            malla={malla}
+            horarioData={horarioData}
+            onNotify={notify}
+          />
         )}
         </Suspense>
       </main>
