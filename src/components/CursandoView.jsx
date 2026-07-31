@@ -182,9 +182,7 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius, horarioCla
     cortes: migrateCortes([]),
     repeticiones: [],
   };
-  if (!d.cortes || d.cortes.length === 0 || (d.cortes[0] && d.cortes[0].items === undefined)) {
-    d.cortes = migrateCortes(d.cortes);
-  }
+  d.cortes = migrateCortes(d.cortes);
 
   const notaFinal = calcNotaFinal(d.cortes);
   const perdio = notaFinal !== null && Number(notaFinal) < NOTA_PASS;
