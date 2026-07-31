@@ -56,9 +56,14 @@ function uuid() {
 function calcCorteNota(items) {
   if (!items || items.length === 0) return null;
   let sumProd = 0, sumPeso = 0;
-  items.forEach(({ nota, peso }) => {
+  items.forEach(({ nota, peso, notaMax }) => {
     const n = parseFloat(nota), p = parseFloat(peso);
-    if (!isNaN(n) && !isNaN(p) && p > 0) { sumProd += n * p; sumPeso += p; }
+    if (!isNaN(n) && !isNaN(p) && p > 0) {
+      const max = parseFloat(notaMax);
+      const n500 = !isNaN(max) && max > 0 ? (n / max) * 500 : n;
+      sumProd += n500 * p;
+      sumPeso += p;
+    }
   });
   return sumPeso > 0 ? Number((sumProd / sumPeso).toFixed(1)) : null;
 }
@@ -119,8 +124,7 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onSyncCalendar,
         if (nota === "") {
           cortes[corteIdx].items = (cortes[corteIdx].items || []).filter(it => it.nombre !== nombre);
         } else {
-          const corteNota = (Number(nota) / val) * 500;
-          const newItem = { nombre, nota: corteNota, peso: val };
+          const newItem = { nombre, nota: Number(nota), notaMax: val, peso: val };
           const existingItemIdx = cortes[corteIdx].items.findIndex(it => it.nombre === nombre);
           if (existingItemIdx >= 0) {
             cortes[corteIdx].items[existingItemIdx] = newItem;

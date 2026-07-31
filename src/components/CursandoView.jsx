@@ -29,10 +29,15 @@ function migrateCortes(cortes) {
 function calcCorteNota(items) {
   if (!items || items.length === 0) return null;
   let sumProd = 0, sumPeso = 0;
-  items.forEach(({ nota, peso }) => {
+  items.forEach(({ nota, peso, notaMax }) => {
     const n = parseFloat(nota);
     const p = parseFloat(peso);
-    if (!isNaN(n) && !isNaN(p) && p > 0) { sumProd += n * p; sumPeso += p; }
+    if (!isNaN(n) && !isNaN(p) && p > 0) {
+      const max = parseFloat(notaMax);
+      const n500 = !isNaN(max) && max > 0 ? (n / max) * 500 : n;
+      sumProd += n500 * p;
+      sumPeso += p;
+    }
   });
   if (sumPeso === 0) return null;
   return Number((sumProd / sumPeso).toFixed(1));
@@ -79,9 +84,9 @@ function CorteItemRow({ item, idx, onChange, onRemove, canRemove }) {
         onChange={e => onChange({ ...item, nombre: e.target.value })}
       />
       <div className={styles.inputGroup}>
-        <label>Nota /{NOTA_MAX}</label>
+        <label>Nota /{item.notaMax || NOTA_MAX}</label>
         <input
-          type="number" min={NOTA_MIN} max={NOTA_MAX} step="0.1"
+          type="number" min={NOTA_MIN} max={item.notaMax || NOTA_MAX} step="0.1"
           className={styles.notaInput}
           value={item.nota}
           placeholder="—"
