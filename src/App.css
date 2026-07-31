@@ -71,9 +71,12 @@
   color-scheme: light;
 }
 
+/* El fondo vive en html Y body (no solo body): Safari iOS muestrea el color
+   de html para teñir de forma translúcida la status bar y la barra de URL.
+   min-height: 100dvh asegura que el fondo pinta hasta el final real del scroll. */
 html, body, #root {
   min-height: 100vh;
-  min-height: 100dvh; /* ocupa toda la pantalla física con viewport-fit=cover */
+  min-height: 100dvh;
 }
 
 html, body {
@@ -87,18 +90,22 @@ html, body {
 
 body {
   position: relative;
-  background-color: var(--bg);
 }
 
 /* Aurora anclada al viewport (elemento real: los position:fixed en
-   pseudo-elementos de body no se mantienen fijos en iOS). */
+   pseudo-elementos de body no se mantienen fijos en iOS).
+   Las dos bandas lineales en el tope y el fondo (las primeras capas, que van
+   encima) le dan ~90px de --bg sólido a los bordes del viewport: así Safari
+   detecta un color consistente para fusionar la status bar y la barra de URL. */
 .aurora {
-  content: "";
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  background-color: var(--bg);
   background-image:
+    linear-gradient(to bottom, var(--bg) 0, transparent 90px),
+    linear-gradient(to top, var(--bg) 0, transparent 90px),
     radial-gradient(ellipse 55% 50% at 14% 18%, var(--aurora-1), transparent 60%),
     radial-gradient(ellipse 50% 45% at 86% 13%, var(--aurora-2), transparent 60%),
     radial-gradient(ellipse 55% 50% at 80% 88%, var(--aurora-3), transparent 60%),
