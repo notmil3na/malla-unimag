@@ -1064,7 +1064,10 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
                 </div>
                 {diasActivos.map(dia=>(
                   <div key={dia.id} className={styles.diaCol}>
-                    <div className={styles.diaHeader}>{dia.label}</div>
+                    <div className={styles.diaHeader}>
+                      <span className={styles.diaLabelCorto}>{dia.id}</span>
+                      <span className={styles.diaLabelLargo}>{dia.label}</span>
+                    </div>
                     <div className={styles.diaBody}
                       onDragOver={(e)=>handleDragOver(e, dia.id)}
                       onDrop={(e)=>handleDrop(e, dia.id)}

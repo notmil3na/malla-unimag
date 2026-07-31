@@ -86,6 +86,7 @@
 /* ── Grid wrapper ─────────────────────────────────── */
 .gridWrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface);
@@ -115,6 +116,7 @@
   font-size: 12px; font-weight: 600; color: var(--text);
   border-bottom: 1px solid var(--border); background: var(--surface2);
 }
+.diaLabelCorto { display: none; }
 .diaBody {
   position: relative; flex: 1;
 }
@@ -373,6 +375,25 @@
   .planAddBtn { padding: 5px 10px; font-size: 11px; }
 }
 
+@media (max-width: 700px) {
+  .grid {
+    min-width: 0;
+    grid-template-columns: 40px repeat(var(--num-dias, 5), minmax(56px, 1fr));
+  }
+  .horaCol {
+    position: sticky; left: 0; z-index: 3;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .horaCell { font-size: 9px; padding: 5px 6px 0 0; }
+  .diaLabelLargo { display: none; }
+  .diaLabelCorto { display: block; font-size: 11px; }
+  .claseBloqueContent { padding: 5px 6px; }
+  .claseId { font-size: 12px; }
+  .claseNombre, .claseProfesor, .claseHora, .claseSalon { font-size: 9px; }
+}
+
 /* ═══════════════════════════════════════════════════
    MODO PLANIFICADOR
    ═══════════════════════════════════════════════════ */
@@ -547,7 +568,7 @@
 .miniBloqueHora { color: var(--text-muted); font-size: 8px; }
 
 /* ── Mini horario grid (position-based like main) ─── */
-.miniGridWrap { overflow-x: auto; }
+.miniGridWrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .miniGridInner {
   display: grid;
   grid-template-columns: 32px repeat(var(--num-dias), minmax(58px, 1fr));
