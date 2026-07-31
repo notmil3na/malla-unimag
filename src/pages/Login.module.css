@@ -1,5 +1,6 @@
 .wrap {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -199,9 +200,12 @@
 .btn:active { transform: translateY(0); }
 
 @media (max-width: 640px) {
-  .wrap { align-items: flex-start; padding: 14px; }
+  .wrap {
+    align-items: flex-start;
+    padding: calc(env(safe-area-inset-top) + 14px) 14px calc(env(safe-area-inset-bottom) + 14px);
+  }
   .wrap::before { display: none; }
-  .card { margin-top: 14px; border-radius: 14px; padding: 24px 18px 20px; max-width: 100%; }
+  .card { margin: auto; border-radius: 14px; padding: 24px 18px 20px; max-width: 100%; }
   .logoText { font-size: 26px; }
   .sub { margin-bottom: 16px; }
   .row2 { grid-template-columns: 1fr; gap: 10px; }
