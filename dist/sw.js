@@ -4,7 +4,7 @@
  * Supabase) NO se interceptan aquí: la app las encola en localStorage
  * (src/utils/offlineQueue.js) y las reenvía al reconectar.
  */
-const CACHE = "mimalla-v2";
+const CACHE = "mimalla-v3";
 const CORE = [
   "/",
   "/manifest.webmanifest",
