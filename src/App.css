@@ -85,7 +85,9 @@ body {
   background-color: var(--bg);
 }
 
-body::after {
+/* Aurora anclada al viewport (elemento real: los position:fixed en
+   pseudo-elementos de body no se mantienen fijos en iOS). */
+.aurora {
   content: "";
   position: fixed;
   inset: 0;
