@@ -15,6 +15,7 @@
   box-shadow: var(--shadow-soft);
   position: relative;
   margin: 16px 16px 16px 0;
+  padding-bottom: env(safe-area-inset-bottom);
   /* IMPORTANTE: sin backdrop-filter aquí. `backdrop-filter` en un ancestro
      convierte a ese ancestro en el bloque contenedor de los `position: fixed`
      descendientes (modales, overlays, panels), rompiendo su posición con
@@ -24,7 +25,7 @@
 .toast {
   position: fixed;
   right: 20px;
-  bottom: 20px;
+  bottom: calc(env(safe-area-inset-bottom) + 20px);
   z-index: 999;
   background: color-mix(in srgb, var(--modal-bg) 90%, transparent);
   color: var(--text);
@@ -40,7 +41,7 @@
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 18px;
+  bottom: calc(env(safe-area-inset-bottom) + 18px);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -147,6 +148,7 @@
     height: auto;
     min-height: 100vh;
     overflow: visible;
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   .main {
