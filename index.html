@@ -7,8 +7,33 @@
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8f4fc" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e0a18" />
     <title>MiMalla – Plan de Estudios</title>
+    <script>
+      // Aplicar el tema guardado ANTES del primer pintado (evita el flash de tema
+      // al recargar y sincroniza la barra de estado con el fondo real de la app).
+      (function () {
+        try {
+          var THEMES = {
+            ambar:     ["#EECE7B", "#D0783B", "238,206,123"],
+            oceano:    ["#6BA3E8", "#3A70B0", "107,163,232"],
+            violeta:   ["#B882E8", "#7B50B0", "184,130,232"],
+            rosa:      ["#E87098", "#C04070", "232,112,152"],
+            esmeralda: ["#6EC8A8", "#3A8B6A", "110,200,168"],
+            coral:     ["#E8946B", "#C06840", "232,148,107"],
+          };
+          var s = JSON.parse(localStorage.getItem("malla_session") || "null");
+          var r = document.documentElement;
+          var mode = (s && s.appMode) || "dark";
+          var c = THEMES[(s && s.appTheme)] || THEMES.ambar;
+          r.setAttribute("data-theme", mode);
+          r.style.setProperty("--accent", c[0]);
+          r.style.setProperty("--accent2", c[1]);
+          r.style.setProperty("--accent-rgb", c[2]);
+          if (s && s.fontBody) r.style.setProperty("--font-body", "'" + s.fontBody + "', system-ui, sans-serif");
+        } catch (e) {}
+      })();
+    </script>
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%230e0a18'/><circle cx='50' cy='50' r='42' fill='none' stroke='%23EECE7B' stroke-opacity='0.35' stroke-width='2'/><path d='M50 16 L58.3 38.6 L82.3 39.5 L63.4 54.4 L70 77.5 L50 70.7 L30 77.5 L36.6 54.4 L17.7 39.5 L41.7 38.6 Z' fill='%23EECE7B'/></svg>" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
     <meta name="mobile-web-app-capable" content="yes" />

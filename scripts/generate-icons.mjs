@@ -5,10 +5,16 @@ import { fileURLToPath } from "node:url";
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "public", "icons");
 
-const BG = [14, 10, 24];
-const GOLD_HI = [240, 221, 171];
-const GOLD_LO = [181, 143, 76];
-const GOLD_GLOW = [200, 169, 110];
+// Paleta de la app (App.css / APP_THEMES)
+const BG        = [14, 10, 24];        // --bg  #0e0a18
+const GOLD_HI   = [247, 231, 188];
+const GOLD_LO   = [176, 132, 62];
+const GOLD_ACC  = [238, 206, 123];     // --accent #EECE7B
+const VIOLET    = [168, 110, 220];     // aurora-1
+const PINK      = [210, 60, 150];      // aurora-3
+const BLUE      = [100, 150, 230];     // aurora-4
+
+const clamp255 = (v) => Math.max(0, Math.min(255, Math.round(v)));
 
 const crcTable = (() => {
   const t = new Uint32Array(256);
@@ -72,13 +78,26 @@ function pointInPoly(x, y, verts) {
   return inside;
 }
 
-function renderIcon(size, starFactor) {
+// Escena del logo MiMalla: fondo oscuro con aurora, disco de cristal con anillo
+// ámbar y estrella dorada. Misma paleta que la interfaz.
+function renderIcon(size, starR, discR) {
   const S = 4;
-  const R = size * starFactor;
-  const r = R * 0.382;
   const cx = size / 2;
   const cy = size / 2;
-  const verts = starVertices(cx, cy, R, r);
+  const verts = starVertices(cx, cy, starR, starR * 0.42);
+
+  const aurora = [
+    { x: 0.32, y: 0.30, R: 0.55, c: GOLD_ACC, s: 0.16 },
+    { x: 0.78, y: 0.22, R: 0.50, c: VIOLET,   s: 0.13 },
+    { x: 0.82, y: 0.84, R: 0.45, c: PINK,     s: 0.09 },
+    { x: 0.16, y: 0.86, R: 0.45, c: BLUE,     s: 0.07 },
+  ];
+  const sparkles = [
+    { x: 0.36, y: -0.33, r: 0.022 },
+    { x: -0.37, y: 0.10, r: 0.016 },
+    { x: 0.13, y: 0.40, r: 0.012 },
+  ];
+  const ringW = 0.012;
 
   const px = Buffer.alloc(size * size * 4);
   for (let y = 0; y < size; y++) {
@@ -86,28 +105,74 @@ function renderIcon(size, starFactor) {
       let rSum = 0, gSum = 0, bSum = 0;
       for (let sy = 0; sy < S; sy++) {
         for (let sx = 0; sx < S; sx++) {
-          const px = x + (sx + 0.5) / S;
-          const py = y + (sy + 0.5) / S;
-          let cr = BG[0], cg = BG[1], cb = BG[2];
-          const d = Math.hypot(px - cx, py - cy) / size;
-          const glow = Math.max(0, 1 - d / 0.55) * 0.22;
-          cr += (GOLD_GLOW[0] - BG[0]) * glow;
-          cg += (GOLD_GLOW[1] - BG[1]) * glow;
-          cb += (GOLD_GLOW[2] - BG[2]) * glow;
-          if (pointInPoly(px, py, verts)) {
-            const t = Math.min(1, Math.max(0, (py - (cy - R)) / (2 * R)));
-            cr = GOLD_HI[0] + (GOLD_LO[0] - GOLD_HI[0]) * t;
-            cg = GOLD_HI[1] + (GOLD_LO[1] - GOLD_HI[1]) * t;
-            cb = GOLD_HI[2] + (GOLD_LO[2] - GOLD_HI[2]) * t;
+          const fx = x + (sx + 0.5) / S;
+          const fy = y + (sy + 0.5) / S;
+          const nx = fx / size;
+          const ny = fy / size;
+
+          let col = [BG[0], BG[1], BG[2]];
+
+          // Aurora
+          for (const a of aurora) {
+            const d = Math.hypot(nx - a.x, ny - a.y) / a.R;
+            if (d < 1) {
+              const f = (1 - d) * (1 - d) * a.s;
+              col[0] += a.c[0] * f;
+              col[1] += a.c[1] * f;
+              col[2] += a.c[2] * f;
+            }
           }
-          rSum += cr; gSum += cg; bSum += cb;
+
+          // Resplandor dorado alrededor de la estrella
+          const gd = Math.hypot(fx - cx, fy - cy) / size;
+          const gR = starR / size / 0.6 + 0.12;
+          const gG = Math.max(0, 1 - gd / gR);
+          const glow = gG * gG * 0.18;
+          col[0] += GOLD_ACC[0] * glow;
+          col[1] += GOLD_ACC[1] * glow;
+          col[2] += GOLD_ACC[2] * glow;
+
+          // Disco de cristal (vidrio translúcido con brillo superior)
+          const dDisc = Math.hypot(fx - cx, fy - cy) / size;
+          if (dDisc < discR) {
+            const lift = (1 - dDisc / discR) * 0.12;
+            col = col.map((v, i) => v * (1 - lift) + 255 * lift);
+            const sheen = Math.max(0, 1 - fy / size / 0.55) * 0.05;
+            col[0] += 255 * sheen;
+            col[1] += 255 * sheen;
+            col[2] += 255 * sheen;
+          }
+
+          // Anillo ámbar del disco
+          const ringT = Math.abs(dDisc - discR) / ringW;
+          if (ringT <= 1) {
+            const a = (1 - ringT) * 0.35;
+            col = col.map((v, i) => v * (1 - a) + GOLD_ACC[i] * a);
+          }
+
+          // Estrella dorada con gradiente vertical
+          if (pointInPoly(fx, fy, verts)) {
+            const t = Math.min(1, Math.max(0, (fy - (cy - starR)) / (2 * starR)));
+            col = GOLD_HI.map((v, i) => v + (GOLD_LO[i] - v) * t);
+          }
+
+          // Destellos
+          for (const sp of sparkles) {
+            const sd = Math.hypot(fx - (cx + sp.x * size), fy - (cy + sp.y * size)) / (sp.r * size);
+            if (sd < 1) {
+              const f = (1 - sd) * 0.85;
+              col = col.map((v, i) => v * (1 - f) + [255, 244, 214][i] * f);
+            }
+          }
+
+          rSum += col[0]; gSum += col[1]; bSum += col[2];
         }
       }
       const i = (y * size + x) * 4;
       const n = S * S;
-      px[i] = Math.round(rSum / n);
-      px[i + 1] = Math.round(gSum / n);
-      px[i + 2] = Math.round(bSum / n);
+      px[i]     = clamp255(rSum / n);
+      px[i + 1] = clamp255(gSum / n);
+      px[i + 2] = clamp255(bSum / n);
       px[i + 3] = 255;
     }
   }
@@ -115,15 +180,15 @@ function renderIcon(size, starFactor) {
 }
 
 const specs = [
-  ["icon-192.png", 192, 0.3],
-  ["icon-512.png", 512, 0.3],
-  ["icon-512-maskable.png", 512, 0.26],
-  ["apple-touch-icon.png", 180, 0.3],
+  ["icon-192.png",           192, 45, 76],
+  ["icon-512.png",           512, 118, 200],
+  ["icon-512-maskable.png",  512, 92, 176],
+  ["apple-touch-icon.png",   180, 42, 70],
 ];
 
 mkdirSync(OUT, { recursive: true });
-for (const [name, size, factor] of specs) {
+for (const [name, size, starR, discR] of specs) {
   const file = join(OUT, name);
-  writeFileSync(file, renderIcon(size, factor));
+  writeFileSync(file, renderIcon(size, starR, discR));
   console.log(`✓ ${name} (${size}x${size})`);
 }
