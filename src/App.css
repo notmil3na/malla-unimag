@@ -141,3 +141,17 @@ body::before {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ── Accesibilidad ─────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Evita el auto-zoom de iOS al enfocar inputs (requiere ≥16px) */
+@media (max-width: 600px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
