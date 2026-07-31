@@ -77,7 +77,8 @@ export function applyTheme(themeKey, mode, fontBody) {
   root.style.setProperty("--accent2",    t.accent2);
   root.style.setProperty("--accent-rgb", t.accentRgb);
   // Mantener la barra de estado del navegador alineada con el modo de la app
-  const themeColor = m === "light" ? "#f8f4fc" : "#0e0a18";
+  // (color sólido más cercano al tope del gradiente, no el fondo base).
+  const themeColor = m === "light" ? "#ece1f8" : "#221731";
   document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => {
     meta.content = themeColor;
   });
