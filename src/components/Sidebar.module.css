@@ -165,6 +165,4 @@
   .sidebar { margin: 8px; padding: calc(env(safe-area-inset-top) + 8px) 10px calc(env(safe-area-inset-bottom) + 8px); }
   .brandText { font-size: 18px; }
   .profile { padding: 6px 8px; }
-  .nav { flex-wrap: wrap; overflow-x: visible; row-gap: 2px; }
-  .navBtn { padding: 6px 8px; font-size: 11px; gap: 5px; }
 }

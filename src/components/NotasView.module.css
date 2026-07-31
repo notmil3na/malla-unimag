@@ -459,12 +459,6 @@
   .gradeInput { width: 80px; font-size: 14px; }
   .letterSelect { min-width: 0; width: 100%; }
   .resumenTotalVal { font-size: 22px; }
-  .desiredBar { padding: 10px 12px; }
-  .failSimWrap { width: 100%; align-items: stretch; }
-  .failSimSelect { min-width: 0; width: 100%; }
-  .desiredInput { width: 100%; }
-  .failSimRow { flex-wrap: wrap; gap: 10px; justify-content: space-between; }
-  .failSimAvg strong { font-size: 22px; }
 }
 
 /* ── Simulador: ¿qué pasa si repruebo? ───────────────── */

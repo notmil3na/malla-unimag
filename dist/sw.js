@@ -4,7 +4,7 @@
  * Supabase) NO se interceptan aquí: la app las encola en localStorage
  * (src/utils/offlineQueue.js) y las reenvía al reconectar.
  */
-const CACHE = "mimalla-v4";
+const CACHE = "mimalla-v3";
 const CORE = [
   "/",
   "/manifest.webmanifest",
@@ -32,10 +32,6 @@ self.addEventListener("activate", (e) => {
       )
       .then(() => self.clients.claim())
   );
-});
-
-self.addEventListener("message", (e) => {
-  if (e.data && e.data.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 self.addEventListener("fetch", (e) => {
