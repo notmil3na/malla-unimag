@@ -197,7 +197,7 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius, horarioCla
   };
   const addCorte = () => {
     if (d.cortes.length >= 5) return;
-    onChange({ ...d, cortes: [...d.cortes, { nombre: `Corte ${d.cortes.length + 1}`, peso: 100, items: [] }] });
+    onChange({ ...d, cortes: [...d.cortes, { nombre: `Corte ${d.cortes.length + 1}`, peso: PESOS_DEFAULT[d.cortes.length] ?? 100, items: [] }] });
   };
   const removeCorte = (i) => {
     onChange({ ...d, cortes: d.cortes.filter((_, idx) => idx !== i) });
