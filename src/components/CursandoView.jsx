@@ -79,6 +79,16 @@ function CorteItemRow({ item, idx, onChange, onRemove, max }) {
         onChange={e => onChange({ ...item, nombre: e.target.value })}
       />
       <div className={styles.inputGroup}>
+        <label>Valoración</label>
+        <input
+          type="number" min={1} max={500} step="0.1"
+          className={styles.pesoInput}
+          value={item.notaMax ?? ""}
+          placeholder="—"
+          onChange={e => onChange({ ...item, notaMax: e.target.value })}
+        />
+      </div>
+      <div className={styles.inputGroup}>
         <label>Nota /{item.notaMax || max}</label>
         <input
           type="number" min={NOTA_MIN} max={item.notaMax || max} step="0.1"
@@ -104,7 +114,7 @@ function CorteRow({ corte, idx, onChange, onRemove, canRemove }) {
     onChange({ ...corte, items });
   };
   const addItem = () => {
-    onChange({ ...corte, items: [...(corte.items || []), { nombre: "", nota: "" }] });
+    onChange({ ...corte, items: [...(corte.items || []), { nombre: "", nota: "", notaMax: "" }] });
   };
   const removeItem = (i) => {
     onChange({ ...corte, items: (corte.items || []).filter((_, idx) => idx !== i) });
