@@ -78,7 +78,7 @@ export default function Login({ onLogin }) {
       semester:     Number(form.semester) || 1,
       ingresoCorte: form.ingresoCorte || "2023-2",
       photo:        null,
-      appMode:      "light",
+      appMode:      "dark",
       appTheme:     "ambar",
       themeColors:  DEFAULT_THEME_COLORS,
       borderRadius: 12,

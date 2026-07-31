@@ -55,6 +55,9 @@
   font-weight: 600;
   box-shadow: var(--shadow-lg);
   white-space: nowrap;
+  max-width: calc(100vw - 24px);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .offlineDot {
@@ -148,11 +151,13 @@
     height: auto;
     min-height: 100vh;
     overflow: visible;
+    overflow-x: clip;
     padding-bottom: env(safe-area-inset-bottom);
   }
 
   .main {
     overflow: visible;
+    overflow-x: clip;
     margin: 0 12px 12px;
     border-radius: var(--radius-lg);
   }

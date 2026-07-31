@@ -75,13 +75,13 @@ html, body {
   height: 100%;
   color: var(--text);
   font-family: var(--font-body);
-  transition: background 0.35s ease, color 0.35s ease;
+  background-color: var(--bg);
+  transition: background-color 0.35s ease, color 0.35s ease;
   letter-spacing: 0.01em;
 }
 
 body {
   position: relative;
-  background-color: var(--bg);
   background-image:
     radial-gradient(ellipse 55% 50% at 12% 18%, var(--aurora-1), transparent 60%),
     radial-gradient(ellipse 50% 45% at 88% 12%, var(--aurora-2), transparent 60%),

@@ -63,11 +63,12 @@
 
 /* ── Tarjetas de persona ──────────────────────────── */
 .personGrid {
-  display: grid; gap: 12px;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  display: flex; flex-wrap: wrap; gap: 12px;
+  justify-content: center;
 }
 .personCard {
   display: flex; align-items: center; gap: 14px;
+  flex: 1 1 340px; max-width: 420px; min-width: min(340px, 100%);
   background: var(--surface); border: 1px solid var(--border);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
