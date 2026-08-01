@@ -178,3 +178,10 @@
   .presets { gap: 6px; }
   .previewCard { min-width: 110px; }
 }
+
+@media (max-width: 360px) {
+  .wrap { padding: 12px 8px; }
+  .title { font-size: 18px; }
+  .previewCard { min-width: 100px; }
+  .fontBtn { min-width: 100px; }
+}

@@ -354,3 +354,10 @@
   .modalBody { padding: 16px; gap: 12px; }
   .modalFooter { padding: 12px 16px; }
 }
+
+@media (max-width: 360px) {
+  .wrap { padding: 12px 8px; }
+  .title { font-size: 18px; }
+  .calCell { min-height: 38px; padding: 2px; }
+  .calCellEmpty { min-height: 38px; }
+}

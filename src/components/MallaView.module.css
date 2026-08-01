@@ -582,3 +582,17 @@
     padding: 7px 12px;
   }
 }
+
+@media (max-width: 360px) {
+  .wrap {
+    padding: 12px 8px;
+  }
+
+  .title {
+    font-size: calc(18px * var(--fs, 1));
+  }
+
+  .semestre {
+    min-width: 140px;
+  }
+}

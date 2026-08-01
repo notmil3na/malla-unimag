@@ -326,3 +326,9 @@
   .personCard { flex-wrap: wrap; }
   .personActions { width: 100%; justify-content: flex-end; }
 }
+
+@media (max-width: 360px) {
+  .wrap { padding: 12px 8px; }
+  .title { font-size: 18px; }
+  .personCard { padding: 14px; gap: 10px; }
+}

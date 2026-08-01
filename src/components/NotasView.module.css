@@ -532,3 +532,12 @@
   padding-top: 10px;
   border-top: 1px dashed var(--border);
 }
+
+@media (max-width: 360px) {
+  .wrap { padding: 12px 8px; }
+  .title { font-size: 18px; }
+  .globalVal { font-size: 22px; }
+  .semPondVal { font-size: 20px; }
+  .resumenTotalVal { font-size: 20px; }
+  .failSimAvg strong { font-size: 22px; }
+}

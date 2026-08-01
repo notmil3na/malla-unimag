@@ -147,6 +147,7 @@
     flex-direction: column;
     height: auto;
     min-height: 100vh;
+    min-height: 100dvh;
     overflow: visible;
     padding-bottom: env(safe-area-inset-bottom);
   }
@@ -167,4 +168,27 @@
   }
   .hoyWidget { margin: 12px 10px 0; }
   .hoyCardTitle { font-size: 12px; }
+}
+
+/* Avisos flotantes (toast y barra offline): que nunca se salgan de la pantalla
+   ni tapen contenido en celulares angostos. */
+@media (max-width: 560px) {
+  .toast {
+    left: 12px;
+    right: 12px;
+    bottom: calc(env(safe-area-inset-bottom) + 12px);
+    text-align: center;
+    justify-content: center;
+  }
+
+  .offlineBar {
+    left: 12px;
+    right: 12px;
+    transform: none;
+    bottom: calc(env(safe-area-inset-bottom) + 12px);
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    max-width: none;
+  }
 }

@@ -284,3 +284,10 @@
   .cursandoItemCred { padding: 0 10px; }
   .cursandoTotal { padding: 10px 14px; }
 }
+
+@media (max-width: 360px) {
+  .wrap { padding: 12px 8px; }
+  .title { font-size: 20px; }
+  .avatar, .avatarImg, .avatarInitial { width: 52px; height: 52px; }
+  .avatarInitial { font-size: 18px; }
+}

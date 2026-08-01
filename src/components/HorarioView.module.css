@@ -776,3 +776,14 @@
   .legendDragHint { border-right: none; padding-right: 0; width: 100%; }
   .legendRow { gap: 8px; }
 }
+
+@media (max-width: 360px) {
+  .wrap { padding: 12px 8px; }
+  .title { font-size: 18px; }
+  .diaBtn { padding: 5px 8px; font-size: 10.5px; }
+  .legendRow { padding: 8px; }
+  .modalHeader { padding: 12px; }
+  .modalBody { padding: 12px; }
+  .modalFooter { padding: 10px 12px; }
+  .miniGridInner { min-width: 260px; }
+}
