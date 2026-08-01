@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
 import Sidebar from "../components/Sidebar";
+import ErrorBoundary from "../components/ErrorBoundary";
 import { getMallaByCareer } from "../data/malla.js";
 import { api } from "../api";
 import { getPendingSaves, hasPendingSaves, queueSave, clearPendingSave } from "../utils/offlineQueue.js";
@@ -9,15 +10,26 @@ import {
   IconGrades, IconMalla, IconUser, IconPaint, IconUsers
 } from "../components/Icons";
 
-const MallaView        = lazy(() => import("../components/MallaView"));
-const CursandoView     = lazy(() => import("../components/CursandoView"));
-const HorarioView      = lazy(() => import("../components/HorarioView"));
-const NotasView        = lazy(() => import("../components/NotasView"));
-const PerfilView       = lazy(() => import("../components/PerfilView"));
-const TemaView         = lazy(() => import("../components/TemaView"));
-const CalendarioView   = lazy(() => import("../components/CalendarioView"));
-const AsignacionesView = lazy(() => import("../components/AsignacionesView"));
-const ColaboracionView = lazy(() => import("../components/ColaboracionView"));
+// Carga las vistas en diferido pero reintenta si el chunk falla (red flaky,
+// actualización del SW en curso): un solo fallo de red no debe tumbar la app.
+function loadView(loader) {
+  return loader().catch((err) => {
+    console.warn("Chunk lazy falló, reintentando:", err);
+    return new Promise((resolve, reject) => {
+      setTimeout(() => loader().then(resolve).catch(reject), 1200);
+    });
+  });
+}
+
+const MallaView        = lazy(() => loadView(() => import("../components/MallaView")));
+const CursandoView     = lazy(() => loadView(() => import("../components/CursandoView")));
+const HorarioView      = lazy(() => loadView(() => import("../components/HorarioView")));
+const NotasView        = lazy(() => loadView(() => import("../components/NotasView")));
+const PerfilView       = lazy(() => loadView(() => import("../components/PerfilView")));
+const TemaView         = lazy(() => loadView(() => import("../components/TemaView")));
+const CalendarioView   = lazy(() => loadView(() => import("../components/CalendarioView")));
+const AsignacionesView = lazy(() => loadView(() => import("../components/AsignacionesView")));
+const ColaboracionView = lazy(() => loadView(() => import("../components/ColaboracionView")));
 
 const DIA_MAP = { 0:"D", 1:"L", 2:"M", 3:"X", 4:"J", 5:"V", 6:"S" };
 const DIA_NAMES = { L:"Lunes", M:"Martes", X:"Miércoles", J:"Jueves", V:"Viernes", S:"Sábado" };
@@ -308,12 +320,13 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
         onUpdateUser={onUpdateUser}
       />
       <main className={styles.main}>
-        <Suspense fallback={
-          <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",color:"var(--text-muted)",fontFamily:"var(--font-body)",gap:"8px"}}>
-            <span style={{fontSize:"20px",color:"var(--accent)"}}>✦</span>
-            <span>Cargando...</span>
-          </div>
-        }>
+        <ErrorBoundary key={tab} view>
+          <Suspense fallback={
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",color:"var(--text-muted)",fontFamily:"var(--font-body)",gap:"8px"}}>
+              <span style={{fontSize:"20px",color:"var(--accent)"}}>✦</span>
+              <span>Cargando...</span>
+            </div>
+          }>
         {tab === "horario" && (
           <>
             <HoyWidget horarioData={horarioData} malla={malla} />
@@ -390,7 +403,8 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
             onNotify={notify}
           />
         )}
-        </Suspense>
+          </Suspense>
+        </ErrorBoundary>
       </main>
 
       {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
