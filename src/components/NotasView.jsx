@@ -417,9 +417,11 @@ export default function NotasView({ malla, notas, onSave, user }) {
               <option value="">Elige una materia…</option>
               {simulables.map((m) => {
                 const n = localNotas[m.id];
-                const notaActual = isValidNumericGrade(n.nota)
-                  ? n.nota
-                  : (n.intentos || []).find((it) => isValidNumericGrade(it.nota))?.nota;
+                const notaActual = n
+                  ? isValidNumericGrade(n.nota)
+                    ? n.nota
+                    : (n.intentos || []).find((it) => isValidNumericGrade(it.nota))?.nota
+                  : undefined;
                 return (
                   <option key={m.id} value={m.id}>
                     {m.id} · {m.nombre} (actual: {notaActual ?? "—"})
