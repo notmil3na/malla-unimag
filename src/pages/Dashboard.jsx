@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
 import Sidebar from "../components/Sidebar";
 import { getMallaByCareer } from "../data/malla.js";
-import { supabase } from "../supabase";
+import { api } from "../api";
 import { getPendingSaves, hasPendingSaves, queueSave, clearPendingSave } from "../utils/offlineQueue.js";
 import styles from "./Dashboard.module.css";
 import {
@@ -102,36 +102,25 @@ function mergeMallaWithBase(baseMalla, savedMalla) {
   }));
 }
 
-// Supabase helpers
-async function loadUserData(username) {
-  const { data, error } = await supabase
-    .from("user_data")
-    .select("*")
-    .eq("username", username)
-    .single();
-  if (error && error.code !== "PGRST116") {
-    // PGRST116 = "no rows found", que es normal para un usuario nuevo.
+// Backend helpers (Vercel Functions)
+async function loadUserData() {
+  try {
+    const { data } = await api("/user_data");
+    return data || null;
+  } catch (error) {
     console.error("Error cargando datos de usuario:", error);
+    return null;
   }
-  return data || null;
 }
 
-async function saveUserData(username, patch) {
-  const { data: existing } = await supabase
-    .from("user_data")
-    .select("username")
-    .eq("username", username)
-    .single();
-
-  const { error } = existing
-    ? await supabase.from("user_data").update(patch).eq("username", username)
-    : await supabase.from("user_data").insert({ username, ...patch });
-
-  if (error) {
+async function saveUserData(patch) {
+  try {
+    await api("/user_data", { method: "POST", body: { patch } });
+    return { ok: true };
+  } catch (error) {
     console.error("Error guardando en Supabase:", error);
     return { ok: false, error };
   }
-  return { ok: true };
 }
 
 export default function Dashboard({ user, onLogout, onUpdateUser }) {
@@ -173,7 +162,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
       notify("Sin conexión: cambios guardados localmente. Se sincronizarán al reconectar.");
       return;
     }
-    const res = await saveUserData(user.username, { [column]: data });
+    const res = await saveUserData({ [column]: data });
     if (!res.ok) {
       queueSave(column, data);
       setPendingCount(Object.keys(getPendingSaves()).length);
@@ -191,7 +180,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
       if (cols.length === 0) return;
       let okCount = 0;
       for (const col of cols) {
-        const res = await saveUserData(user.username, { [col]: pending[col] });
+        const res = await saveUserData({ [col]: pending[col] });
         if (res.ok) {
           clearPendingSave(col);
           okCount++;
@@ -217,7 +206,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
   // Cargar datos desde Supabase al iniciar
   useEffect(() => {
     async function load() {
-      const data = await loadUserData(user.username);
+      const data = await loadUserData();
       if (data) {
         if (data.malla)    setMalla(mergeMallaWithBase(defaultMalla, data.malla));
         if (data.notas)    setNotas(data.notas);
@@ -263,7 +252,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
   const handleMallaReset = useCallback((newSemester) => {
     const reset = autoApply(baseMalla, newSemester);
     setMalla(reset);
-    saveUserData(user.username, { malla: reset });
+    saveUserData({ malla: reset });
     notify("Semestre reiniciado");
   }, [baseMalla, user.username, notify]);
 
@@ -278,7 +267,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
           return m;
         }),
       }));
-      saveUserData(user.username, { malla: updated });
+      saveUserData({ malla: updated });
       return updated;
     });
   }, [user.username]);

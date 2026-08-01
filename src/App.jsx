@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import UpdatePrompt from "./components/UpdatePrompt";
-import { supabase } from "./supabase";
+import { api, saveSession, clearSession, getToken } from "./api";
 import "./App.css";
 
 // ── Theme definitions ──────────────────────────────────────────────────────
@@ -86,51 +86,29 @@ export function applyTheme(themeKey, mode, fontBody) {
   }
 }
 
-// ── Supabase auth helpers ──────────────────────────────────────────────────
-export async function getUsers() {
-  const { data } = await supabase.from("users").select("*");
-  if (!data) return {};
-  return Object.fromEntries(data.map((u) => [u.username, u]));
-}
-
+// ── Backend (Vercel Functions) ─────────────────────────────────────────────
 export async function saveUser(userData) {
-  const row = {
-    username:      userData.username,
-    password:      userData.password,
-    name:          userData.name          || "",
-    university:    userData.university    || "",
-    career:        userData.career        || "",
-    semester:      userData.semester      || 1,
-    ingreso_corte: userData.ingresoCorte  || "2023-2",
-    photo:         userData.photo         || null,
-    app_mode:      userData.appMode       || "dark",
-    app_theme:     userData.appTheme      || "ambar",
-    theme_colors:  userData.themeColors   || null,
-    border_radius: userData.borderRadius  ?? 12,
-    font_scale:    userData.fontScale     ?? 1,
-    font_body:     userData.fontBody      || "DM Sans",
+  const body = {
+    name:         userData.name,
+    university:   userData.university,
+    career:       userData.career,
+    semester:     userData.semester,
+    ingresoCorte: userData.ingresoCorte,
+    photo:        userData.photo ?? null,
+    appMode:      userData.appMode,
+    appTheme:     userData.appTheme,
+    themeColors:  userData.themeColors,
+    borderRadius: userData.borderRadius,
+    fontScale:    userData.fontScale,
+    fontBody:     userData.fontBody,
   };
-  const { error } = await supabase.from("users").upsert(row, { onConflict: "username" });
-  if (error) console.error("saveUser error:", error);
-}
-
-export function dbRowToUser(row) {
-  return {
-    username:     row.username,
-    password:     row.password,
-    name:         row.name,
-    university:   row.university,
-    career:       row.career,
-    semester:     row.semester,
-    ingresoCorte: row.ingreso_corte,
-    photo:        row.photo,
-    appMode:      row.app_mode,
-    appTheme:     row.app_theme,
-    themeColors:  row.theme_colors,
-    borderRadius: row.border_radius,
-    fontScale:    row.font_scale,
-    fontBody:     row.font_body,
-  };
+  try {
+    await api("/users", { method: "POST", body });
+    return { ok: true };
+  } catch (error) {
+    console.error("saveUser error:", error);
+    return { ok: false, error };
+  }
 }
 
 // El tema inicial se aplica ANTES del primer pintado desde un script inline en
@@ -143,34 +121,37 @@ export default function App() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Intentar recuperar sesión de localStorage como fallback rápido
+    // Recuperar sesión de localStorage (fallback rápido antes de validar).
     try {
-      const savedUser = localStorage.getItem("malla_session");
-      if (savedUser) {
-        const u = JSON.parse(savedUser);
-        setUser(u);
-        applyTheme(u.appTheme || "ambar", u.appMode || "dark", u.fontBody);
+      const saved = localStorage.getItem("malla_session");
+      if (saved) {
+        const s = JSON.parse(saved);
+        if (s && s.token && s.user) {
+          setUser(s.user);
+          applyTheme(s.user.appTheme || "ambar", s.user.appMode || "dark", s.user.fontBody);
+        }
       }
     } catch (_) {}
     setReady(true);
   }, []);
 
-  const handleLogin = (userData) => {
-    localStorage.setItem("malla_session", JSON.stringify(userData));
-    setUser(userData);
-    applyTheme(userData.appTheme || "ambar", userData.appMode || "dark", userData.fontBody);
+  // auth = { token, user } devuelto por POST /api/auth/login
+  const handleLogin = (auth) => {
+    saveSession(auth.token, auth.user);
+    setUser(auth.user);
+    applyTheme(auth.user.appTheme || "ambar", auth.user.appMode || "dark", auth.user.fontBody);
   };
 
   const handleLogout = () => {
     const currentMode  = user?.appMode  || "dark";
     const currentTheme = user?.appTheme || "ambar";
-    localStorage.removeItem("malla_session");
+    clearSession();
     setUser(null);
     applyTheme(currentTheme, currentMode);
   };
 
   const handleUpdateUser = async (updated) => {
-    localStorage.setItem("malla_session", JSON.stringify(updated));
+    saveSession(getToken(), updated);
     setUser(updated);
     applyTheme(updated.appTheme || "ambar", updated.appMode || "dark", updated.fontBody);
     await saveUser(updated);

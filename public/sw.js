@@ -4,7 +4,7 @@
  * Supabase) NO se interceptan aquí: la app las encola en localStorage
  * (src/utils/offlineQueue.js) y las reenvía al reconectar.
  */
-const CACHE = "mimalla-v8";
+const CACHE = "mimalla-v9";
 const CORE = [
   "/",
   "/manifest.webmanifest",
@@ -41,6 +41,9 @@ self.addEventListener("message", (e) => {
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
+
+  // API propia: SIEMPRE red. Cachearla daría datos obsoletos.
+  if (req.url.includes("/api/")) return;
 
   // Navegaciones: red primero, caché como respaldo (SPA offline).
   if (req.mode === "navigate") {

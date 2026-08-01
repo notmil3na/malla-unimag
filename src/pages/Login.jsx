@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { CORTES, saveUser, dbRowToUser } from "../App";
-import { supabase } from "../supabase";
+import { CORTES } from "../App";
+import { api } from "../api";
 import styles from "./Login.module.css";
 import { IconCheck, IconChevronRight } from "../components/Icons";
 
@@ -37,15 +37,16 @@ export default function Login({ onLogin }) {
     setError("");
     if (!form.username || !form.password) return triggerError("Completa todos los campos");
     setLoading(true);
-    const { data, error: err } = await supabase
-      .from("users")
-      .select("*")
-      .eq("username", form.username)
-      .single();
-    setLoading(false);
-    if (err || !data) return triggerError("Usuario no encontrado");
-    if (data.password !== form.password) return triggerError("Contraseña incorrecta");
-    onLogin(dbRowToUser(data));
+    try {
+      const auth = await api("/auth/login", {
+        method: "POST",
+        body: { username: form.username, password: form.password },
+      });
+      onLogin(auth);
+    } catch (err) {
+      setLoading(false);
+      return triggerError(err.message || "Error al iniciar sesión");
+    }
   };
 
   const handleRegister = async (e) => {
@@ -55,19 +56,6 @@ export default function Login({ onLogin }) {
       return triggerError("Nombre, usuario y contraseña son obligatorios");
     if (form.password !== form.confirm) return triggerError("Las contraseñas no coinciden");
     if (form.password.length < 6) return triggerError("La contraseña debe tener al menos 6 caracteres");
-
-    setLoading(true);
-    // Verificar si ya existe
-    const { data: existing } = await supabase
-      .from("users")
-      .select("username")
-      .eq("username", form.username)
-      .single();
-
-    if (existing) {
-      setLoading(false);
-      return triggerError("Ese usuario ya existe");
-    }
 
     const newUser = {
       username:     form.username,
@@ -86,11 +74,17 @@ export default function Login({ onLogin }) {
       fontBody:     "DM Sans",
     };
 
-    await saveUser(newUser);
-    setLoading(false);
-    setSuccess("¡Cuenta creada! Inicia sesión.");
-    setTab("login");
-    setForm(f => ({ ...f, password: "", confirm: "" }));
+    setLoading(true);
+    try {
+      await api("/auth/register", { method: "POST", body: newUser });
+      setLoading(false);
+      setSuccess("¡Cuenta creada! Inicia sesión.");
+      setTab("login");
+      setForm(f => ({ ...f, password: "", confirm: "" }));
+    } catch (err) {
+      setLoading(false);
+      return triggerError(err.message || "No se pudo crear la cuenta");
+    }
   };
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));

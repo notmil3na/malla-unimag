@@ -19,14 +19,17 @@
             coral:     ["#E8946B", "#C06840", "232,148,107"],
           };
           var s = JSON.parse(localStorage.getItem("malla_session") || "null");
+          // Sesión nueva: { token, user }. Sesiones antiguas (pre-refactor)
+          // guardaban el objeto de usuario directo: se leen solo para el tema.
+          var u = (s && s.user) || (s && !s.token ? s : null);
           var r = document.documentElement;
-          var mode = (s && s.appMode) || "dark";
-          var c = THEMES[(s && s.appTheme)] || THEMES.ambar;
+          var mode = (u && u.appMode) || "dark";
+          var c = THEMES[(u && u.appTheme)] || THEMES.ambar;
           r.setAttribute("data-theme", mode);
           r.style.setProperty("--accent", c[0]);
           r.style.setProperty("--accent2", c[1]);
           r.style.setProperty("--accent-rgb", c[2]);
-          if (s && s.fontBody) r.style.setProperty("--font-body", "'" + s.fontBody + "', system-ui, sans-serif");
+          if (u && u.fontBody) r.style.setProperty("--font-body", "'" + u.fontBody + "', system-ui, sans-serif");
           // NOTA: no hay meta theme-color. En Safari iOS (pestaña normal) un
           // theme-color presente pinta la barra de estado con una banda sólida
           // opaca. Sin él, Safari muestrea el background-color del html/body y
