@@ -118,7 +118,7 @@ async function saveUserData(patch) {
     await api("/user_data", { method: "POST", body: { patch } });
     return { ok: true };
   } catch (error) {
-    console.error("Error guardando en Supabase:", error);
+    console.error("Error guardando datos:", error);
     return { ok: false, error };
   }
 }
