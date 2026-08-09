@@ -6,13 +6,13 @@ import { fileURLToPath } from "node:url";
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "public", "icons");
 
 // Paleta de la app (App.css / APP_THEMES)
-const BG        = [14, 10, 24];        // --bg  #0e0a18
+const BG        = [14, 10, 24];       // --bg
 const GOLD_HI   = [247, 231, 188];
 const GOLD_LO   = [176, 132, 62];
-const GOLD_ACC  = [238, 206, 123];     // --accent #EECE7B
-const VIOLET    = [168, 110, 220];     // aurora-1
-const PINK      = [210, 60, 150];      // aurora-3
-const BLUE      = [100, 150, 230];     // aurora-4
+const GOLD_ACC  = [238, 206, 123];    // --accent
+const VIOLET    = [168, 110, 220];    // aurora-1
+const PINK      = [210, 60, 150];     // aurora-3
+const BLUE      = [100, 150, 230];    // aurora-4
 
 const clamp255 = (v) => Math.max(0, Math.min(255, Math.round(v)));
 
@@ -78,8 +78,6 @@ function pointInPoly(x, y, verts) {
   return inside;
 }
 
-// Escena del logo MiMalla: fondo oscuro con aurora, disco de cristal con anillo
-// ámbar y estrella dorada. Misma paleta que la interfaz.
 function renderIcon(size, starR, discR) {
   const S = 4;
   const cx = size / 2;
@@ -112,7 +110,6 @@ function renderIcon(size, starR, discR) {
 
           let col = [BG[0], BG[1], BG[2]];
 
-          // Aurora
           for (const a of aurora) {
             const d = Math.hypot(nx - a.x, ny - a.y) / a.R;
             if (d < 1) {
@@ -123,7 +120,6 @@ function renderIcon(size, starR, discR) {
             }
           }
 
-          // Resplandor dorado alrededor de la estrella
           const gd = Math.hypot(fx - cx, fy - cy) / size;
           const gR = starR / size / 0.6 + 0.12;
           const gG = Math.max(0, 1 - gd / gR);
@@ -132,7 +128,6 @@ function renderIcon(size, starR, discR) {
           col[1] += GOLD_ACC[1] * glow;
           col[2] += GOLD_ACC[2] * glow;
 
-          // Disco de cristal (vidrio translúcido con brillo superior)
           const dDisc = Math.hypot(fx - cx, fy - cy) / size;
           if (dDisc < discR) {
             const lift = (1 - dDisc / discR) * 0.12;
@@ -143,20 +138,17 @@ function renderIcon(size, starR, discR) {
             col[2] += 255 * sheen;
           }
 
-          // Anillo ámbar del disco
           const ringT = Math.abs(dDisc - discR) / ringW;
           if (ringT <= 1) {
             const a = (1 - ringT) * 0.35;
             col = col.map((v, i) => v * (1 - a) + GOLD_ACC[i] * a);
           }
 
-          // Estrella dorada con gradiente vertical
           if (pointInPoly(fx, fy, verts)) {
             const t = Math.min(1, Math.max(0, (fy - (cy - starR)) / (2 * starR)));
             col = GOLD_HI.map((v, i) => v + (GOLD_LO[i] - v) * t);
           }
 
-          // Destellos
           for (const sp of sparkles) {
             const sd = Math.hypot(fx - (cx + sp.x * size), fy - (cy + sp.y * size)) / (sp.r * size);
             if (sd < 1) {

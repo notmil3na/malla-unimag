@@ -1,6 +1,5 @@
 import { admin, envReady, json, readBody, requireUser } from "./_lib.mjs";
 
-// Columnas que la app puede persistir en user_data.
 const ALLOWED_COLUMNS = new Set([
   "malla",
   "notas",
@@ -9,10 +8,10 @@ const ALLOWED_COLUMNS = new Set([
   "plan",
   "calendario",
   "asignaciones",
+  "ajustes",
+  "notasclase",
 ]);
 
-// GET  → datos del usuario autenticado (o null si no tiene fila).
-// POST → upsert de { patch } con columnas permitidas, siempre del usuario autenticado.
 export default async function handler(req, res) {
   if (!envReady() || !admin) return json(res, 500, { error: "Configuración del servidor incompleta" });
   const me = requireUser(req);

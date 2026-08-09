@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { MALLA, ESTADOS } from "../data/malla.js";
-import { getSemesterCountdown, SEMESTER_CORTE } from "../utils/semesterCountdown.js";
+import { getSemesterCountdown, semesterCorteFor, semesterDatesFor } from "../utils/semesterCountdown.js";
 import { canEnrollMateria } from "../utils/gradeHelpers.js";
 import { buildMallaTxt, downloadTxt } from "../utils/mallaExport.js";
 import { IconChevronRight, IconClose, IconLightbulb, IconWarning } from "./Icons";
@@ -8,7 +8,6 @@ import { getObligatorias } from "../utils/careerProgress.js";
 import MateriaCard from "./MateriaCard";
 import styles from "./MallaView.module.css";
 
-// Auto-approve all semesters before the current one
 function applyAutoApprove(malla, currentSemester) {
   return malla.map((sem) => ({
     ...sem,
@@ -23,7 +22,7 @@ function applyAutoApprove(malla, currentSemester) {
   }));
 }
 
-export default function MallaView({ malla: initialMalla, notas, onSave, user, onNotify }) {
+export default function MallaView({ malla: initialMalla, notas, onSave, user, onNotify, semestre }) {
   const [malla, setMalla] = useState(() =>
     applyAutoApprove(initialMalla || MALLA, user.semester || 1)
   );
@@ -86,19 +85,46 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
   }, [selected, materiaById, allMaterias]);
 
   const handleEstadoChange = useCallback((materiaId, newEstado) => {
+    const dependents = new Map();
+    malla.flatMap((s) => s.materias).forEach((m) => {
+      (m.prereqs || []).forEach((pid) => {
+        if (!dependents.has(pid)) dependents.set(pid, []);
+        dependents.get(pid).push(m.id);
+      });
+    });
+
+    const affected = new Set([materiaId]);
+    const toVisit = [materiaId];
+    while (toVisit.length > 0) {
+      const pid = toVisit.pop();
+      (dependents.get(pid) || []).forEach((depId) => {
+        if (!affected.has(depId)) {
+          affected.add(depId);
+          toVisit.push(depId);
+        }
+      });
+    }
+
+    let flipped = 0;
     const updated = malla.map((s) => ({
       ...s,
-      materias: s.materias.map((m) =>
-        m.id === materiaId ? { ...m, estado: newEstado } : m
-      ),
+      materias: s.materias.map((m) => {
+        if (m.id === materiaId) return { ...m, estado: newEstado };
+        if (newEstado === "faltante" && affected.has(m.id) && (m.estado === "aprobada" || m.estado === "cursando")) {
+          flipped++;
+          return { ...m, estado: "faltante" };
+        }
+        return m;
+      }),
     }));
     setMalla(updated);
     onSave(updated);
+    if (flipped > 0) onNotify?.(`${flipped} materia(s) pasaron a faltante por prerequisitos`);
     if (selected) {
       const updatedSelected = updated.flatMap((s) => s.materias).find((m) => m.id === selected.id);
       if (updatedSelected) setSelected(updatedSelected);
     }
-  }, [malla, onSave, selected]);
+  }, [malla, onSave, onNotify, selected]);
 
   const stats = useMemo(() => ({
     total:     obligatorias.length,
@@ -150,7 +176,11 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
     downloadTxt(`malla_${safeName}.txt`, content);
     onNotify?.("Malla descargada");
   };
-  const semester = useMemo(() => getSemesterCountdown(), []);
+  const semester = useMemo(() => getSemesterCountdown(semestre), [semestre]);
+  const semDates = useMemo(() => semesterDatesFor(semestre), [semestre]);
+  const MESES_CORTOS_M = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  const fmtSemDate = (d) => `${d.getDate()} ${MESES_CORTOS_M[d.getMonth()]} ${d.getFullYear()}`;
+  const semRange = `${fmtSemDate(semDates.start)} – ${fmtSemDate(semDates.end)}`;
   const matriculables = useMemo(() => allMaterias.filter((m) => canEnrollMateria(m, allMaterias)), [allMaterias]);
   const matriculableIds = useMemo(() => new Set(matriculables.map((m) => m.id)), [matriculables]);
 
@@ -158,14 +188,16 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
     <div className={styles.wrap} style={{ "--fs": fs }}>
       {/* Header */}
       <div className={styles.header}>
-        <div>
-          <h2 className={styles.title}>Malla Curricular</h2>
-          <p className={styles.subtitle}>{user.career} · {user.university}</p>
-        </div>
-        <div className={styles.headerActions}>
+        <div className={styles.headerLeft}>
+          <div>
+            <h2 className={styles.title}>Malla Curricular</h2>
+            <p className={styles.subtitle}>{user.career} · {user.university}</p>
+          </div>
           <button type="button" className={styles.downloadBtn} onClick={handleDownload}>
             ↓ Descargar malla (.txt)
           </button>
+        </div>
+        <div className={styles.headerRight}>
           <div className={styles.stats}>
           {[
             { label: "Aprobadas", val: stats.aprobadas, color: colors.aprobada || "#6ec88a" },
@@ -211,7 +243,7 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
         <div className={styles.prereqAlertBanner}>
           <IconWarning size={16} />
           <div className={styles.prereqAlertText}>
-            <strong>{pendingPrereqs.length} materias bloqueadas</strong> por prerequisitos sin aprobar. Aprueba las materias previas para habilitarlas.
+            <strong>{pendingPrereqs.length} materias bloqueadas</strong> por prerequisitos sin aprobar. Aprueba las anteriores para desbloquearlas.
           </div>
         </div>
       )}
@@ -220,9 +252,9 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
         <div className={styles.semesterWidgetTop}>
           <div>
             <p className={styles.semesterWidgetLabel}>
-              Cuenta regresiva · Corte {SEMESTER_CORTE}
+              Cuenta regresiva · Corte {semesterCorteFor(semestre)}
             </p>
-            <p className={styles.semesterWidgetRange}>3 ago 2026 – 28 nov 2026</p>
+            <p className={styles.semesterWidgetRange}>{semRange}</p>
           </div>
           <span className={styles.semesterWidgetStatus}>{semester.status}</span>
         </div>
@@ -250,7 +282,7 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
 
       {/* Legend */}
       <div className={styles.legend}>
-        <span className={styles.legendHint}><IconLightbulb size={13} /> Haz clic en una materia para ver prerequisitos</span>
+        <span className={styles.legendHint}><IconLightbulb size={13} /> Toca una materia para ver sus prerequisitos</span>
         <div className={styles.legendItems}>
           {Object.entries(ESTADOS).map(([k, v]) => (
             <div key={k} className={styles.legendItem}>
@@ -332,7 +364,7 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
             checked={showMatriculables}
             onChange={(e) => setShowMatriculables(e.target.checked)}
           />
-          <span>Ver materias que puedo matricular este semestre</span>
+          <span>Ver qué puedo matricular este semestre</span>
           {showMatriculables && (
             <span className={styles.matriculablesCount}>{matriculables.length} disponibles</span>
           )}
@@ -364,7 +396,7 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
             </div>
           ) : (
             <p className={styles.matriculablesEmpty}>
-              No hay materias disponibles por ahora. Aprueba los prerequisitos pendientes.
+              No hay materias disponibles por ahora. Aprueba los prerequisitos pendientes y listo.
             </p>
           )}
         </div>
@@ -394,7 +426,7 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
                 <span>
                   <strong>Prerequisito(s) pendiente(s):</strong>{" "}
                   {selectedMissingPrereqs.map((pid) => materiaById.get(pid)?.nombre || pid).join(", ")}.
-                  Aún no deberías cursar esta materia.
+                  Aún no toca cursar esta materia.
                 </span>
               </div>
             )}

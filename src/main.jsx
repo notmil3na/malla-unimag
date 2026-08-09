@@ -27,9 +27,6 @@ if ("serviceWorker" in navigator) {
         if (reg.installing) notify(reg.installing);
         reg.addEventListener("updatefound", () => notify(reg.installing));
 
-        // Busca versiones nuevas mientras la app está abierta: cada 15 min y
-        // cada vez que el usuario vuelve a la app (foco/visibilidad). Sin esto
-        // el navegador solo revisa al recargar y la pantalla nunca salía sola.
         const check = () => reg.update().catch(() => {});
         setInterval(check, 15 * 60 * 1000);
         document.addEventListener("visibilitychange", () => {

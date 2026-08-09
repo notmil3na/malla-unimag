@@ -31,8 +31,6 @@ export function horaIdx(h) {
 }
 
 // ── Conflictos de horario ────────────────────────────────────────────────
-// `clases`: horario existente. `pending`: nuevas clases a comprobar.
-// Devuelve los conflictos como [{ clase, chocaCon }].
 export function findConflicts(clases, pending) {
   const conflicts = [];
   const pendientes = pending.filter((c) =>

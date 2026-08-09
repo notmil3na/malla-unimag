@@ -264,7 +264,6 @@ export default function NotasView({ malla, notas, onSave, user }) {
     ? projectDesiredAverage(malla, localNotas, desiredAvg)
     : null;
 
-  // Todas las materias que se están cursando ahora (tengan o no nota aún).
   const simulables = allMaterias
     .filter((m) => {
       if (m.estado !== "cursando") return false;
@@ -304,9 +303,9 @@ export default function NotasView({ malla, notas, onSave, user }) {
 
       <div className={styles.globalBanner} style={{ borderColor: colorA }}>
         <div>
-          <p className={styles.globalLabel}>Promedio ponderado global acumulado</p>
+          <p className={styles.globalLabel}>Promedio ponderado global</p>
           <p className={styles.globalSub}>
-            {globalPond ? `${globalPond.creditos} créditos con nota registrada` : "Sin notas registradas aún"}
+            {globalPond ? `${globalPond.creditos} créditos con nota registrada` : "Todavía sin notas registradas"}
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
@@ -368,8 +367,8 @@ export default function NotasView({ malla, notas, onSave, user }) {
           {projection.feasible && projection.requiredUniform !== null && (
             <>
               <p className={styles.projectionSummary}>
-                Necesitas un promedio de <strong>{projection.requiredUniform.toFixed(1)}</strong> en las
-                {" "}<strong>{projection.pendingCred}</strong> créditos pendientes sin nota numérica
+                Necesitas un promedio de <strong>{projection.requiredUniform.toFixed(1)}</strong> en los
+                {" "}<strong>{projection.pendingCred}</strong> créditos que aún no tienen nota
                 {projection.requiredUniform >= PASS_GRADE ? " (aprobatorio)" : " (por debajo del mínimo 300)"}.
               </p>
               {[...projection.pendingBySem.entries()]
@@ -405,7 +404,7 @@ export default function NotasView({ malla, notas, onSave, user }) {
               if (!e.target.checked) setFailSimId("");
             }}
           />
-          <span>¿Qué pasa si repruebo esta materia?</span>
+          <span>¿Y si repruebo esta materia?</span>
         </label>
         {showFailSim && (
           <div className={styles.failSimWrap}>
@@ -414,8 +413,7 @@ export default function NotasView({ malla, notas, onSave, user }) {
               value={failSimId}
               onChange={(e) => setFailSimId(e.target.value)}
             >
-              <option value="">Elige una materia…</option>
-              {simulables.map((m) => {
+              <option value="">Elige una materia…</option>              {simulables.map((m) => {
                 const n = localNotas[m.id];
                 const notaActual = n
                   ? isValidNumericGrade(n.nota)
@@ -602,7 +600,7 @@ export default function NotasView({ malla, notas, onSave, user }) {
 
           {globalPond && (
             <div className={styles.resumenTotal} style={{ borderColor: colorA }}>
-              <span>Promedio ponderado acumulado total</span>
+              <span>Promedio ponderado total</span>
               <span className={styles.resumenTotalVal} style={{ color: colorA }}>
                 {globalPond.valor.toFixed(1)}
               </span>

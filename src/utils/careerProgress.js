@@ -20,8 +20,6 @@ export function buildSemestreMap(malla) {
   return map;
 }
 
-// Promedio ponderado global acumulado. La definitiva de cada materia y cada
-// intento/habilitación registrado cuentan por igual en la suma ponderada.
 export function calcGlobalPond(malla, notas) {
   const semestreById = buildSemestreMap(malla);
   const allMaterias = malla.flatMap((s) => s.materias);
@@ -48,9 +46,6 @@ export function calcGlobalPond(malla, notas) {
   return { valor: sumPond / sumCred, creditos: sumCred, sumPond, sumCred };
 }
 
-// Simulador "¿qué pasa si repruebo esto?": proyecta el GPA ponderado si la
-// definitiva de una materia pasa a ser una nota de pérdida y se agrega una
-// habilitación aprobatoria (ambas cuentan en el ponderado).
 export function simulateFailMateria(malla, notas, materiaId, opts = {}) {
   const failedGrade = opts.failedGrade !== undefined ? opts.failedGrade : 200;
   const retakeGrade = opts.retakeGrade !== undefined ? opts.retakeGrade : 400;
@@ -89,9 +84,9 @@ export function simulateFailMateria(malla, notas, materiaId, opts = {}) {
   };
 }
 
-export function calcCareerTime(user) {
+export function calcCareerTime(user, opts = {}) {
   const ingresoIdx = CORTES.indexOf(user.ingresoCorte || "");
-  const currentCorte = corteForSemester(user.ingresoCorte, Number(user.semester) || 1);
+  const currentCorte = opts.currentCorte || corteForSemester(user.ingresoCorte, Number(user.semester) || 1);
   const currentIdx = currentCorte ? CORTES.indexOf(currentCorte) : -1;
 
   if (ingresoIdx === -1 || currentIdx === -1) {

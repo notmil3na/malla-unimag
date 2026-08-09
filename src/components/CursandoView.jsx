@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import styles from "./CursandoView.module.css";
 import { IconCheck, IconX, IconUser, IconPlus, IconClose, IconChevronUp, IconChevronDown, IconSemester } from "./Icons";
+import NotasClaseView from "./NotasClaseView";
 
 const NOTA_MIN  = 0;
 const NOTA_MAX  = 500;
@@ -153,7 +154,7 @@ function CorteRow({ corte, idx, onChange, onRemove, canRemove }) {
 
       <div className={styles.itemsPanel}>
         {(corte.items || []).length === 0 && (
-          <p className={styles.itemsEmpty}>Sin evaluaciones. Agrega un ítem para registrar puntos.</p>
+          <p className={styles.itemsEmpty}>Aún no hay evaluaciones. Agrega una para empezar a sumar puntos.</p>
         )}
         {(corte.items || []).map((item, i) => (
           <CorteItemRow
@@ -383,9 +384,13 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius, horarioCla
   );
 }
 
-export default function CursandoView({ malla, cursandoData, onSave, user, horarioData }) {
+export default function CursandoView({
+  malla, cursandoData, onSave, user, horarioData,
+  notasClaseData, onSaveNotasClase,
+}) {
   const [data, setData]   = useState(cursandoData || {});
   const [saved, setSaved] = useState(false);
+  const [subView, setSubView] = useState("semestre");
 
   const horarioClases = horarioData?.clases || [];
   const materiaMap = useMemo(() => {
@@ -403,6 +408,12 @@ export default function CursandoView({ malla, cursandoData, onSave, user, horari
     const horarioMaterias = fromHorario.map(id => materiaMap[id]);
     return [...manual, ...horarioMaterias];
   }, [malla, horarioClases, materiaMap]);
+
+  const materiasAll = useMemo(() => malla.flatMap(s => s.materias), [malla]);
+  const cursandoIds = useMemo(
+    () => new Set(materiasCursando.map(m => m.id)),
+    [materiasCursando]
+  );
 
   const getHorarioForMateria = (materiaId) => {
     return horarioClases.find(c => c.materiaId === materiaId);
@@ -425,6 +436,30 @@ export default function CursandoView({ malla, cursandoData, onSave, user, horari
 
   return (
     <div className={styles.wrap}>
+      <div className={styles.subNav}>
+        <button
+          className={`${styles.subNavBtn} ${subView === "semestre" ? styles.subNavActive : ""}`}
+          onClick={() => setSubView("semestre")}
+        >
+          <IconSemester size={13} /> Semestre
+        </button>
+        <button
+          className={`${styles.subNavBtn} ${subView === "notas" ? styles.subNavActive : ""}`}
+          onClick={() => setSubView("notas")}
+        >
+          <span className={styles.subNavStar}>✦</span> Notas de clase
+        </button>
+      </div>
+
+      {subView === "notas" ? (
+        <NotasClaseView
+          materiasAll={materiasAll}
+          cursandoIds={cursandoIds}
+          notasClaseData={notasClaseData}
+          onSaveNotasClase={onSaveNotasClase}
+        />
+      ) : (
+      <>
       <div className={styles.header}>
         <div>
           <h2 className={styles.title}>Semestre actual</h2>
@@ -546,6 +581,8 @@ export default function CursandoView({ malla, cursandoData, onSave, user, horari
             </table>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );

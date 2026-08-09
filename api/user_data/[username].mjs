@@ -1,6 +1,5 @@
 import { admin, envReady, json, requireUser } from "../_lib.mjs";
 
-// GET → horario + malla de un amigo por username (feature de colaboración).
 export default async function handler(req, res) {
   if (req.method !== "GET") return json(res, 405, { error: "method" });
   if (!envReady() || !admin) return json(res, 500, { error: "Configuración del servidor incompleta" });

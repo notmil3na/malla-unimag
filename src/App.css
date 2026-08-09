@@ -24,7 +24,6 @@
   --accent2:    #8b6f3a;
   --accent-rgb: 200,169,110;
 
-  /* Aurora mesh (mística, sutil) */
   --aurora-1: rgba(168,110,220,0.32);
   --aurora-2: rgba(255,140,110,0.22);
   --aurora-3: rgba(210,60,150,0.22);
@@ -38,7 +37,6 @@
   --shadow-soft: 0 8px 32px rgba(0,0,0,0.35);
   --shadow-lg: 0 20px 60px rgba(0,0,0,0.45);
 
-  /* Alias de compatibilidad (usados en algunos módulos) */
   --card: var(--surface);
   --line: var(--border);
 
@@ -71,9 +69,6 @@
   color-scheme: light;
 }
 
-/* El fondo vive en html Y body (no solo body): Safari iOS muestrea el color
-   de html para teñir de forma translúcida la status bar y la barra de URL.
-   min-height: 100dvh asegura que el fondo pinta hasta el final real del scroll. */
 html, body, #root {
   min-height: 100vh;
   min-height: 100dvh;
@@ -86,7 +81,6 @@ html, body {
   font-family: var(--font-body);
   transition: background 0.35s ease, color 0.35s ease;
   letter-spacing: 0.01em;
-  /* Evita que móviles inflen el texto al hacer landscape / zoom */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
@@ -95,10 +89,6 @@ body {
   position: relative;
 }
 
-/* Aurora anclada al viewport (elemento real: los position:fixed en
-   pseudo-elementos de body no se mantienen fijos en iOS). Sin bandas sólidas
-   en los bordes: con la barra de Safari ya translúcida, la zona de estado
-   debe mostrar el gradiente directamente, no un rectángulo plano de --bg. */
 .aurora {
   position: fixed;
   inset: 0;
@@ -112,7 +102,6 @@ body {
     radial-gradient(ellipse 50% 45% at 15% 90%, var(--aurora-4), transparent 60%);
 }
 
-/* Textura sutil, consistente en toda la app (no solo Login) */
 body::before {
   content: "";
   position: fixed;
@@ -136,8 +125,13 @@ body::before {
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
+/* ── Selects nativos: opciones con color del tema ─── */
+select option {
+  background: var(--modal-bg);
+  color: var(--modal-text);
+}
+
 /* ── Utilidades globales de movimiento ─────────────── */
-/* Transición al entrar una vista (usar como className en el wrapper de cada tab) */
 @keyframes viewReveal {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -146,7 +140,6 @@ body::before {
   animation: viewReveal 0.4s cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 
-/* Destello único (no infinito) para marcar un logro/estado nuevo */
 @keyframes revealFlash {
   0%   { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.55); }
   100% { box-shadow: 0 0 0 14px rgba(var(--accent-rgb), 0); }
@@ -170,7 +163,6 @@ body::before {
   border-radius: 4px;
 }
 
-/* Evita el auto-zoom de iOS al enfocar inputs (requiere ≥16px) */
 @media (max-width: 600px) {
   input, select, textarea {
     font-size: 16px !important;

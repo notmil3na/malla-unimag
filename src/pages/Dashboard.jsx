@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
 import Sidebar from "../components/Sidebar";
 import ErrorBoundary from "../components/ErrorBoundary";
+import NotificationBell from "../components/NotificationBell";
+import SecuritySetupModal from "../components/SecuritySetupModal";
+import useReminders from "../hooks/useReminders";
 import { getMallaByCareer } from "../data/malla.js";
 import { api } from "../api";
 import { getPendingSaves, hasPendingSaves, queueSave, clearPendingSave } from "../utils/offlineQueue.js";
@@ -10,8 +13,6 @@ import {
   IconGrades, IconMalla, IconUser, IconPaint, IconUsers
 } from "../components/Icons";
 
-// Carga las vistas en diferido pero reintenta si el chunk falla (red flaky,
-// actualización del SW en curso): un solo fallo de red no debe tumbar la app.
 function loadView(loader) {
   return loader().catch((err) => {
     console.warn("Chunk lazy falló, reintentando:", err);
@@ -21,19 +22,19 @@ function loadView(loader) {
   });
 }
 
-const MallaView        = lazy(() => loadView(() => import("../components/MallaView")));
-const CursandoView     = lazy(() => loadView(() => import("../components/CursandoView")));
-const HorarioView      = lazy(() => loadView(() => import("../components/HorarioView")));
-const NotasView        = lazy(() => loadView(() => import("../components/NotasView")));
-const PerfilView       = lazy(() => loadView(() => import("../components/PerfilView")));
-const TemaView         = lazy(() => loadView(() => import("../components/TemaView")));
-const CalendarioView   = lazy(() => loadView(() => import("../components/CalendarioView")));
+const MallaView = lazy(() => loadView(() => import("../components/MallaView")));
+const CursandoView = lazy(() => loadView(() => import("../components/CursandoView")));
+const HorarioView = lazy(() => loadView(() => import("../components/HorarioView")));
+const NotasView = lazy(() => loadView(() => import("../components/NotasView")));
+const PerfilView = lazy(() => loadView(() => import("../components/PerfilView")));
+const TemaView = lazy(() => loadView(() => import("../components/TemaView")));
+const CalendarioView = lazy(() => loadView(() => import("../components/CalendarioView")));
 const AsignacionesView = lazy(() => loadView(() => import("../components/AsignacionesView")));
 const ColaboracionView = lazy(() => loadView(() => import("../components/ColaboracionView")));
 
-const DIA_MAP = { 0:"D", 1:"L", 2:"M", 3:"X", 4:"J", 5:"V", 6:"S" };
-const DIA_NAMES = { L:"Lunes", M:"Martes", X:"Miércoles", J:"Jueves", V:"Viernes", S:"Sábado" };
-const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const DIA_MAP = { 0: "D", 1: "L", 2: "M", 3: "X", 4: "J", 5: "V", 6: "S" };
+const DIA_NAMES = { L: "Lunes", M: "Martes", X: "Miércoles", J: "Jueves", V: "Viernes", S: "Sábado" };
+const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
 function parseHora(h) {
   if (!h) return 0;
@@ -114,7 +115,7 @@ function mergeMallaWithBase(baseMalla, savedMalla) {
   }));
 }
 
-// Backend helpers (Vercel Functions)
+// ── Backend helpers (Vercel Functions) ─────────────────────────────────────
 async function loadUserData() {
   try {
     const { data } = await api("/user_data");
@@ -136,7 +137,7 @@ async function saveUserData(patch) {
 }
 
 export default function Dashboard({ user, onLogout, onUpdateUser }) {
-  const [tab, setTab]       = useState("horario");
+  const [tab, setTab] = useState("horario");
   const [loaded, setLoaded] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
   const [isOffline, setIsOffline] = useState(typeof navigator !== "undefined" ? !navigator.onLine : false);
@@ -156,35 +157,33 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
   const baseMalla = useMemo(() => getMallaByCareer(user.career), [user.career]);
   const defaultMalla = useMemo(() => autoApply(baseMalla, user.semester || 1), [baseMalla, user.semester]);
 
-  const [malla,        setMalla]        = useState(defaultMalla);
-  const [notas,        setNotas]        = useState({});
+  const [malla, setMalla] = useState(defaultMalla);
+  const [notas, setNotas] = useState({});
   const [cursandoData, setCursandoData] = useState({});
-  const [horarioData,  setHorarioData]  = useState({ dias: ["L","M","X","J","V"], clases: [] });
-  const [planData,     setPlanData]     = useState(null);
+  const [horarioData, setHorarioData] = useState({ dias: ["L", "M", "X", "J", "V"], clases: [] });
+  const [planData, setPlanData] = useState(null);
   const [calendarioData, setCalendarioData] = useState({ eventos: [] });
   const [asignacionesData, setAsignacionesData] = useState({ items: [] });
+  const [notasClaseData, setNotasClaseData] = useState({});
 
-  // Persistencia con tolerancia offline: si no hay red (o Supabase falla),
-  // la columna se encola en localStorage y se sincroniza al reconectar.
   const persistColumn = useCallback(async (column, data, applyLocal) => {
     applyLocal(data);
     if (!navigator.onLine) {
       queueSave(column, data);
       setPendingCount(Object.keys(getPendingSaves()).length);
-      notify("Sin conexión: cambios guardados localmente. Se sincronizarán al reconectar.");
+      notify("Sin conexión: tus cambios quedaron guardados y se sincronizarán al volver.");
       return;
     }
     const res = await saveUserData({ [column]: data });
     if (!res.ok) {
       queueSave(column, data);
       setPendingCount(Object.keys(getPendingSaves()).length);
-      notify("Sin conexión: cambios guardados localmente. Se sincronizarán al reconectar.");
+      notify("Sin conexión: tus cambios quedaron guardados y se sincronizarán al volver.");
     } else {
-      notify("Guardado correctamente");
+      notify("Cambios guardados");
     }
   }, [user.username, notify]);
 
-  // Sincronizar la cola pendiente al volver la conexión.
   useEffect(() => {
     const flush = async () => {
       const pending = getPendingSaves();
@@ -215,18 +214,18 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
     };
   }, [user.username, notify]);
 
-  // Cargar datos desde Supabase al iniciar
   useEffect(() => {
     async function load() {
       const data = await loadUserData();
       if (data) {
-        if (data.malla)    setMalla(mergeMallaWithBase(defaultMalla, data.malla));
-        if (data.notas)    setNotas(data.notas);
+        if (data.malla) setMalla(mergeMallaWithBase(defaultMalla, data.malla));
+        if (data.notas) setNotas(data.notas);
         if (data.cursando) setCursandoData(data.cursando);
-        if (data.horario)  setHorarioData(data.horario);
-        if (data.plan)     setPlanData(data.plan);
+        if (data.horario) setHorarioData(data.horario);
+        if (data.plan) setPlanData(data.plan);
         if (data.calendario) setCalendarioData(data.calendario);
         if (data.asignaciones) setAsignacionesData(data.asignaciones);
+        if (data.notasclase) setNotasClaseData(data.notasclase);
       }
       setLoaded(true);
     }
@@ -261,6 +260,21 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
     await persistColumn("asignaciones", data, setAsignacionesData);
   }, [persistColumn]);
 
+  const saveNotasClase = useCallback(async (data) => {
+    await persistColumn("notasclase", data, setNotasClaseData);
+  }, [persistColumn]);
+
+  const saveSemestre = useCallback((semestre) => {
+    saveCalendario({ ...calendarioData, semestre });
+  }, [saveCalendario, calendarioData]);
+
+  const semestre = calendarioData?.semestre || null;
+
+  const reminders = useReminders({
+    items: asignacionesData?.items || [],
+    eventos: calendarioData?.eventos || [],
+  });
+
   const handleMallaReset = useCallback((newSemester) => {
     const reset = autoApply(baseMalla, newSemester);
     setMalla(reset);
@@ -285,15 +299,15 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
   }, [user.username]);
 
   const tabs = useMemo(() => [
-    { id: "horario",      label: "Horario",       icon: IconSchedule },
-    { id: "calendario",   label: "Calendario",     icon: IconCalendar },
-    { id: "asignaciones", label: "Asignaciones",   icon: IconClipboard },
-    { id: "cursando",     label: "Semestre",       icon: IconSemester },
-    { id: "notas",        label: "Notas",          icon: IconGrades },
-    { id: "malla",        label: "Malla",          icon: IconMalla },
-    { id: "perfil",       label: "Mi Perfil",      icon: IconUser },
-    { id: "tema",         label: "Personalizar",   icon: IconPaint },
-    { id: "colaboracion", label: "Colaboración",   icon: IconUsers },
+    { id: "horario", label: "Horario", icon: IconSchedule },
+    { id: "calendario", label: "Calendario", icon: IconCalendar },
+    { id: "asignaciones", label: "Asignaciones", icon: IconClipboard },
+    { id: "cursando", label: "Semestre", icon: IconSemester },
+    { id: "notas", label: "Notas", icon: IconGrades },
+    { id: "malla", label: "Malla", icon: IconMalla },
+    { id: "perfil", label: "Mi Perfil", icon: IconUser },
+    { id: "colaboracion", label: "Colaboración", icon: IconUsers },
+    { id: "tema", label: "Personalizar", icon: IconPaint },
   ], []);
 
   if (!loaded) {
@@ -318,102 +332,112 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
         onTabChange={setTab}
         onLogout={onLogout}
         onUpdateUser={onUpdateUser}
+        bell={<NotificationBell {...reminders} />}
       />
       <main className={styles.main}>
         <ErrorBoundary key={tab} view>
           <Suspense fallback={
-            <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",color:"var(--text-muted)",fontFamily:"var(--font-body)",gap:"8px"}}>
-              <span style={{fontSize:"20px",color:"var(--accent)"}}>✦</span>
+            <div className={styles.tabLoading}>
+              <span style={{ fontSize: "20px", color: "var(--accent)" }}>✦</span>
               <span>Cargando...</span>
             </div>
           }>
-        {tab === "horario" && (
-          <>
-            <HoyWidget horarioData={horarioData} malla={malla} />
-            <HorarioView
-              malla={malla}
-              horarioData={horarioData}
-              planData={planData}
-              onSave={saveHorario}
-              onSavePlan={savePlan}
-              onNotify={notify}
-              user={user}
-              onEnrollMaterias={enrollMateriasFromPlan}
-            />
-          </>
-        )}
-        {tab === "calendario" && (
-          <CalendarioView
-            malla={malla}
-            calendarioData={calendarioData}
-            onSave={saveCalendario}
-            user={user}
-            horarioData={horarioData}
-          />
-        )}
-        {tab === "asignaciones" && (
-          <AsignacionesView
-            malla={malla}
-            asignacionesData={asignacionesData}
-            onSave={saveAsignaciones}
-            user={user}
-            cursandoData={cursandoData}
-            onSaveCursando={saveCursando}
-            calendarioData={calendarioData}
-            onSaveCalendario={saveCalendario}
-          />
-        )}
-        {tab === "cursando" && (
-          <CursandoView
-            malla={malla}
-            cursandoData={cursandoData}
-            onSave={saveCursando}
-            user={user}
-            horarioData={horarioData}
-          />
-        )}
-        {tab === "malla" && (
-          <MallaView
-            malla={malla}
-            notas={notas}
-            onSave={saveMalla}
-            user={user}
-            onNotify={notify}
-          />
-        )}
-        {tab === "notas" && (
-          <NotasView malla={malla} notas={notas} onSave={saveNotas} user={user} />
-        )}
-        {tab === "perfil" && (
-          <PerfilView
-            user={user}
-            onUpdate={onUpdateUser}
-            onMallaReset={handleMallaReset}
-            malla={malla}
-          />
-        )}
-        {tab === "tema" && (
-          <TemaView user={user} onUpdate={onUpdateUser} />
-        )}
-        {tab === "colaboracion" && (
-          <ColaboracionView
-            user={user}
-            malla={malla}
-            horarioData={horarioData}
-            onNotify={notify}
-          />
-        )}
+            {tab === "horario" && (
+              <>
+                <HoyWidget horarioData={horarioData} malla={malla} />
+                <HorarioView
+                  malla={malla}
+                  horarioData={horarioData}
+                  planData={planData}
+                  onSave={saveHorario}
+                  onSavePlan={savePlan}
+                  onNotify={notify}
+                  user={user}
+                  onEnrollMaterias={enrollMateriasFromPlan}
+                />
+              </>
+            )}
+            {tab === "calendario" && (
+              <CalendarioView
+                malla={malla}
+                calendarioData={calendarioData}
+                onSave={saveCalendario}
+                user={user}
+                horarioData={horarioData}
+                asignacionesData={asignacionesData}
+                onSaveAsignaciones={saveAsignaciones}
+              />
+            )}
+            {tab === "asignaciones" && (
+              <AsignacionesView
+                malla={malla}
+                asignacionesData={asignacionesData}
+                onSave={saveAsignaciones}
+                user={user}
+                cursandoData={cursandoData}
+                onSaveCursando={saveCursando}
+                calendarioData={calendarioData}
+                onSaveCalendario={saveCalendario}
+                semestre={semestre}
+              />
+            )}
+            {tab === "cursando" && (
+              <CursandoView
+                malla={malla}
+                cursandoData={cursandoData}
+                onSave={saveCursando}
+                user={user}
+                horarioData={horarioData}
+                notasClaseData={notasClaseData}
+                onSaveNotasClase={saveNotasClase}
+              />
+            )}
+            {tab === "malla" && (
+              <MallaView
+                malla={malla}
+                notas={notas}
+                onSave={saveMalla}
+                user={user}
+                onNotify={notify}
+                semestre={semestre}
+              />
+            )}
+            {tab === "notas" && (
+              <NotasView malla={malla} notas={notas} onSave={saveNotas} user={user} />
+            )}
+            {tab === "perfil" && (
+              <PerfilView
+                user={user}
+                onUpdate={onUpdateUser}
+                onMallaReset={handleMallaReset}
+                malla={malla}
+                semestre={semestre}
+                onSaveSemestre={saveSemestre}
+              />
+            )}
+            {tab === "tema" && (
+              <TemaView user={user} onUpdate={onUpdateUser} />
+            )}
+            {tab === "colaboracion" && (
+              <ColaboracionView
+                user={user}
+                malla={malla}
+                horarioData={horarioData}
+                onNotify={notify}
+              />
+            )}
           </Suspense>
         </ErrorBoundary>
       </main>
 
       {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
+      <SecuritySetupModal />
       {(isOffline || pendingCount > 0) && (
         <div className={styles.offlineBar}>
           <span className={styles.offlineDot} />
           {isOffline
-            ? "Sin conexión · los cambios se guardan localmente"
-            : `${pendingCount} cambio(s) pendiente(s) por sincronizar`}
+            ? "Sin conexión · tus cambios se guardan en este dispositivo"
+            : `${pendingCount} cambio(s) por sincronizar`}
         </div>
       )}
     </div>

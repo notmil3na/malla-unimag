@@ -1,16 +1,16 @@
 import { useState, useMemo } from "react";
 import styles from "./AsignacionesView.module.css";
 import {
-  IconExamen, IconQuiz, IconTarea, IconProyecto, IconClose, IconEdit, IconTrash, IconClipboard, IconCheck, IconChevronUp, IconChevronDown
+  IconExamen, IconQuiz, IconTarea, IconProyecto, IconForo, IconLaboratorio, IconInforme, IconClose, IconEdit, IconTrash, IconClipboard, IconCheck, IconChevronUp, IconChevronDown
 } from "./Icons";
 import { HORAS_FORM } from "../utils/horarioHelpers";
-import { SEMESTER_CORTE } from "../utils/semesterCountdown";
+import { semesterDatesFor, semesterCorteFor } from "../utils/semesterCountdown";
+import { REMINDER_OPTIONS } from "../utils/reminders";
+import useBodyScrollLock from "../hooks/useBodyScrollLock";
 
 const NOTA_PASS_PCT = 0.6;
 
 const MESES_CORTOS = ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-
-const ANIO_SEMESTRE = Number(String(SEMESTER_CORTE).split("-")[0]);
 
 const DIAS = Array.from({ length: 31 }, (_, i) => i + 1);
 
@@ -23,9 +23,9 @@ const HORA_OPTIONS = HORAS_FORM.map((h) => {
   return { value: `${String(h24).padStart(2, "0")}:${mm}`, label: h };
 });
 
-function toISODate(dia, mes) {
+function toISODate(anio, dia, mes) {
   if (!dia || !mes) return "";
-  return `${ANIO_SEMESTRE}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+  return `${anio}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
 }
 
 function formatDate(iso) {
@@ -43,10 +43,13 @@ function formatTime(h) {
 }
 
 const TIPO_INFO = {
-  examen:   { label: "Examen",   Icon: IconExamen, color: "#E87098" },
-  quiz:     { label: "Quiz",     Icon: IconQuiz, color: "#B882E8" },
-  tarea:    { label: "Tarea",    Icon: IconTarea, color: "#6BA3E8" },
-  proyecto: { label: "Proyecto", Icon: IconProyecto, color: "#E8946B" },
+  examen:      { label: "Examen",      Icon: IconExamen,      color: "#E87098" },
+  quiz:        { label: "Quiz",        Icon: IconQuiz,        color: "#B882E8" },
+  tarea:       { label: "Tarea",       Icon: IconTarea,       color: "#6BA3E8" },
+  proyecto:    { label: "Proyecto",    Icon: IconProyecto,    color: "#E8946B" },
+  foro:        { label: "Foro",        Icon: IconForo,        color: "#5CC8A5" },
+  laboratorio: { label: "Laboratorio", Icon: IconLaboratorio, color: "#E8B86B" },
+  informe:     { label: "Informe",     Icon: IconInforme,     color: "#6B8AE8" },
 };
 
 function uuid() {
@@ -98,7 +101,7 @@ function migrateCortes(cortes) {
   });
 }
 
-function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onSyncCalendar, cortesData }) {
+function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onEdit, onSyncCalendar, cortesData }) {
   const [expanded, setExpanded] = useState(false);
   const info = TIPO_INFO[item.tipo] || TIPO_INFO.tarea;
   const mat = allMaterias.find(m => m.id === item.materiaId);
@@ -125,7 +128,7 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onSyncCalendar,
     const val = Number(item.valoracion) || 100;
     const updated = { ...item, nota: nota === "" ? undefined : Number(nota) };
     onUpdate(updated);
-    if (isExamenQuiz && item.corteIdx !== undefined && item.materiaId) {
+    if (item.corteIdx !== undefined && item.materiaId) {
       const corteIdx = item.corteIdx;
       const nombre = `${info.label}${item.titulo ? `: ${item.titulo}` : ""}`;
       const cursando = cortesData[item.materiaId] || { cortes: migrateCortes([]) };
@@ -158,13 +161,15 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onSyncCalendar,
         <div className={styles.cardBody}>
           <div className={styles.cardTop}>
             <span className={styles.cardTipo} style={{ color: info.color }}><info.Icon size={11} /> {info.label}</span>
-            {item.fechaExamen && <span className={styles.cardFecha}>{formatDate(item.fechaExamen)}</span>}
-            {item.fechaEntrega && <span className={styles.cardFecha}>Entrega: {formatDate(item.fechaEntrega)}</span>}
+            {item.fechaExamen && !item.fechaFin && <span className={styles.cardFecha}>{formatDate(item.fechaExamen)}</span>}
+            {item.fechaExamen && item.fechaFin && <span className={styles.cardFecha}>Del {formatDate(item.fechaExamen)} al {formatDate(item.fechaFin)}</span>}
+            {item.fechaEntrega && !item.fechaFin && <span className={styles.cardFecha}>Entrega: {formatDate(item.fechaEntrega)}</span>}
+            {item.fechaEntrega && item.fechaFin && <span className={styles.cardFecha}>Del {formatDate(item.fechaEntrega)} al {formatDate(item.fechaFin)}</span>}
           </div>
           <p className={styles.cardTitle}>{item.titulo || info.label}</p>
           {mat && <p className={styles.cardMateria}>{mat.id} — {mat.nombre}</p>}
           <div className={styles.cardMeta}>
-            {isExamenQuiz && item.valoracion && <span className={styles.cardMetaItem}> vale {item.valoracion} pts</span>}
+            {item.valoracion && <span className={styles.cardMetaItem}> vale {item.valoracion} pts</span>}
             {isExamenQuiz && item.esBinas && <span className={styles.cardMetaItem}>Binas</span>}
             {item.lugar && <span className={styles.cardMetaItem}>▪ {item.lugar}</span>}
             {item.temas?.length > 0 && (
@@ -191,23 +196,21 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onSyncCalendar,
             <p className={styles.cardDesc}>{item.descripcion}</p>
           )}
 
-          {isExamenQuiz && (
-            <div className={styles.gradeRow}>
-              <div className={styles.formField}>
-                <label>Nota /{item.valoracion || "?"}</label>
-                <input type="number" min={0} max={Number(item.valoracion) || 500} step="0.1"
-                  className={styles.gradeInput} value={item.nota ?? ""}
-                  placeholder="—" onChange={e => handleGrade(e.target.value)} />
-              </div>
-              {item.nota !== undefined && item.nota !== null && (
-                <span className={styles.gradeBadge}
-                  style={{ color: (item.nota / (Number(item.valoracion) || 100)) >= NOTA_PASS_PCT ? "#6ec88a" : "#e07070",
-                    background: (item.nota / (Number(item.valoracion) || 100)) >= NOTA_PASS_PCT ? "rgba(110,200,138,0.15)" : "rgba(224,112,112,0.15)" }}>
-                  = {(item.nota / (Number(item.valoracion) || 100) * 5).toFixed(2)} /5.0
-                </span>
-              )}
+          <div className={styles.gradeRow}>
+            <div className={styles.formField}>
+              <label>Nota /{item.valoracion || "?"}</label>
+              <input type="number" min={0} max={Number(item.valoracion) || 500} step="0.1"
+                className={styles.gradeInput} value={item.nota ?? ""}
+                placeholder="—" onChange={e => handleGrade(e.target.value)} />
             </div>
-          )}
+            {item.nota !== undefined && item.nota !== null && (
+              <span className={styles.gradeBadge}
+                style={{ color: (item.nota / (Number(item.valoracion) || 100)) >= NOTA_PASS_PCT ? "#6ec88a" : "#e07070",
+                  background: (item.nota / (Number(item.valoracion) || 100)) >= NOTA_PASS_PCT ? "rgba(110,200,138,0.15)" : "rgba(224,112,112,0.15)" }}>
+                = {(item.nota / (Number(item.valoracion) || 100) * 5).toFixed(2)} /5.0
+              </span>
+            )}
+          </div>
 
           {isExamenQuiz && (
             <div className={styles.temasSection}>
@@ -235,6 +238,7 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onSyncCalendar,
           )}
 
           <div className={styles.cardActions}>
+            <button className={styles.editBtn} onClick={() => onEdit(item.id)}><IconEdit size={11} /> Editar</button>
             <button className={styles.deleteBtn} onClick={() => onDelete(item.id)}><IconTrash size={11} /> Eliminar</button>
           </div>
         </div>
@@ -243,11 +247,15 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onSyncCalendar,
   );
 }
 
-export default function AsignacionesView({ malla, asignacionesData, onSave, user, cursandoData, onSaveCursando, calendarioData, onSaveCalendario }) {
+export default function AsignacionesView({ malla, asignacionesData, onSave, user, cursandoData, onSaveCursando, calendarioData, onSaveCalendario, semestre }) {
   const [filterTipo, setFilterTipo] = useState("todos");
   const [filterMateria, setFilterMateria] = useState("todas");
   const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState(null);
   const [showCompleted, setShowCompleted] = useState(false);
+
+  const anioSemestre = semesterDatesFor(semestre).start.getFullYear();
+  const corteSemestre = semesterCorteFor(semestre);
 
   const items = asignacionesData?.items || [];
   const allMaterias = malla.flatMap(s => s.materias);
@@ -265,31 +273,72 @@ export default function AsignacionesView({ malla, asignacionesData, onSave, user
   const completedCount = items.filter(it => it.completada).length;
 
   const handleAdd = (newItem) => {
-    const { diaExamen, mesExamen, diaEntrega, mesEntrega, ...rest } = newItem;
-    const fechaExamen = toISODate(diaExamen, mesExamen);
-    const fechaEntrega = toISODate(diaEntrega, mesEntrega);
-    const created = { ...rest, id: uuid(), temas: rest.temas || [], completada: false, fechaExamen, fechaEntrega };
-    const updated = [...items, created];
-    onSave({ items: updated });
-    if ((rest.tipo === "examen" || rest.tipo === "quiz") && fechaExamen && rest.materiaId) {
-      const evts = calendarioData?.eventos || [];
+    const { diaExamen, mesExamen, diaEntrega, mesEntrega, diaFinEx, mesFinEx, diaFinEn, mesFinEn, ...rest } = newItem;
+    const fechaExamen = toISODate(anioSemestre, diaExamen, mesExamen);
+    const fechaEntrega = toISODate(anioSemestre, diaEntrega, mesEntrega);
+    const isEx = rest.tipo === "examen" || rest.tipo === "quiz";
+    const fechaFin = toISODate(anioSemestre, isEx ? diaFinEx : diaFinEn, isEx ? mesFinEx : mesFinEn);
+    const created = { ...rest, id: uuid(), temas: rest.temas || [], completada: false, fechaExamen, fechaEntrega, fechaFin };
+    const evts = calendarioData?.eventos || [];
+    const fecha = isEx ? fechaExamen : fechaEntrega;
+    const hora = isEx ? (rest.horaExamen || "") : (rest.horaEntrega || "");
+    if (fecha) {
       const calEvent = {
-        id: uuid(), tipo: rest.tipo, titulo: rest.titulo || TIPO_INFO[rest.tipo]?.label || rest.tipo,
-        fecha: fechaExamen, horaInicio: rest.horaExamen || "",
-        materiaId: rest.materiaId, lugar: rest.lugar || "",
+        id: uuid(), tipo: rest.tipo, fecha, hora,
+        materiaId: rest.materiaId || "", lugar: rest.lugar || "",
+        descripcion: rest.descripcion || "", fechaFin,
+        recordatorio: rest.recordatorio ?? 1, notificar: true,
         assignmentId: created.id,
       };
+      created.calendarId = calEvent.id;
       onSaveCalendario({ eventos: [...evts, calEvent] });
     }
+    onSave({ items: [...items, created] });
     setShowModal(false);
   };
 
   const handleUpdate = (updated) => {
-    onSave({ items: items.map(it => it.id === updated.id ? updated : it) });
-    if ((updated.tipo === "examen" || updated.tipo === "quiz") && updated.calendarId) {
-      const evts = calendarioData?.eventos || [];
-      onSaveCalendario({ eventos: evts.map(ev => ev.id === updated.calendarId ? { ...ev, fecha: updated.fechaExamen, horaInicio: updated.horaExamen, titulo: updated.titulo, lugar: updated.lugar } : ev) });
+    const isEx = updated.tipo === "examen" || updated.tipo === "quiz";
+    const fecha = isEx ? updated.fechaExamen : updated.fechaEntrega;
+    const hora = isEx ? (updated.horaExamen || "") : (updated.horaEntrega || "");
+    let next = updated;
+    let newEvts = null;
+    const evts = calendarioData?.eventos || [];
+    if (updated.calendarId) {
+      if (fecha) {
+        newEvts = evts.map(ev => ev.id === updated.calendarId
+          ? { ...ev, tipo: updated.tipo, fecha, hora, titulo: updated.titulo, materiaId: updated.materiaId, lugar: updated.lugar, descripcion: updated.descripcion, esBinas: updated.esBinas, corteIdx: updated.corteIdx, temas: updated.temas, fechaFin: updated.fechaFin, recordatorio: updated.recordatorio ?? 1 }
+          : ev);
+      } else {
+        newEvts = evts.filter(ev => ev.id !== updated.calendarId);
+        next = { ...updated, calendarId: undefined };
+      }
+    } else if (fecha) {
+      const calEvent = {
+        id: uuid(), tipo: updated.tipo, fecha, hora,
+        materiaId: updated.materiaId || "", lugar: updated.lugar || "",
+        descripcion: updated.descripcion || "", esBinas: updated.esBinas,
+        corteIdx: updated.corteIdx, temas: updated.temas, fechaFin: updated.fechaFin,
+        recordatorio: updated.recordatorio ?? 1, notificar: true,
+        assignmentId: updated.id,
+      };
+      newEvts = [...evts, calEvent];
+      next = { ...updated, calendarId: calEvent.id };
     }
+    onSave({ items: items.map(it => it.id === updated.id ? next : it) });
+    if (newEvts) onSaveCalendario({ eventos: newEvts });
+  };
+
+  const handleEdit = (newItem, original) => {
+    const { diaExamen, mesExamen, diaEntrega, mesEntrega, diaFinEx, mesFinEx, diaFinEn, mesFinEn, ...rest } = newItem;
+    const fechaExamen = toISODate(anioSemestre, diaExamen, mesExamen);
+    const fechaEntrega = toISODate(anioSemestre, diaEntrega, mesEntrega);
+    const isEx = rest.tipo === "examen" || rest.tipo === "quiz";
+    const fechaFin = toISODate(anioSemestre, isEx ? diaFinEx : diaFinEn, isEx ? mesFinEx : mesFinEn);
+    const updated = { ...original, ...rest, fechaExamen, fechaEntrega, fechaFin, temas: rest.temas || [] };
+    handleUpdate(updated);
+    setShowModal(false);
+    setEditing(null);
   };
 
   const handleDelete = (id) => {
@@ -303,7 +352,13 @@ export default function AsignacionesView({ malla, asignacionesData, onSave, user
 
   const handleToggleComplete = (id) => {
     const item = items.find(it => it.id === id);
-    if (item) onSave({ items: items.map(it => it.id === id ? { ...it, completada: !it.completada } : it) });
+    if (!item) return;
+    const completing = !item.completada;
+    onSave({ items: items.map(it => it.id === id ? { ...it, completada: completing } : it) });
+    if (item.calendarId) {
+      const evts = calendarioData?.eventos || [];
+      onSaveCalendario({ eventos: evts.map(ev => ev.id === item.calendarId ? { ...ev, notificar: !completing } : ev) });
+    }
   };
 
   return (
@@ -348,8 +403,8 @@ export default function AsignacionesView({ malla, asignacionesData, onSave, user
       {filteredItems.length === 0 && (
         <div className={styles.emptyState}>
           <span className={styles.emptyIcon}><IconClipboard size={32} /></span>
-          <p>No hay asignaciones {filterTipo !== "todos" || filterMateria !== "todas" ? "con estos filtros" : "registradas"}</p>
-          <p>Haz clic en <strong>+ Asignación</strong> para agregar una.</p>
+          <p>No hay asignaciones {filterTipo !== "todos" || filterMateria !== "todas" ? "con estos filtros" : "todavía"}</p>
+          <p>Toca <strong>+ Asignación</strong> para crear la primera.</p>
         </div>
       )}
 
@@ -361,27 +416,53 @@ export default function AsignacionesView({ malla, asignacionesData, onSave, user
             allMaterias={allMaterias}
             onUpdate={handleUpdate}
             onDelete={handleDelete}
+            onEdit={(id) => setEditing(items.find(it => it.id === id))}
             onSyncCalendar={(materiaId, data) => onSaveCursando({ ...cursandoData, [materiaId]: data })}
             cortesData={cursandoData}
           />
         ))}
       </div>
 
-      {showModal && (
-        <AddModal onClose={() => setShowModal(false)} onSave={handleAdd} materias={cursandoMaterias} cortesData={cursandoData} />
+      {(showModal || editing) && (
+        <AddModal
+          onClose={() => { setShowModal(false); setEditing(null); }}
+          onSave={editing ? (form) => handleEdit(form, editing) : handleAdd}
+          materias={cursandoMaterias}
+          cortesData={cursandoData}
+          anioSemestre={anioSemestre}
+          corteSemestre={corteSemestre}
+          initial={editing}
+        />
       )}
     </div>
   );
 }
 
-function AddModal({ onClose, onSave, materias, cortesData }) {
-  const [form, setForm] = useState({
+function AddModal({ onClose, onSave, materias, cortesData, anioSemestre, corteSemestre, initial }) {
+  useBodyScrollLock();
+  const fechaEx = initial?.fechaExamen ? initial.fechaExamen.split("-") : [];
+  const fechaEn = initial?.fechaEntrega ? initial.fechaEntrega.split("-") : [];
+  const fechaFin = initial?.fechaFin ? initial.fechaFin.split("-") : [];
+  const hasRangoInitial = !!(initial?.fechaFin);
+  const [form, setForm] = useState(initial ? {
+    tipo: initial.tipo || "examen", titulo: initial.titulo || "", materiaId: initial.materiaId || "",
+    diaExamen: fechaEx[2] || "", mesExamen: fechaEx[1] || "", horaExamen: initial.horaExamen || "",
+    diaEntrega: fechaEn[2] || "", mesEntrega: fechaEn[1] || "", horaEntrega: initial.horaEntrega || "",
+    diaFinEx: initial.tipo === "examen" || initial.tipo === "quiz" ? (fechaFin[2] || "") : "",
+    mesFinEx: initial.tipo === "examen" || initial.tipo === "quiz" ? (fechaFin[1] || "") : "",
+    diaFinEn: initial.tipo !== "examen" && initial.tipo !== "quiz" ? (fechaFin[2] || "") : "",
+    mesFinEn: initial.tipo !== "examen" && initial.tipo !== "quiz" ? (fechaFin[1] || "") : "",
+    lugar: initial.lugar || "", descripcion: initial.descripcion || "", valoracion: initial.valoracion ?? "", esBinas: !!initial.esBinas,
+    corteIdx: initial.corteIdx ?? 0, temas: initial.temas || [], recordatorio: initial.recordatorio ?? 1,
+  } : {
     tipo: "examen", titulo: "", materiaId: "",
     diaExamen: "", mesExamen: "", horaExamen: "",
-    diaEntrega: "", mesEntrega: "",
+    diaEntrega: "", mesEntrega: "", horaEntrega: "",
+    diaFinEx: "", mesFinEx: "", diaFinEn: "", mesFinEn: "",
     lugar: "", descripcion: "", valoracion: "", esBinas: false,
-    corteIdx: 0, temas: [],
+    corteIdx: 0, temas: [], recordatorio: 1,
   });
+  const [usarRango, setUsarRango] = useState(hasRangoInitial);
   const update = (f, v) => setForm(p => ({ ...p, [f]: v }));
   const isExamenQuiz = form.tipo === "examen" || form.tipo === "quiz";
 
@@ -399,11 +480,15 @@ function AddModal({ onClose, onSave, materias, cortesData }) {
   const updateTema = (i, val) => { const t = [...form.temas]; t[i] = { ...t[i], nombre: val }; update("temas", t); };
   const removeTema = (i) => update("temas", form.temas.filter((_, idx) => idx !== i));
 
+  const fechaLabel = isExamenQuiz ? "Fecha de evaluación" : "Fecha de entrega";
+  const diaRango = isExamenQuiz ? "diaFinEx" : "diaFinEn";
+  const mesRango = isExamenQuiz ? "mesFinEx" : "mesFinEn";
+
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modal} onClick={e => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <h3 className={styles.modalTitle}>Nueva asignación</h3>
+          <h3 className={styles.modalTitle}>{initial ? "Editar asignación" : "Nueva asignación"}</h3>
           <button className={styles.modalClose} onClick={onClose}><IconClose size={14} /></button>
         </div>
         <div className={styles.modalBody}>
@@ -413,7 +498,7 @@ function AddModal({ onClose, onSave, materias, cortesData }) {
               {Object.entries(TIPO_INFO).map(([key, val]) => (
                 <button key={key} className={`${styles.tipoBtn} ${form.tipo === key ? styles.tipoBtnActive : ""}`}
                   style={{ "--t-color": val.color }} onClick={() => update("tipo", key)}>
-                  <span><val.Icon size={11} /></span> {val.label}
+                  <span><val.Icon size={11} /></span> <span className={styles.tipoLabel}>{val.label}</span>
                 </button>
               ))}
             </div>
@@ -427,132 +512,133 @@ function AddModal({ onClose, onSave, materias, cortesData }) {
                 {materias.map(m => <option key={m.id} value={m.id}>{m.id} - {m.nombre}</option>)}
               </select>
             </div>
-            {isExamenQuiz && (
-              <div className={styles.formField}>
-                <label>Título (opcional)</label>
-                <input type="text" className={styles.textInput} value={form.titulo}
-                  placeholder={TIPO_INFO[form.tipo]?.label || "Nombre"} onChange={e => update("titulo", e.target.value)} />
-              </div>
-            )}
-          </div>
-
-          {!isExamenQuiz && (
             <div className={styles.formField}>
               <label>Título (opcional)</label>
               <input type="text" className={styles.textInput} value={form.titulo}
                 placeholder={TIPO_INFO[form.tipo]?.label || "Nombre"} onChange={e => update("titulo", e.target.value)} />
             </div>
+          </div>
+
+          <div className={styles.formRow2}>
+            <div className={styles.formField}>
+              <label>{usarRango ? `${fechaLabel} — Inicio` : fechaLabel}</label>
+              <div className={styles.dateRow}>
+                <select className={styles.select} value={isExamenQuiz ? form.diaExamen : form.diaEntrega}
+                  onChange={e => update(isExamenQuiz ? "diaExamen" : "diaEntrega", e.target.value)}>
+                  <option value="">Día</option>
+                  {DIAS.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <select className={styles.select} value={isExamenQuiz ? form.mesExamen : form.mesEntrega}
+                  onChange={e => update(isExamenQuiz ? "mesExamen" : "mesEntrega", e.target.value)}>
+                  <option value="">Mes</option>
+                  {MESES_CORTOS.filter(Boolean).map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
+                </select>
+              </div>
+              <span className={styles.formHint}>Año {anioSemestre} · semestre {corteSemestre}</span>
+            </div>
+            <div className={styles.formField}>
+              <label>Hora</label>
+              <select className={styles.select} value={isExamenQuiz ? form.horaExamen : form.horaEntrega}
+                onChange={e => update(isExamenQuiz ? "horaExamen" : "horaEntrega", e.target.value)}>
+                <option value="">—</option>
+                {HORA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {usarRango && (
+            <div className={styles.formField}>
+              <label>{fechaLabel} — Fin</label>
+              <div className={styles.dateRow}>
+                <select className={styles.select} value={form[diaRango]} onChange={e => update(diaRango, e.target.value)}>
+                  <option value="">Día</option>
+                  {DIAS.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <select className={styles.select} value={form[mesRango]} onChange={e => update(mesRango, e.target.value)}>
+                  <option value="">Mes</option>
+                  {MESES_CORTOS.filter(Boolean).map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
+                </select>
+              </div>
+              <span className={styles.formHint}>Año {anioSemestre}</span>
+            </div>
           )}
+
+          <span className={styles.formHint} role="button" style={{ cursor: "pointer", userSelect: "none" }}
+            onClick={() => setUsarRango(v => !v)}>
+            {usarRango ? "Usar fecha única" : "¿Rango de fechas?"}
+          </span>
+
+          <div className={styles.formRow2}>
+            <div className={styles.formField}>
+              <label>Puntos máximos</label>
+              <input type="number" min={1} className={styles.textInput}
+                value={form.valoracion} placeholder="100" onChange={e => update("valoracion", e.target.value)} />
+            </div>
+            {isExamenQuiz && (
+              <div className={styles.formField}>
+                <label>En binas</label>
+                <button className={`${styles.toggleBtn} ${form.esBinas ? styles.toggleBtnOn : ""}`}
+                  onClick={() => update("esBinas", !form.esBinas)}>
+                  {form.esBinas ? "Sí" : "No"}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className={styles.formField}>
+            <label>Corte</label>
+            <select className={styles.select} value={form.corteIdx} onChange={e => update("corteIdx", Number(e.target.value))}>
+              {cortesMateria.length > 0 ? cortesMateria.map((c, i) => (
+                <option key={i} value={i}>{c.nombre} ({c.peso} pts)</option>
+              )) : (
+                <option value={0}>Corte 1</option>
+              )}
+            </select>
+            <span className={styles.formHint}>
+              La nota se suma sola al acumulado de este corte en "Semestre"
+            </span>
+          </div>
 
           {isExamenQuiz && (
-            <>
-              <div className={styles.formRow2}>
-                <div className={styles.formField}>
-                  <label>Fecha de evaluación</label>
-                  <div className={styles.dateRow}>
-                    <select className={styles.select} value={form.diaExamen} onChange={e => update("diaExamen", e.target.value)}>
-                      <option value="">Día</option>
-                      {DIAS.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                    <select className={styles.select} value={form.mesExamen} onChange={e => update("mesExamen", e.target.value)}>
-                      <option value="">Mes</option>
-                      {MESES_CORTOS.filter(Boolean).map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
-                    </select>
+            <div className={styles.formField}>
+              <label>Temas evaluados</label>
+              <div className={styles.temasList}>
+                {form.temas.map((tema, i) => (
+                  <div key={tema.id} className={styles.temaRow}>
+                    <input type="text" className={styles.textInput} value={tema.nombre}
+                      placeholder="Tema..." onChange={e => updateTema(i, e.target.value)} />
+                    <button className={styles.removeBtn} onClick={() => removeTema(i)}><IconClose size={11} /></button>
                   </div>
-                  <span className={styles.formHint}>Año {ANIO_SEMESTRE} · semestre {SEMESTER_CORTE}</span>
-                </div>
-                <div className={styles.formField}>
-                  <label>Hora</label>
-                  <select className={styles.select} value={form.horaExamen} onChange={e => update("horaExamen", e.target.value)}>
-                    <option value="">—</option>
-                    {HORA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                </div>
+                ))}
+                <button className={styles.addItemBtn} onClick={addTema}>+ Tema</button>
               </div>
-              <div className={styles.formRow2}>
-                <div className={styles.formField}>
-                  <label>Puntos máximos</label>
-                  <input type="number" min={1} className={styles.textInput}
-                    value={form.valoracion} placeholder="100" onChange={e => update("valoracion", e.target.value)} />
-                </div>
-                <div className={styles.formField}>
-                  <label>En binas</label>
-                  <button className={`${styles.toggleBtn} ${form.esBinas ? styles.toggleBtnOn : ""}`}
-                    onClick={() => update("esBinas", !form.esBinas)}>
-                    {form.esBinas ? "Sí" : "No"}
-                  </button>
-                </div>
-              </div>
-              <div className={styles.formField}>
-                <label>Corte</label>
-                <select className={styles.select} value={form.corteIdx} onChange={e => update("corteIdx", Number(e.target.value))}>
-                  {cortesMateria.length > 0 ? cortesMateria.map((c, i) => (
-                    <option key={i} value={i}>{c.nombre} ({c.peso} pts)</option>
-                  )) : (
-                    <option value={0}>Corte 1</option>
-                  )}
-                </select>
-                <span className={styles.formHint}>
-                  La nota se sumará automáticamente al acumulado de este corte en "Semestre"
-                </span>
-              </div>
-              <div className={styles.formField}>
-                <label>Temas evaluados</label>
-                <div className={styles.temasList}>
-                  {form.temas.map((tema, i) => (
-                    <div key={tema.id} className={styles.temaRow}>
-                      <input type="text" className={styles.textInput} value={tema.nombre}
-                        placeholder="Tema..." onChange={e => updateTema(i, e.target.value)} />
-                      <button className={styles.removeBtn} onClick={() => removeTema(i)}><IconClose size={11} /></button>
-                    </div>
-                  ))}
-                  <button className={styles.addItemBtn} onClick={addTema}>+ Tema</button>
-                </div>
-              </div>
-            </>
+            </div>
           )}
 
-          {(form.tipo === "tarea" || form.tipo === "proyecto") && (
-            <>
-              <div className={styles.formRow2}>
-                <div className={styles.formField}>
-                  <label>Fecha de entrega</label>
-                  <div className={styles.dateRow}>
-                    <select className={styles.select} value={form.diaEntrega} onChange={e => update("diaEntrega", e.target.value)}>
-                      <option value="">Día</option>
-                      {DIAS.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                    <select className={styles.select} value={form.mesEntrega} onChange={e => update("mesEntrega", e.target.value)}>
-                      <option value="">Mes</option>
-                      {MESES_CORTOS.filter(Boolean).map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
-                    </select>
-                  </div>
-                  <span className={styles.formHint}>Año {ANIO_SEMESTRE} · semestre {SEMESTER_CORTE}</span>
-                </div>
-                <div className={styles.formField}>
-                  <label>Lugar</label>
-                  <input type="text" className={styles.textInput} value={form.lugar}
-                    placeholder="Salón, plataforma..." onChange={e => update("lugar", e.target.value)} />
-                </div>
-              </div>
-              <div className={styles.formField}>
-                <label>Descripción</label>
-                <textarea className={styles.textarea} value={form.descripcion}
-                  placeholder="Detalles..." rows={3}
-                  onChange={e => update("descripcion", e.target.value)} />
-              </div>
-            </>
-          )}
+          <div className={styles.formField}>
+            <label>Descripción</label>
+            <textarea className={styles.textarea} value={form.descripcion}
+              placeholder="Detalles..." rows={3}
+              onChange={e => update("descripcion", e.target.value)} />
+          </div>
 
           <div className={styles.formField}>
             <label>Lugar (opcional)</label>
             <input type="text" className={styles.textInput} value={form.lugar}
               placeholder="Salón, edificio..." onChange={e => update("lugar", e.target.value)} />
           </div>
+
+          <div className={styles.formField}>
+            <label>Recordatorio</label>
+            <select className={styles.select} value={form.recordatorio} onChange={e => update("recordatorio", Number(e.target.value))}>
+              {REMINDER_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <span className={styles.formHint}>Se te notificará antes de la fecha</span>
+          </div>
         </div>
         <div className={styles.modalFooter}>
           <button className={styles.btnSecondary} onClick={onClose}>Cancelar</button>
-          <button className={styles.btnPrimary} onClick={() => onSave(form)}>Crear</button>
+          <button className={styles.btnPrimary} onClick={() => onSave(form)}>{initial ? "Guardar cambios" : "Crear"}</button>
         </div>
       </div>
     </div>

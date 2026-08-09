@@ -68,6 +68,20 @@
 .legendItem { display: flex; align-items: center; gap: 6px; cursor: grab; padding: 2px 4px; border-radius: 6px; transition: background 0.15s; user-select: none; }
 .legendItem:hover { background: rgba(var(--accent-rgb), 0.16); }
 .legendItem:active { cursor: grabbing; }
+.legendItemDragging { opacity: 0.4; transform: scale(0.95); }
+.touchGhost {
+  position: fixed; left: 0; top: 0; z-index: 1000;
+  pointer-events: none; touch-action: none;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+  font-size: 12px; font-weight: 700; color: var(--accent);
+  font-family: var(--font-body);
+  white-space: nowrap;
+}
 .legendDot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .legendId { font-size: 11px; font-weight: 700; color: var(--text); }
 .legendNombre { font-size: 11px; color: var(--text-muted); }
@@ -171,23 +185,26 @@
   line-height: 1.35; white-space: nowrap; overflow: hidden;
   text-overflow: ellipsis;
 }
+.claseIcon { display: none; }
 
 /* ── Modal ────────────────────────────────────────── */
 .modalOverlay {
   position: fixed; inset: 0; z-index: 200;
   background: rgba(0, 0, 0, 0.42);
-  display: flex;
-  padding: 16px;
+  display: flex; align-items: center; justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   animation: fadeIn 0.15s ease;
-  overflow-y: auto;
+  overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; touch-action: pan-y;
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .modal {
   margin: auto;
   background: var(--modal-bg); border: 1px solid var(--modal-border);
-  border-radius: var(--radius-lg); width: 100%; max-width: 540px;
-  max-height: none;
+  border-radius: var(--radius-lg); width: 100%; max-width: min(92vw, 540px);
+  max-height: 85dvh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
   box-shadow: 0 20px 60px rgba(0,0,0,0.18);
   animation: slideUp 0.2s ease;
 }
@@ -232,6 +249,8 @@
   display: flex; align-items: center; justify-content: space-between;
   padding: 20px 22px 16px;
   border-bottom: 1px solid var(--border);
+  border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);
+  flex-shrink: 0;
 }
 .modalTitle { font-family: var(--font-display); font-size: 20px; font-weight: 400; color: var(--text); }
 .modalClose {
@@ -241,11 +260,20 @@
 }
 .modalClose:hover { background: var(--surface2); }
 
-.modalBody { padding: 20px 22px; display: flex; flex-direction: column; gap: 16px; }
+.modalBody {
+  padding: 20px 22px; display: flex; flex-direction: column; gap: 16px;
+  flex: 1 1 auto; min-height: 0;
+  overflow-y: auto; overflow-x: hidden;
+  overscroll-behavior: contain; touch-action: pan-y;
+}
+.modalBody > * { flex-shrink: 0; }
 
 .modalFooter {
   padding: 16px 22px; border-top: 1px solid var(--border);
   display: flex; justify-content: flex-end; gap: 10px;
+  flex-shrink: 0;
+  border-bottom-left-radius: var(--radius-lg); border-bottom-right-radius: var(--radius-lg);
+  position: relative; z-index: 1; background: var(--modal-bg);
 }
 
 /* ── Form elements ────────────────────────────────── */
@@ -262,6 +290,7 @@
   border-radius: var(--radius-sm); color: var(--text);
   font-family: var(--font-body); font-size: 13px;
   padding: 9px 12px; outline: none; width: 100%;
+  min-width: 0; max-width: 100%;
   transition: border-color 0.2s;
   appearance: none; -webkit-appearance: none;
 }
@@ -275,6 +304,7 @@
   border-radius: var(--radius-sm); padding: 10px 8px; cursor: pointer;
   font-family: var(--font-body); font-size: 11px; color: var(--text-muted);
   transition: all 0.15s; text-align: center;
+  min-width: 0; word-break: break-word;
 }
 .edificioBtn:hover { border-color: var(--accent); color: var(--text); }
 .edificioBtnActive { border-color: var(--accent) !important; color: var(--accent) !important; background: rgba(var(--accent-rgb), 0.16) !important; }
@@ -347,8 +377,8 @@
   .legendRow { padding: 8px 10px; }
   .grid { min-width: 480px; }
   .diaHeader { font-size: 11px; }
-  .modalOverlay { padding: 10px; }
-  .modal { border-radius: var(--radius-md); max-height: 95vh; }
+  .modalOverlay { padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); }
+  .modal { border-radius: var(--radius-md); }
   .modalHeader { padding: 14px; }
   .modalBody { padding: 14px; gap: 12px; }
   .modalFooter { padding: 12px 14px; }
@@ -368,17 +398,31 @@
 @media (max-width: 480px) {
   .wrap { padding: 14px 10px; }
   .title { font-size: 20px; }
-  .addBtn { width: 100%; text-align: center; }
+  .headerActions { width: 100%; }
+  .headerActions .exportBtn,
+  .headerActions .addBtn { flex: 1; justify-content: center; text-align: center; }
   .diasRow { gap: 5px; }
   .diaBtn { padding: 5px 10px; font-size: 11px; }
   .planOpcionBtn { padding: 5px 10px; font-size: 11px; }
   .planAddBtn { padding: 5px 10px; font-size: 11px; }
+  .formRow { flex-direction: column; }
+  .formRow .formField { min-width: 0; }
 }
 
-@media (max-width: 700px) {
+/* ── Móvil: grid semanal con scroll horizontal y snap por día (Opción B) ──
+   En pantallas angostas el grid de 7 columnas es ilegible, así que cada día
+   tiene un ancho fijo y el usuario desliza horizontalmente. La columna de
+   hora queda pegada a la izquierda. */
+@media (max-width: 768px) {
+  .gridWrap {
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 42px; /* ancho de la columna de hora + separación */
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
   .grid {
     min-width: 0;
-    grid-template-columns: 40px repeat(var(--num-dias, 5), minmax(56px, 1fr));
+    grid-template-columns: 40px repeat(var(--num-dias, 5), minmax(280px, 1fr));
   }
   .horaCol {
     position: sticky; left: 0; z-index: 3;
@@ -387,11 +431,40 @@
     -webkit-backdrop-filter: blur(6px);
   }
   .horaCell { font-size: 9px; padding: 5px 6px 0 0; }
-  .diaLabelLargo { display: none; }
-  .diaLabelCorto { display: block; font-size: 11px; }
-  .claseBloqueContent { padding: 5px 6px; }
+  .diaCol { scroll-snap-align: start; }
+
+  /* ── Tarjetas de clase legibles en móvil ── */
+  .claseBloque { min-height: 44px; }
+  .claseBloqueContent { padding: 8px 10px; }
   .claseId { font-size: 12px; }
-  .claseNombre, .claseProfesor, .claseHora, .claseSalon { font-size: 9px; }
+  .claseNombre {
+    font-size: 14px; font-weight: 600;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; white-space: normal;
+  }
+  .claseProfesor { font-size: 12px; }
+  .claseHora, .claseSalon {
+    font-size: 12px;
+    display: inline-flex; align-items: center; gap: 4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  }
+  .claseHora { margin-top: auto; padding-top: 3px; }
+  .claseIcon { display: inline-flex; flex-shrink: 0; }
+
+  /* ── Leyenda táctil: se mantiene el visual original (sin caja) ── */
+  .legendItemTap { cursor: pointer; touch-action: none; }
+
+  /* ── Planificador: reordenar con botones (sin drag en touch) ── */
+  .miniDragHandle { display: none; }
+  .miniMoveBtn { display: inline-flex; }
+
+  /* ── Mini horario: snap por día y columnas legibles ── */
+  .miniGridWrap { scroll-snap-type: x mandatory; }
+  .miniGridInner {
+    min-width: 0;
+    grid-template-columns: 32px repeat(var(--num-dias, 5), minmax(150px, 1fr));
+  }
+  .miniDiaCol { scroll-snap-align: start; }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -471,6 +544,97 @@
   gap: 14px;
 }
 
+/* ── Resumen de matrícula ─────────────────────────── */
+.planResumen {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.planResumenHeader {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  padding: 12px 16px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+
+.planResumenTitle {
+  display: block;
+  font-size: 13px; font-weight: 700; color: var(--text);
+}
+
+.planResumenSub {
+  font-size: 12px; color: var(--text-muted);
+}
+
+.planResumenBadge {
+  font-size: 11px; font-weight: 600;
+  padding: 4px 12px; border-radius: 999px;
+}
+.planResumenBadgeOk {
+  color: #6ec88a;
+  background: rgba(110, 200, 138, 0.1);
+  border: 1px solid rgba(110, 200, 138, 0.3);
+}
+.planResumenBadgeWarn {
+  color: #e0a060;
+  background: rgba(224, 160, 96, 0.1);
+  border: 1px solid rgba(224, 160, 96, 0.3);
+}
+
+.planResumenList {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 8px;
+}
+
+.planResumenEmpty {
+  font-size: 12px; color: var(--text-muted);
+  text-align: center; padding: 12px 8px;
+}
+
+.planResumenMateria {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
+}
+
+.planResumenDot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.planResumenDotOk { background: #6ec88a; }
+.planResumenDotWarn { background: #e0a060; }
+
+.planResumenMateriaBody {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 1px;
+}
+.planResumenMateriaId {
+  font-size: 10px; font-weight: 700; color: var(--accent);
+  letter-spacing: 0.04em;
+}
+.planResumenMateriaNombre {
+  font-size: 13px; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.planResumenMateriaCred {
+  font-size: 11px; color: var(--text-muted); flex-shrink: 0;
+}
+
+.planResumenWarn {
+  font-size: 11px; color: #e0a060;
+  display: flex; align-items: center; gap: 4px;
+  flex-shrink: 0;
+}
+
+.planResumenConflict {
+  font-size: 12px; color: #e07070;
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+}
+
 .miniCardDragWrap { transition: opacity 0.15s, transform 0.15s; border-radius: var(--radius-md); }
 .miniCardDragging { opacity: 0.4; }
 .miniCardDragOver { outline: 2px dashed var(--accent); outline-offset: 3px; border-radius: var(--radius-md); }
@@ -527,6 +691,7 @@
 .miniActionBtn:disabled { opacity: 0.35; cursor: not-allowed; }
 .miniActionBtn:disabled:hover { background: transparent; color: var(--text-muted); }
 .miniActionBtnDanger:hover { background: rgba(224,112,112,0.15); color: #e07070; }
+.miniMoveBtn { display: none; }
 
 /* ── Mini tabla ───────────────────────────────────── */
 .miniTableWrap { overflow-x: auto; }
@@ -668,9 +833,8 @@
 }
 .planEmptyIcon { font-size: 36px; display: block; margin-bottom: 12px; }
 
-@media (max-width: 700px) {
+@media (max-width: 768px) {
   .planGrid { grid-template-columns: 1fr; }
-  .miniGridInner { min-width: 280px; }
 }
 
 /* ═══════════════════════════════════════════════════

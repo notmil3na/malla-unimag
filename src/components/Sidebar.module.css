@@ -23,6 +23,12 @@
 
 .brand { display: flex; align-items: center; gap: 8px; }
 
+.brandActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .brandIcon {
   font-size: 20px; color: var(--accent);
   display: inline-block;
@@ -149,9 +155,9 @@
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
   }
-  .brandRow { margin-bottom: 0; padding: 0 4px; }
+  .brandRow { margin-bottom: 12px; padding: 0 4px; }
   .themeIndicator { display: none; }
-  .profile { margin-bottom: 0; padding: 8px 10px; }
+  .profile { margin-bottom: 12px; padding: 8px 10px; }
   .avatar, .avatarImg, .avatar > span { width: 34px; height: 34px; }
   .avatar > span { font-size: 14px; }
   .avatarRing { display: none; }
@@ -162,13 +168,19 @@
   .navBtn { width: auto; min-width: max-content; padding: 7px 10px; font-size: 12px; gap: 6px; border-radius: var(--radius-sm); }
   .navBtn.active::before { display: none; }
   .navIcon { font-size: 14px; width: 16px; }
-  .logout { margin-top: 0; padding: 7px 10px; font-size: 11px; }
+  .logout {
+    margin-top: 12px;
+    padding: 10px 12px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+    border-radius: 0 0 10px 10px;
+  }
 }
 
 @media (max-width: 480px) {
   .sidebar { margin: 8px; padding: calc(env(safe-area-inset-top) + 8px) 10px calc(env(safe-area-inset-bottom) + 8px); }
   .brandText { font-size: 18px; }
-  .profile { padding: 6px 8px; }
+  .profile { padding: 6px 8px; margin-bottom: 10px; }
 }
 
 @media (max-width: 360px) {

@@ -26,7 +26,6 @@ export default async function handler(req, res) {
   const ok = await verifyPassword(String(password), data.password);
   if (!ok) return json(res, 401, { error: "Contraseña incorrecta" });
 
-  // Migrar contraseña legacy (texto plano) a hash scrypt en el primer login.
   if (typeof data.password === "string" && !data.password.startsWith("scrypt:")) {
     const hashed = await hashPassword(String(password));
     await admin.from("users").update({ password: hashed }).eq("username", data.username);

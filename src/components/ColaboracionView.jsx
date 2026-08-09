@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import styles from "./ColaboracionView.module.css";
 import {
   IconUsers, IconSearch, IconUserPlus, IconCheck, IconClose, IconWarning,
-  IconTrash, IconSchedule, IconStar,
+  IconTrash, IconSchedule, IconStar, IconScale,
 } from "./Icons";
+import { ACCENT_COLORS } from "../utils/horarioHelpers.js";
 import {
   fetchUsersBrief, fetchFriendships, sendFriendRequest,
   acceptFriendship, removeFriendship, fetchFriendData,
@@ -12,10 +13,10 @@ import {
   DAY_LABELS, WINDOW_START, WINDOW_END,
   formatHourIdx, buildBusyByDay, cellStatuses,
   commonFreeSlots, unionDias, cursandoMaterias, commonSubjects,
-  progressFromMalla,
+  progressFromMalla, overlappingClasses, overlapHoursByDay,
 } from "../utils/scheduleCompare.js";
+import { horaIdx, toViewHora } from "../utils/horarioHelpers.js";
 
-// Script para crear la tabla (mismo contenido que migracion_amigos.sql).
 const MIGRATION_SQL = `create table if not exists public.friendships (
   id              uuid primary key default gen_random_uuid(),
   user_username   text not null references public.users(username) on delete cascade,
@@ -82,10 +83,10 @@ function ComparadorGrid({ myHorario, frHorario }) {
         <p className={styles.gridHint}>
           <IconWarning size={12} />
           {miHorarioVacio && amigoHorarioVacio
-            ? "Ambos horarios están vacíos: todas las franjas aparecen como libres."
+            ? "Ninguno tiene horario todavía, así que todas las franjas se ven libres."
             : miHorarioVacio
-              ? "Tu horario está vacío: se asume que estás libre toda la ventana."
-              : "El horario de tu amigo está vacío: se asume que está libre toda la ventana."}
+              ? "No tienes horario todavía: se asume que estás libre toda la ventana."
+              : "Tu amigo no tiene horario todavía: se asume que está libre toda la ventana."}
         </p>
       )}
 
@@ -125,7 +126,7 @@ function ComparadorGrid({ myHorario, frHorario }) {
 
       <div className={styles.slotList}>
         {slots.length === 0 ? (
-          <p className={styles.slotEmpty}>No hay franjas libres en común de al menos 1 hora.</p>
+          <p className={styles.slotEmpty}>No encontraron franjas libres en común de al menos 1 hora.</p>
         ) : (
           slots.map((s, i) => (
             <div key={i} className={styles.slotRow}>
@@ -142,8 +143,175 @@ function ComparadorGrid({ myHorario, frHorario }) {
   );
 }
 
+// ── Comparación de horarios ───────────────────────────────────────────────
+// Mini horario de solo lectura para la comparación lado a lado.
+function MiniSchedule({ title, subtitle, clases, dias, horas, colorMap, overlapHours }) {
+  const CELL_H = 26;
+  const esCoincidencia = (d, s, e) => {
+    const set = overlapHours[d];
+    if (!set) return false;
+    for (let h = s; h < e; h++) if (set.has(h)) return true;
+    return false;
+  };
+  return (
+    <div className={styles.miniSched}>
+      <div className={styles.miniSchedHead}>
+        <span className={styles.miniSchedTitle}>{title}</span>
+        <span className={styles.miniSchedSub} title={subtitle}>{subtitle}</span>
+      </div>
+      <div className={styles.miniSchedScroll}>
+        <div className={styles.miniSchedGrid}>
+          <div className={styles.miniSchedHourCol}>
+            <div className={styles.miniSchedHourHead} />
+            {horas.map((h) => (
+              <div key={h} className={styles.miniSchedHourCell}>{formatHourIdx(h)}</div>
+            ))}
+          </div>
+          {dias.map((d) => {
+            const dayClases = (clases || []).filter((c) => c.dia === d);
+            return (
+              <div key={d} className={styles.miniSchedDay}>
+                <div className={styles.miniSchedDayHead} title={DAY_LABELS[d]}>{d}</div>
+                <div className={styles.miniSchedDayBody} style={{ height: horas.length * CELL_H }}>
+                  {dayClases.map((c, i) => {
+                    const s = horaIdx(c.horaInicio), e = horaIdx(c.horaFin);
+                    if (s < 0 || e <= s) return null;
+                    const overlap = esCoincidencia(d, s, e);
+                    const color = colorMap[c.materiaId] || "var(--accent)";
+                    return (
+                      <div key={i}
+                        className={`${styles.miniSchedBlock} ${overlap ? styles.miniSchedBlockOverlap : ""}`}
+                        style={{ top: s * CELL_H, height: (e - s) * CELL_H - 2, "--block-color": color }}
+                        title={`${c.materiaId}${c.grupo ? ` - ${c.grupo}` : ""}${c.profesor ? ` · ${c.profesor}` : ""} | ${toViewHora(c.horaInicio)}–${toViewHora(c.horaFin)}${c.salonLabel ? ` | ${c.salonLabel}` : ""}`}>
+                        <span className={styles.miniSchedBlockId}>{c.materiaId}{c.grupo ? ` (${c.grupo})` : ""}</span>
+                        <span className={styles.miniSchedBlockHora}>{toViewHora(c.horaInicio)}–{toViewHora(c.horaFin)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Panel "Comparar horarios": ambos horarios lado a lado + coincidencias.
+function ComparadorHorarios({ myHorario, frHorario, myMalla, frMalla, myName = "Tú", frName }) {
+  const myClases = myHorario?.clases || [];
+  const frClases = frHorario?.clases || [];
+  const horas = [];
+  for (let h = WINDOW_START; h < WINDOW_END; h++) horas.push(h);
+
+  const dias = useMemo(() => unionDias(myHorario, frHorario), [myHorario, frHorario]);
+  const overlaps = useMemo(() => overlappingClasses(myClases, frClases), [myClases, frClases]);
+  const overlapHours = useMemo(() => overlapHoursByDay(myClases, frClases), [myClases, frClases]);
+
+  const myMaterias = useMemo(() => cursandoMaterias(myMalla), [myMalla]);
+  const frMaterias = useMemo(() => cursandoMaterias(frMalla), [frMalla]);
+  const myColorMap = {};
+  myMaterias.forEach((m, i) => { myColorMap[m.id] = ACCENT_COLORS[i % ACCENT_COLORS.length]; });
+  const frColorMap = {};
+  frMaterias.forEach((m, i) => { frColorMap[m.id] = ACCENT_COLORS[i % ACCENT_COLORS.length]; });
+
+  const totalMismaMateria = overlaps.filter((o) => o.mismaMateria).length;
+  const totalMismoSalon = overlaps.filter((o) => o.mismoSalon).length;
+  const totalHoras = overlaps.reduce((a, o) => a + o.duracion, 0);
+  const hayHorarios = myClases.length > 0 || frClases.length > 0;
+
+  return (
+    <div className={styles.gridCard}>
+      <div className={styles.gridHeader}>
+        <h4 className={styles.gridTitle}>Comparar horarios</h4>
+        <div className={styles.legend}>
+          <span className={styles.legendItem}>
+            <i className={styles.legendDot} style={{ background: "var(--accent)" }} /> Tu horario
+          </span>
+          <span className={styles.legendItem}>
+            <i className={styles.legendDot} style={{ background: "#8A7DA8" }} /> Horario de {frName}
+          </span>
+          <span className={styles.legendItem}>
+            <i className={styles.legendDot} style={{ background: "color-mix(in srgb, #E87098 45%, transparent)", border: "1px solid #E87098" }} /> Coinciden
+          </span>
+        </div>
+      </div>
+
+      {!hayHorarios ? (
+        <p className={styles.gridHint}>
+          <IconWarning size={12} /> Ninguno tiene clases agendadas todavía, así que no hay nada que comparar.
+        </p>
+      ) : (
+        <div className={styles.horariosDual}>
+          <MiniSchedule
+            title="Mi horario"
+            subtitle={myName}
+            clases={myClases}
+            dias={dias}
+            horas={horas}
+            colorMap={myColorMap}
+            overlapHours={overlapHours}
+          />
+          <MiniSchedule
+            title="Horario"
+            subtitle={frName}
+            clases={frClases}
+            dias={dias}
+            horas={horas}
+            colorMap={frColorMap}
+            overlapHours={overlapHours}
+          />
+        </div>
+      )}
+
+      <div className={styles.slotStats}>
+        <span className={styles.slotStat}>
+          <strong>{overlaps.length}</strong> coincidencia{overlaps.length !== 1 ? "s" : ""} de clase
+        </span>
+        <span className={styles.slotStat}><strong>{totalMismaMateria}</strong> misma materia</span>
+        <span className={styles.slotStat}><strong>{totalMismoSalon}</strong> mismo salón</span>
+        <span className={styles.slotStat}>
+          <strong>{totalHoras} h</strong> coinciden / semana
+        </span>
+      </div>
+
+      <div className={styles.coincTitle}>Clases a la misma hora</div>
+      <div className={styles.slotList}>
+        {overlaps.length === 0 ? (
+          <p className={styles.slotEmpty}>No tienen clases a la misma hora.</p>
+        ) : (
+          overlaps.map((o, i) => (
+            <div key={i} className={`${styles.coincRow} ${o.mismaMateria ? styles.coincRowMateria : ""}`}>
+              <span className={styles.slotDay}>{DAY_LABELS[o.dia]}</span>
+              <span className={styles.coincHora}>{formatHourIdx(o.inicio)} – {formatHourIdx(o.fin)}</span>
+              <span className={styles.coincDetalle}>
+                {o.mismaMateria ? (
+                  <>
+                    <strong>{o.miClase.materiaId}</strong> · ¡misma materia!
+                    {o.miClase.grupo && o.frClase.grupo && o.miClase.grupo !== o.frClase.grupo
+                      ? ` (${o.miClase.grupo} vs ${o.frClase.grupo})`
+                      : o.miClase.grupo ? ` (${o.miClase.grupo})` : ""}
+                  </>
+                ) : (
+                  <>
+                    <strong>{myName}:</strong> {o.miClase.materiaId}{o.miClase.grupo ? ` (${o.miClase.grupo})` : ""}
+                    {" · "}
+                    <strong>{frName}:</strong> {o.frClase.materiaId}{o.frClase.grupo ? ` (${o.frClase.grupo})` : ""}
+                  </>
+                )}
+                {o.mismoSalon && <span className={styles.coincSalon}> · mismo salón {o.miClase.salonLabel}</span>}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Panel de comparación ──────────────────────────────────────────────────
-function ComparisonSection({ me, perfil, data, myHorario, myMalla, onClose }) {
+function ComparisonSection({ me, perfil, data, myHorario, myMalla, myName, onClose }) {
   const frHorario = data?.horario || { dias: [], clases: [] };
   const frMalla = data?.malla || [];
   const frCursando = useMemo(() => cursandoMaterias(frMalla), [frMalla]);
@@ -151,6 +319,7 @@ function ComparisonSection({ me, perfil, data, myHorario, myMalla, onClose }) {
   const progress = useMemo(() => progressFromMalla(frMalla), [frMalla]);
   const nombre = perfil?.name || me;
   const hasMalla = progress.totalCred > 0;
+  const [modo, setModo] = useState("horarios");
 
   return (
     <section className={styles.compareSection}>
@@ -195,7 +364,7 @@ function ComparisonSection({ me, perfil, data, myHorario, myMalla, onClose }) {
           <div className={styles.profileBlock}>
             <h4 className={styles.blockTitle}>Cursando ahora</h4>
             {frCursando.length === 0 ? (
-              <p className={styles.blockMuted}>Aún no tiene materias marcadas como "Cursando".</p>
+              <p className={styles.blockMuted}>Aún no tiene materias en "Cursando".</p>
             ) : (
               <ul className={styles.frMaterias}>
                 {frCursando.map((m) => (
@@ -212,7 +381,7 @@ function ComparisonSection({ me, perfil, data, myHorario, myMalla, onClose }) {
           <div className={styles.profileBlock}>
             <h4 className={styles.blockTitle}>Progreso de carrera</h4>
             {!hasMalla ? (
-              <p className={styles.blockMuted}>Sin datos de malla guardados.</p>
+              <p className={styles.blockMuted}>Todavía no tiene una malla guardada.</p>
             ) : (
               <>
                 <div className={styles.progressLabelRow}>
@@ -228,7 +397,32 @@ function ComparisonSection({ me, perfil, data, myHorario, myMalla, onClose }) {
         </div>
 
         {/* Columna derecha: comparación de horarios */}
-        <ComparadorGrid myHorario={myHorario} frHorario={frHorario} />
+        <div className={styles.comparadorCol}>
+          <div className={styles.comparadorTabs}>
+            <button
+              className={`${styles.comparadorTab} ${modo === "horarios" ? styles.comparadorTabActive : ""}`}
+              onClick={() => setModo("horarios")}>
+              <IconSchedule size={13} /> Horarios
+            </button>
+            <button
+              className={`${styles.comparadorTab} ${modo === "huecos" ? styles.comparadorTabActive : ""}`}
+              onClick={() => setModo("huecos")}>
+              <IconScale size={13} /> Huecos en común
+            </button>
+          </div>
+          {modo === "horarios" ? (
+            <ComparadorHorarios
+              myHorario={myHorario}
+              frHorario={frHorario}
+              myMalla={myMalla}
+              frMalla={frMalla}
+              myName={myName}
+              frName={nombre}
+            />
+          ) : (
+            <ComparadorGrid myHorario={myHorario} frHorario={frHorario} />
+          )}
+        </div>
       </div>
     </section>
   );
@@ -236,7 +430,7 @@ function ComparisonSection({ me, perfil, data, myHorario, myMalla, onClose }) {
 
 // ── Vista principal ───────────────────────────────────────────────────────
 export default function ColaboracionView({ user, malla, horarioData, onNotify }) {
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState(null);
   const [friendships, setFriendships] = useState({});
   const [loading, setLoading] = useState(true);
   const [tableMissing, setTableMissing] = useState(false);
@@ -265,17 +459,32 @@ export default function ColaboracionView({ user, malla, horarioData, onNotify })
 
   useEffect(() => {
     let active = true;
-    (async () => {
+    const loadUsers = async () => {
       const usersRes = await fetchUsersBrief();
-      if (active) {
-        if (!usersRes.error) setUsers(usersRes.data);
-        else setLoadError(true);
+      if (!active) return;
+      if (usersRes.error) setLoadError(true);
+      else setUsers(usersRes.data);
+    };
+    const loadFriendships = async () => {
+      const friendshipsRes = await fetchFriendships(user.username);
+      if (!active) return;
+      if (friendshipsRes.missingTable) {
+        setTableMissing(true);
+        setFriendships({});
+      } else if (friendshipsRes.error) {
+        setLoadError(true);
+        setFriendships({});
+      } else {
+        setLoadError(false);
+        setTableMissing(false);
+        setFriendships(friendshipsRes.data);
       }
-      await reloadFriendships();
-      if (active) setLoading(false);
-    })();
+      setLoading(false);
+    };
+    loadFriendships();
+    loadUsers();
     return () => { active = false; };
-  }, [reloadFriendships]);
+  }, [user.username]);
 
   const handleSend = async (u) => {
     const res = await sendFriendRequest(user.username, u);
@@ -324,20 +533,21 @@ export default function ColaboracionView({ user, malla, horarioData, onNotify })
   const isOutgoing = (u) => rel(u)?.status === "pendiente" && rel(u).requestedBy === user.username;
   const isFriend = (u) => rel(u)?.status === "aceptado";
 
-  const amigos = users.filter((u) => isFriend(u.username));
-  const incoming = users.filter((u) => isIncoming(u.username));
-  const outgoing = users.filter((u) => isOutgoing(u.username));
+  const userList = users || [];
+  const amigos = userList.filter((u) => isFriend(u.username));
+  const incoming = userList.filter((u) => isIncoming(u.username));
+  const outgoing = userList.filter((u) => isOutgoing(u.username));
 
   const q = query.trim().toLowerCase();
   const searchResults = q
-    ? users.filter(
+    ? userList.filter(
         (u) =>
           u.username !== user.username &&
           ((u.name || "").toLowerCase().includes(q) || (u.username || "").toLowerCase().includes(q))
       )
     : [];
 
-  const selectedProfile = users.find((u) => u.username === selectedUser);
+  const selectedProfile = userList.find((u) => u.username === selectedUser);
   const selectedRel = selectedUser ? rel(selectedUser) : null;
 
   const copyMigration = () => {
@@ -369,7 +579,7 @@ export default function ColaboracionView({ user, malla, horarioData, onNotify })
       <div className={styles.header}>
         <div>
           <h2 className={styles.title}>Colaboración</h2>
-          <p className={styles.subtitle}>Agrega amigos y encuentra huecos en común para estudiar juntos</p>
+          <p className={styles.subtitle}>Agrega amigos, compara horarios y busca huecos libres para estudiar juntos</p>
         </div>
         <div className={styles.headerBadge}>
           <IconUsers size={14} /> {amigos.length} amigo{amigos.length !== 1 ? "s" : ""}
@@ -410,6 +620,10 @@ export default function ColaboracionView({ user, malla, horarioData, onNotify })
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
+
+          {!users && (
+            <p className={styles.usersLoading}><span className={styles.loadingSpinner} /> Cargando lista de usuarios…</p>
+          )}
 
           {query && searchResults.length === 0 && (
             <p className={styles.searchEmpty}>Sin resultados para <strong>"{query}"</strong>.</p>
@@ -498,12 +712,14 @@ export default function ColaboracionView({ user, malla, horarioData, onNotify })
             <span className={styles.badgePill}>{amigos.length}</span>
           </div>
 
-          {amigos.length === 0 ? (
+          {!users ? (
+            <p className={styles.usersLoading}><span className={styles.loadingSpinner} /> Cargando lista de usuarios…</p>
+          ) : amigos.length === 0 ? (
             <div className={styles.friendsEmpty}>
               <span className={styles.friendsEmptyIcon}><IconUsers size={30} /></span>
               <p>Aún no tienes amigos.</p>
               <p className={styles.friendsEmptySub}>
-                Busca personas arriba y envíales una solicitud para poder comparar horarios.
+                Busca a alguien arriba y envíale una solicitud para comparar horarios.
               </p>
             </div>
           ) : (
@@ -550,6 +766,7 @@ export default function ColaboracionView({ user, malla, horarioData, onNotify })
             data={friendData}
             myHorario={horarioData}
             myMalla={malla}
+            myName={user.name || user.username}
             onClose={() => { setSelectedUser(null); setFriendData(null); }}
           />
         )}

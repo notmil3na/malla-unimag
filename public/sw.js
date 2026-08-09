@@ -1,10 +1,5 @@
-/* MiMalla – Service Worker
- * Modo offline: precachea el app shell, cachea assets en runtime y sirve
- * navegaciones desde caché cuando no hay red. Las escrituras (POST/PATCH a
- * Supabase) NO se interceptan aquí: la app las encola en localStorage
- * (src/utils/offlineQueue.js) y las reenvía al reconectar.
- */
-const CACHE = "mimalla-v9";
+/* MiMalla – Service Worker */
+const CACHE = "mimalla-v12";
 const CORE = [
   "/",
   "/manifest.webmanifest",
@@ -33,14 +28,50 @@ self.addEventListener("message", (e) => {
   if (e.data && e.data.type === "SKIP_WAITING") self.skipWaiting();
 });
 
+// ── Push (notificaciones con la app cerrada) ────────────────────────────────
+self.addEventListener("push", (e) => {
+  let payload = {};
+  try {
+    payload = e.data ? e.data.json() : {};
+  } catch (_) {}
+  const title = payload.title || "MiMalla · Recordatorio";
+  const opts = {
+    body: payload.body || "Tienes un recordatorio pendiente.",
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    tag: payload.tag || "mimalla-" + Date.now(),
+    data: { url: payload.url || "/" },
+  };
+  e.waitUntil(self.registration.showNotification(title, opts));
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = e.notification.data && e.notification.data.url
+    ? e.notification.data.url
+    : "/";
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      const target = list.find((c) => c.url && c.url.startsWith(self.location.origin));
+      if (target) {
+        target.focus();
+        return target.navigate(url).catch(() => {});
+      }
+      return self.clients.openWindow(url);
+    })
+  );
+});
+
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
 
-  // API propia: SIEMPRE red. Cachearla daría datos obsoletos.
+  // Solo interceptar peticiones del mismo origen (Google Fonts y demás
+  // recursos externos los maneja el navegador, no el SW).
+  if (!req.url.startsWith(self.location.origin)) return;
+
   if (req.url.includes("/api/")) return;
 
-  // Navegaciones: red primero, caché como respaldo (SPA offline).
   if (req.mode === "navigate") {
     e.respondWith(
       fetch(req)
@@ -56,7 +87,6 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // Assets y GETs: caché primero, revalidación en segundo plano.
   e.respondWith(
     caches.match(req).then((cached) => {
       const network = fetch(req)

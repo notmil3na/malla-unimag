@@ -1,6 +1,3 @@
-// MiMalla · Librería compartida de las funciones serverless (Vercel).
-// La clave service_role y el secreto de sesión viven SOLO aquí (env vars),
-// nunca en el bundle del cliente.
 import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
@@ -26,7 +23,6 @@ export function json(res, status, body) {
   return res.status(status).json(body);
 }
 
-// req.body ya viene parseado por Vercel cuando hay JSON; fallback por si no.
 export function readBody(req) {
   if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) {
     return Promise.resolve(req.body);
@@ -45,7 +41,7 @@ export function readBody(req) {
   });
 }
 
-// ── Hashing de contraseñas (scrypt nativo, sin dependencias) ───────────────
+// ── Hashing de contraseñas (scrypt nativo) ────────────────────────────────
 const SCRYPT_OPTS = { N: 16384, r: 8, p: 1 };
 
 function scryptAsync(password, salt, keylen) {
@@ -62,8 +58,6 @@ export async function hashPassword(password) {
   return `scrypt:${salt}:${hash}`;
 }
 
-// Acepta hashes `scrypt:salt:hash`. Las contraseñas legacy (texto plano)
-// se aceptan UNA vez para permitir la migración en el login.
 export async function verifyPassword(password, stored) {
   try {
     if (!password || typeof stored !== "string") return false;
@@ -78,7 +72,7 @@ export async function verifyPassword(password, stored) {
   }
 }
 
-// ── JWT HS256 (sin dependencias) ───────────────────────────────────────────
+// ── JWT HS256 ──────────────────────────────────────────────────────────────
 function b64url(str) {
   return Buffer.from(str).toString("base64url");
 }
@@ -126,13 +120,24 @@ export function getToken(req) {
   return header.startsWith("Bearer ") ? header.slice(7) : null;
 }
 
-// Devuelve { username } si el token es válido, o null.
 export function requireUser(req) {
   return verifyToken(getToken(req));
 }
 
-// ── Perfil público (nunca password) ─────────────────────────────────────────
-// Devuelve camelCase para que el cliente lo use directo en la sesión.
+// ── Detección de columnas faltantes (migración pendiente) ────────────────
+export function isColumnMissing(err) {
+  if (!err) return false;
+  const msg = String(err.message || err.hint || "");
+  const code = String(err.code || "");
+  return (
+    code === "PGRST204" ||
+    code === "42703" ||
+    msg.includes("Could not find the '") ||
+    msg.includes("no existe la columna")
+  );
+}
+
+// ── Perfil público ─────────────────────────────────────────────────────────
 export function publicUser(row) {
   if (!row) return null;
   return {
@@ -142,6 +147,7 @@ export function publicUser(row) {
     career: row.career ?? "",
     semester: row.semester ?? 1,
     ingresoCorte: row.ingreso_corte ?? "2023-2",
+    birthdate: row.birthdate ?? "",
     photo: row.photo ?? null,
     appMode: row.app_mode ?? "dark",
     appTheme: row.app_theme ?? "ambar",
@@ -149,10 +155,10 @@ export function publicUser(row) {
     borderRadius: row.border_radius ?? 12,
     fontScale: row.font_scale ?? 1,
     fontBody: row.font_body ?? "DM Sans",
+    securityQuestion: row.security_question ?? "",
   };
 }
 
-// Convierte un objeto camelCase del cliente a columnas de la tabla users.
 export function toUserRow(obj) {
   const row = {};
   if (obj.name !== undefined) row.name = String(obj.name);
@@ -160,6 +166,7 @@ export function toUserRow(obj) {
   if (obj.career !== undefined) row.career = String(obj.career);
   if (obj.semester !== undefined) row.semester = Number(obj.semester) || 1;
   if (obj.ingresoCorte !== undefined) row.ingreso_corte = String(obj.ingresoCorte);
+  if (obj.birthdate !== undefined) row.birthdate = obj.birthdate || null;
   if (obj.photo !== undefined) row.photo = obj.photo || null;
   if (obj.appMode !== undefined) row.app_mode = String(obj.appMode);
   if (obj.appTheme !== undefined) row.app_theme = String(obj.appTheme);

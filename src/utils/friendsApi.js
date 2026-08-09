@@ -1,16 +1,29 @@
 import { api } from "../api";
 
 // ── Relación canónica ─────────────────────────────────────────────────────
-// Una sola fila por amistad con (user_username, friend_username) ordenados
-// alfabéticamente, así ambos lados consultan con el mismo par.
 export function canonicalPair(a, b) {
   return a < b ? [a, b] : [b, a];
 }
 
 export const FRIENDSHIP_TABLE_MISSING = "42P01";
 
-// El backend (Vercel Functions) hace todo contra Supabase con service_role:
-// si la tabla falta, es un error de la función, no del cliente.
+// ── Caché en memoria (evita re-pedir en cada visita a la pestaña) ────────
+const cache = new Map();
+const CACHE_TTL = 60 * 1000;
+
+function cached(key, fn) {
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < CACHE_TTL) return Promise.resolve(hit.value);
+  return fn().then((res) => {
+    if (!res.error && !res.missingTable) cache.set(key, { at: Date.now(), value: res });
+    return res;
+  });
+}
+
+function invalidate(key) {
+  cache.delete(key);
+}
+
 function wrap(promise) {
   return promise.then(
     (res) => ({ error: null, data: res.data ?? null, missingTable: false }),
@@ -19,27 +32,28 @@ function wrap(promise) {
 }
 
 // ── Consultas ─────────────────────────────────────────────────────────────
-// Devuelve { error, data } donde data es un mapa { usuario -> { status, requestedBy } }.
 export function fetchFriendships(username) {
-  return wrap(api("/friendships"));
+  return cached(`friendships:${username}`, () => wrap(api("/friendships")));
 }
 
 export function sendFriendRequest(me, other) {
+  invalidate(`friendships:${me}`);
   return wrap(api("/friendships", { method: "POST", body: { action: "request", other } }));
 }
 
 export function acceptFriendship(me, other) {
+  invalidate(`friendships:${me}`);
   return wrap(api("/friendships", { method: "POST", body: { action: "accept", other } }));
 }
 
 export function removeFriendship(me, other) {
+  invalidate(`friendships:${me}`);
   return wrap(api("/friendships", { method: "POST", body: { action: "remove", other } }));
 }
 
 // ── Usuarios ──────────────────────────────────────────────────────────────
-// Lista breve de usuarios para buscar (sin password).
 export function fetchUsersBrief() {
-  return wrap(api("/users"));
+  return cached("users", () => wrap(api("/users")));
 }
 
 // ── Datos del amigo (horario + malla para progreso) ───────────────────────

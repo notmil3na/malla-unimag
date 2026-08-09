@@ -4,23 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="MiMalla – Plan de estudios, horarios, notas, asignaciones y colaboración de tu semestre." />
-    <title>MiMalla – Plan de Estudios</title>
+    <title>MiMalla</title>
     <script>
-      // Aplicar el tema guardado ANTES del primer pintado (evita el flash de tema
-      // al recargar y sincroniza la barra de estado con el fondo real de la app).
       (function () {
         try {
           var THEMES = {
-            ambar:     ["#EECE7B", "#D0783B", "238,206,123"],
-            oceano:    ["#6BA3E8", "#3A70B0", "107,163,232"],
-            violeta:   ["#B882E8", "#7B50B0", "184,130,232"],
-            rosa:      ["#E87098", "#C04070", "232,112,152"],
-            esmeralda: ["#6EC8A8", "#3A8B6A", "110,200,168"],
-            coral:     ["#E8946B", "#C06840", "232,148,107"],
+            rojo:      ["#FF3B4D", "#D1212F", "255,59,77"],
+            naranja:   ["#FF7A1A", "#E35E00", "255,122,26"],
+            ambar:     ["#FFC94D", "#F2A900", "255,201,77"],
+            verde:     ["#2BD06E", "#0FA84F", "43,208,110"],
+            turquesa:  ["#00D1B2", "#00A28A", "0,209,178"],
+            azul:      ["#3B82F6", "#1D4ED8", "59,130,246"],
+            violeta:   ["#8B5CF6", "#6D28D9", "139,92,246"],
+            rosa:      ["#FF4D8D", "#E02A6D", "255,77,141"],
+            gris:      ["#9AA5B8", "#5F6B82", "154,165,184"],
           };
           var s = JSON.parse(localStorage.getItem("malla_session") || "null");
-          // Sesión nueva: { token, user }. Sesiones antiguas (pre-refactor)
-          // guardaban el objeto de usuario directo: se leen solo para el tema.
           var u = (s && s.user) || (s && !s.token ? s : null);
           var r = document.documentElement;
           var mode = (u && u.appMode) || "dark";
@@ -30,11 +29,6 @@
           r.style.setProperty("--accent2", c[1]);
           r.style.setProperty("--accent-rgb", c[2]);
           if (u && u.fontBody) r.style.setProperty("--font-body", "'" + u.fontBody + "', system-ui, sans-serif");
-          // NOTA: no hay meta theme-color. En Safari iOS (pestaña normal) un
-          // theme-color presente pinta la barra de estado con una banda sólida
-          // opaca. Sin él, Safari muestrea el background-color del html/body y
-          // fusiona sus barras con el fondo de la página (transparente al hacer
-          // scroll / modo compacto).
         } catch (e) {}
       })();
     </script>
@@ -46,13 +40,25 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="MiMalla" />
-    <script type="module" crossorigin src="/assets/index-93a0e1f8.js"></script>
+    <script type="module" crossorigin src="/assets/index-e8cb836a.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor-27d6d7f2.js">
-    <link rel="stylesheet" href="/assets/index-1ef00473.css">
+    <link rel="stylesheet" href="/assets/index-fd7f74be.css">
   </head>
   <body>
+    <!--
+DIRECTION: la-malla-en-el-cielo (seed 7c68d756)
+THESIS: The login is the whole aurora sky with the semester malla drawn as a gold constellation and the form as a glass observatory console; it refuses the isolated-centered-card auth default.
+OWN-WORLD: Full-bleed aurora sky; five real first-semester subjects as constellation nodes in gold hairlines; MiMalla brand as engraved serif plaque with the rotating star; the form is a frosted-glass dock that lands at the bottom, gold reserved for focus, active tab, button and stars.
+STORY: The student re-enters their plan from the sky: recognizes their malla in the stars, each filled field joins a star to the constellation, and signing in drops them into their observatory.
+FIRST VIEWPORT: gold constellation and brand plaque above, glass dock below with segmented tabs and fields; primary gold button at the base.
+FORM: candidate 4 of the grounded list, full-sky dock; seed 7c68d756.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+-->
     <div class="aurora" aria-hidden="true"></div>
     <div id="root"></div>
     
-  </body>
+  <!-- impeccable-live-start -->
+<script src="http://localhost:8400/live.js?token=608d17bd-ea9d-463f-a084-50ea2a6c609c"></script>
+<!-- impeccable-live-end -->
+</body>
 </html>

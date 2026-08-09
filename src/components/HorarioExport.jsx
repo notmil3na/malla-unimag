@@ -9,6 +9,7 @@ import {
 } from "../utils/horarioHelpers.js";
 import { IconClose, IconDownload } from "./Icons";
 import styles from "./HorarioExport.module.css";
+import useBodyScrollLock from "../hooks/useBodyScrollLock";
 
 const DIA_NAMES = {
   L: "Lunes", M: "Martes", X: "Miércoles",
@@ -29,7 +30,8 @@ function buildGridInfo(clases, dias) {
   return { visHoras, minH, diasMostrar };
 }
 
-export default function HorarioExport({ user, horarioData, malla, onClose, onNotify }) {
+export default function HorarioExport({ user, horarioData, malla, onClose, onNotify, onOpenWallpaper }) {
+  useBodyScrollLock();
   const sheetRef = useRef(null);
   const [busy, setBusy] = useState(false);
 
@@ -116,6 +118,11 @@ export default function HorarioExport({ user, horarioData, malla, onClose, onNot
             </p>
           </div>
           <div className={styles.modalActions}>
+            {onOpenWallpaper && (
+              <button className={styles.btnSecondary} onClick={onOpenWallpaper} disabled={busy}>
+                <IconDownload size={13} /> Fondo de pantalla
+              </button>
+            )}
             <button className={styles.btnSecondary} onClick={handlePdf} disabled={busy}>
               <IconDownload size={13} /> PDF
             </button>

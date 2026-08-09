@@ -4,8 +4,6 @@ function canonicalPair(a, b) {
   return a < b ? [a, b] : [b, a];
 }
 
-// GET  → mapa { amigo -> { status, requestedBy } } para el usuario autenticado.
-// POST → { action: "request"|"accept"|"remove", other }
 export default async function handler(req, res) {
   if (!envReady() || !admin) return json(res, 500, { error: "Configuración del servidor incompleta" });
   const me = requireUser(req);

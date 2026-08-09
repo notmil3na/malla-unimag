@@ -1,4 +1,4 @@
-import { admin, envReady, json, readBody, hashPassword, toUserRow } from "../_lib.mjs";
+import { admin, envReady, json, readBody, hashPassword, toUserRow, isColumnMissing } from "../_lib.mjs";
 
 const USERNAME_RE = /^[a-zA-Z0-9._-]{2,20}$/;
 
@@ -17,6 +17,7 @@ export default async function handler(req, res) {
     return json(res, 400, { error: "La contraseña debe tener al menos 6 caracteres" });
   }
   if (!body.name) return json(res, 400, { error: "El nombre es obligatorio" });
+  if (!String(body.career || "").trim()) return json(res, 400, { error: "La carrera es obligatoria" });
 
   const { data: existing } = await admin
     .from("users")
@@ -43,9 +44,26 @@ export default async function handler(req, res) {
     font_body: body.fontBody ?? "DM Sans",
   };
 
+  const securityQuestion = String(body.securityQuestion || "").trim();
+  const securityAnswer = String(body.securityAnswer || "").trim();
+  if (securityQuestion && securityAnswer) {
+    row.security_question = securityQuestion;
+    row.security_answer = await hashPassword(securityAnswer);
+  }
+
   const { error } = await admin.from("users").insert(row);
   if (error) {
     if (error.code === "23505") return json(res, 409, { error: "Ese usuario ya existe" });
+    if (isColumnMissing(error) && row.security_question !== undefined) {
+      delete row.security_question;
+      delete row.security_answer;
+      const retry = await admin.from("users").insert(row);
+      if (retry.error) {
+        if (retry.error.code === "23505") return json(res, 409, { error: "Ese usuario ya existe" });
+        return json(res, 500, { error: "No se pudo crear la cuenta" });
+      }
+      return json(res, 200, { ok: true });
+    }
     return json(res, 500, { error: "No se pudo crear la cuenta" });
   }
   return json(res, 200, { ok: true });

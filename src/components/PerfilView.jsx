@@ -1,23 +1,34 @@
 import { useState } from "react";
-import { CORTES, corteForSemester } from "../App";
+import { CORTES } from "../App";
 import { calcCareerTime, estimateGraduation } from "../utils/careerProgress.js";
+import { semesterDatesFor, semesterCorteFor } from "../utils/semesterCountdown.js";
 import styles from "./PerfilView.module.css";
-import { IconCamera, IconWarning, IconSemester, IconCheck } from "./Icons";
+import { IconCamera, IconWarning, IconSemester, IconCalendar, IconCheck, IconChevronDown, IconChevronUp } from "./Icons";
 
 const UNIVERSITIES = {
-  "Universidad del Magdalena": ["Ingeniería de Sistemas", "Hotelería y Turismo"],
+  "Universidad del Magdalena": ["Ingeniería de Sistemas", "Hotelería y Turismo", "Ingeniería Industrial", "Negocios Internacionales"],
 };
 
-export default function PerfilView({ user, onUpdate, onMallaReset, malla }) {
+function toISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export default function PerfilView({ user, onUpdate, onMallaReset, malla, semestre, onSaveSemestre }) {
   const [form, setForm] = useState({
     name:         user.name         || "",
     university:   user.university   || "",
     career:       user.career       || "",
     semester:     user.semester     || 1,
     ingresoCorte: user.ingresoCorte || "2023-2",
+    birthdate:    user.birthdate    || "",
     photo:        user.photo        || null,
   });
   const [saved, setSaved] = useState(false);
+
+  const semDates = semesterDatesFor(semestre);
+  const [semInicio, setSemInicio] = useState(() => toISO(semDates.start));
+  const [semFin, setSemFin] = useState(() => toISO(semDates.end));
+  const [semOpen, setSemOpen] = useState(false);
 
   // Materias cursando actualmente
   const materiasActuales = (malla || [])
@@ -26,8 +37,11 @@ export default function PerfilView({ user, onUpdate, onMallaReset, malla }) {
 
   const totalCreditosCursando = materiasActuales.reduce((a, m) => a + m.creditos, 0);
 
-  const corteActual = corteForSemester(form.ingresoCorte, Number(form.semester));
-  const careerTime = calcCareerTime({ ...user, ...form, semester: Number(form.semester) });
+  const corteActual = semesterCorteFor(semestre);
+  const careerTime = calcCareerTime(
+    { ...user, ...form, semester: Number(form.semester) },
+    { currentCorte: corteActual }
+  );
   const graduation = estimateGraduation(malla, { ...user, ...form, semester: Number(form.semester) });
 
   const handlePhoto = (e) => {
@@ -45,6 +59,9 @@ export default function PerfilView({ user, onUpdate, onMallaReset, malla }) {
       onMallaReset(newSem);
     }
     onUpdate({ ...user, ...form, semester: newSem });
+    if (semInicio && semFin && semInicio <= semFin) {
+      onSaveSemestre({ inicio: semInicio, fin: semFin });
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -56,7 +73,7 @@ export default function PerfilView({ user, onUpdate, onMallaReset, malla }) {
     <div className={styles.wrap}>
       <div className={styles.header}>
         <h2 className={styles.title}>Mi Perfil</h2>
-        <p className={styles.subtitle}>Personaliza tu información universitaria</p>
+        <p className={styles.subtitle}>Tu información universitaria</p>
       </div>
 
       <div className={styles.careerCard}>
@@ -131,6 +148,15 @@ export default function PerfilView({ user, onUpdate, onMallaReset, malla }) {
             </div>
 
             <div className={styles.field}>
+              <label>Fecha de nacimiento</label>
+              <input
+                type="date"
+                value={form.birthdate}
+                onChange={e => setForm({ ...form, birthdate: e.target.value })}
+              />
+            </div>
+
+            <div className={styles.field}>
               <label>Universidad</label>
               <select
                 value={form.university}
@@ -181,7 +207,7 @@ export default function PerfilView({ user, onUpdate, onMallaReset, malla }) {
               />
               {Number(form.semester) !== user.semester && Number(form.semester) >= 1 && Number(form.semester) <= 12 && (
                 <p className={styles.semesterHint}>
-                   <IconWarning size={13} /> Al guardar, los semestres anteriores al {form.semester} se marcarán como aprobados automáticamente.
+                   <IconWarning size={13} /> Al guardar, los semestres anteriores al {form.semester} se marcarán como aprobados.
                 </p>
               )}
             </div>
@@ -230,6 +256,34 @@ export default function PerfilView({ user, onUpdate, onMallaReset, malla }) {
                 <span>Total créditos</span>
                 <span className={styles.cursandoTotalVal}>{totalCreditosCursando}</span>
               </div>
+            </div>
+          )}
+
+          <button type="button" className={`${styles.semDateToggle} ${semOpen ? styles.semDateToggleOpen : ""}`} onClick={() => setSemOpen(o => !o)} aria-expanded={semOpen}>
+            <IconCalendar size={13} /> Fechas del semestre
+            {semOpen ? <IconChevronUp size={12} /> : <IconChevronDown size={12} />}
+          </button>
+          {semOpen && (
+            <div className={styles.semDateMenu}>
+              <div className={styles.semDateRow}>
+                <label>Inicio</label>
+                <input type="date" value={semInicio} onChange={e => setSemInicio(e.target.value)} />
+              </div>
+              <div className={styles.semDateRow}>
+                <label>Fin</label>
+                <input type="date" value={semFin} onChange={e => setSemFin(e.target.value)} />
+              </div>
+              {semInicio && semFin && semInicio > semFin && (
+                <p className={styles.semesterHint}>
+                   <IconWarning size={12} /> Inicio debe ser anterior a fin.
+                </p>
+              )}
+              {semInicio && semFin && semInicio <= semFin && (
+                <p className={styles.semesterOk}>
+                   <IconCalendar size={12} />
+                  Corte {semesterCorteFor({ inicio: semInicio, fin: semFin })} · {semInicio} → {semFin}
+                </p>
+              )}
             </div>
           )}
         </div>

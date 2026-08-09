@@ -1,9 +1,3 @@
-// Cola de guardado offline basada en localStorage.
-//
-// Cada "columna" de datos tiene su propia clave. NOTA (bug del plan column):
-// `plan` y `horario` comparten la misma forma { dias, clases }; por eso se
-// usan claves separadas ("plan" y "horario") para que nunca se pisen entre sí.
-
 const STORAGE_KEY = "mimalla_pending_saves";
 
 export function getPendingSaves() {
@@ -35,15 +29,12 @@ export function clearPendingSave(column) {
   delete pending[column];
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(pending));
-  } catch {
-    /* sin espacio: no crítico */
-  }
+  } catch {}
 }
 
 export function clearAllPendingSaves() {
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch {
-    /* no crítico */
   }
 }

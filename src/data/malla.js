@@ -1,6 +1,5 @@
 // Malla curricular — Ingeniería de Sistemas
 // Acuerdo Académico N° 21 de 2024
-// Nota: prereqs de "60% / 70% del plan" no se modelan como materia; quedan sin prereq en la malla.
 export const MALLA_SISTEMAS = [
   {
     semestre: 1,
@@ -242,9 +241,230 @@ export const MALLA_HOTELERIA_TURISMO = [
   },
 ];
 
+// Malla curricular — Ingeniería Industrial
+// Acuerdo N° 26 de 2024
+export const MALLA_INDUSTRIAL = [
+  {
+    semestre: 1,
+    materias: [
+      { id: "CAL1", codigo: "01011601", nombre: "Cálculo Diferencial",                          creditos: 4, estado: "faltante", prereqs: [] },
+      { id: "DIB1", codigo: "01011602", nombre: "Dibujo de Ingeniería",                         creditos: 2, estado: "faltante", prereqs: [] },
+      { id: "III1", codigo: "01011603", nombre: "Introducción a la Ingeniería Industrial",      creditos: 2, estado: "faltante", prereqs: [] },
+      { id: "PLE1", codigo: "01011604", nombre: "Procesos Lectores y Escriturales",             creditos: 2, estado: "faltante", prereqs: [] },
+      { id: "FHC1", codigo: "01011605", nombre: "Formación Humanística y Ciudadana",            creditos: 2, estado: "faltante", prereqs: [] },
+      { id: "RRM1", codigo: "01011606", nombre: "Razonamiento y Representación Matemática",     creditos: 2, estado: "faltante", prereqs: [] },
+      { id: "CGL1", codigo: "01011607", nombre: "Cátedra Global",                               creditos: 2, estado: "faltante", prereqs: [] },
+      { id: "ENG1", codigo: "01011608", nombre: "General English I",                            creditos: 2, estado: "faltante", prereqs: [] },
+    ],
+  },
+  {
+    semestre: 2,
+    materias: [
+      { id: "CAL2", codigo: "02011609", nombre: "Cálculo Integral",                             creditos: 4, estado: "faltante", prereqs: ["CAL1"] },
+      { id: "FIM1", codigo: "02011610", nombre: "Física Mecánica",                              creditos: 4, estado: "faltante", prereqs: ["CAL1"] },
+      { id: "ALI1", codigo: "02011611", nombre: "Álgebra Lineal",                               creditos: 3, estado: "faltante", prereqs: [] },
+      { id: "PRO1", codigo: "02011612", nombre: "Programación",                                 creditos: 3, estado: "faltante", prereqs: [] },
+      { id: "EOA1", codigo: "02011613", nombre: "Expresión Oral y Argumentación",               creditos: 2, estado: "faltante", prereqs: ["PLE1"] },
+      { id: "ENG2", codigo: "02011614", nombre: "General English II",                           creditos: 2, estado: "faltante", prereqs: ["ENG1"] },
+    ],
+  },
+  {
+    semestre: 3,
+    materias: [
+      { id: "ECD1", codigo: "03011615", nombre: "Ecuaciones Diferenciales",                     creditos: 3, estado: "faltante", prereqs: ["CAL2"] },
+      { id: "CYO1", codigo: "03011616", nombre: "Calor y Ondas",                                creditos: 4, estado: "faltante", prereqs: ["FIM1"] },
+      { id: "QGM1", codigo: "03011617", nombre: "Química General",                              creditos: 4, estado: "faltante", prereqs: [] },
+      { id: "DIB2", codigo: "03011618", nombre: "Dibujo Industrial",                            creditos: 2, estado: "faltante", prereqs: ["DIB1"] },
+      { id: "PRE1", codigo: "03011619", nombre: "Probabilidad y Estadística",                   creditos: 3, estado: "faltante", prereqs: ["CAL2"] },
+      { id: "ENG3", codigo: "03011620", nombre: "General English III",                          creditos: 2, estado: "faltante", prereqs: ["ENG2"] },
+    ],
+  },
+  {
+    semestre: 4,
+    materias: [
+      { id: "ESTA1", codigo: "04011621", nombre: "Estática",                                    creditos: 3, estado: "faltante", prereqs: ["FIM1", "CAL2"] },
+      { id: "EYM1", codigo: "04011622", nombre: "Electricidad y Magnetismo",                    creditos: 4, estado: "faltante", prereqs: ["CYO1"] },
+      { id: "CTM1", codigo: "04011623", nombre: "Ciencia y Tecnología de los Materiales",       creditos: 3, estado: "faltante", prereqs: ["QGM1"] },
+      { id: "CCO1", codigo: "04011624", nombre: "Contabilidad y Costeo de Operaciones",         creditos: 3, estado: "faltante", prereqs: ["PRO1"] },
+      { id: "EST2", codigo: "04011625", nombre: "Estadística Inferencial",                      creditos: 3, estado: "faltante", prereqs: ["PRE1"] },
+      { id: "ENG4", codigo: "04011626", nombre: "General English IV",                           creditos: 2, estado: "faltante", prereqs: ["ENG3"] },
+    ],
+  },
+  {
+    semestre: 5,
+    materias: [
+      { id: "RMF1", codigo: "05011656", nombre: "Resistencia de Materiales de Fabricación",     creditos: 4, estado: "faltante", prereqs: ["ESTA1", "CTM1"] },
+      { id: "TER1", codigo: "05011628", nombre: "Termodinámica",                                creditos: 3, estado: "faltante", prereqs: ["CYO1"] },
+      { id: "ECO1", codigo: "05011629", nombre: "Economía",                                     creditos: 3, estado: "faltante", prereqs: ["CCO1"] },
+      { id: "DEX1", codigo: "05011630", nombre: "Diseño de Experimentos",                       creditos: 3, estado: "faltante", prereqs: ["EST2"] },
+      { id: "IOD1", codigo: "05011631", nombre: "Investigación de Operaciones Determinísticas", creditos: 3, estado: "faltante", prereqs: ["ALI1"] },
+      { id: "ENG5", codigo: "05011635", nombre: "General English V",                            creditos: 2, estado: "faltante", prereqs: ["ENG4"] },
+    ],
+  },
+  {
+    semestre: 6,
+    materias: [
+      { id: "IME1", codigo: "06011632", nombre: "Ingeniería de Mercados",                       creditos: 3, estado: "faltante", prereqs: ["ECO1"] },
+      { id: "IMT1", codigo: "06011633", nombre: "Ingeniería de Métodos y Tiempos",              creditos: 3, estado: "faltante", prereqs: ["DEX1"] },
+      { id: "IOP1", codigo: "06011634", nombre: "Investigación de Operaciones Probabilísticas", creditos: 3, estado: "faltante", prereqs: ["IOD1"] },
+      { id: "PNI1", codigo: "06011635", nombre: "Procesos Industriales",                        creditos: 4, estado: "faltante", prereqs: ["RMF1", "TER1"] },
+      { id: "AYO1", codigo: "06011636", nombre: "Administración y Organizaciones",              creditos: 3, estado: "faltante", prereqs: ["ECO1"] },
+      { id: "DYP1", codigo: "06011637", nombre: "Diseño y Prototipado",                         creditos: 2, estado: "faltante", prereqs: [] },
+    ],
+  },
+  {
+    semestre: 7,
+    materias: [
+      { id: "INF1", codigo: "07011638", nombre: "Ingeniería Financiera",                        creditos: 3, estado: "faltante", prereqs: ["IME1"] },
+      { id: "DOP1", codigo: "07011639", nombre: "Diseño de Operaciones",                        creditos: 3, estado: "faltante", prereqs: ["IMT1"] },
+      { id: "CEP1", codigo: "07011640", nombre: "Control Estadístico de Procesos",              creditos: 3, estado: "faltante", prereqs: ["DEX1"] },
+      { id: "SIG1", codigo: "07011641", nombre: "Sistemas Integrados de Gestión",               creditos: 3, estado: "faltante", prereqs: ["AYO1"] },
+      { id: "ETI1", codigo: "07011642", nombre: "Ética en Ingeniería Industrial",               creditos: 2, estado: "faltante", prereqs: [] },
+      { id: "MTI1", codigo: "07011643", nombre: "Metodología y Técnicas de Investigación en Ingeniería", creditos: 2, estado: "faltante", prereqs: ["DYP1"] },
+      { id: "ELP1", codigo: "07011657", nombre: "Electiva de Profundización I",                 creditos: 2, estado: "faltante", prereqs: [] },
+    ],
+  },
+  {
+    semestre: 8,
+    materias: [
+      { id: "IPR1", codigo: "08011644", nombre: "Ingeniería de Proyectos",                      creditos: 3, estado: "faltante", prereqs: [] },
+      { id: "GDO1", codigo: "08011645", nombre: "Gerencia de Operaciones",                      creditos: 3, estado: "faltante", prereqs: ["DOP1"] },
+      { id: "SMO1", codigo: "08011646", nombre: "Simulación de Operaciones",                    creditos: 3, estado: "faltante", prereqs: ["IOP1"] },
+      { id: "RII1", codigo: "08011647", nombre: "Relaciones Industriales",                      creditos: 3, estado: "faltante", prereqs: ["AYO1"] },
+      { id: "PDS1", codigo: "08011648", nombre: "Pensamiento de Sistemas",                      creditos: 2, estado: "faltante", prereqs: ["SIG1"] },
+      { id: "PII1", codigo: "08000001", nombre: "Propuesta de Investigación en Ingeniería",     creditos: 2, estado: "faltante", prereqs: ["MTI1"] },
+      { id: "ELP2", codigo: "08011658", nombre: "Electiva de Profundización II",                creditos: 2, estado: "faltante", prereqs: [] },
+    ],
+  },
+  {
+    semestre: 9,
+    materias: [
+      { id: "DIP1", codigo: "09011650", nombre: "Diseño e Innovación de Productos",             creditos: 3, estado: "faltante", prereqs: ["IPR1"] },
+      { id: "LGI1", codigo: "09011651", nombre: "Logística Integral",                           creditos: 3, estado: "faltante", prereqs: ["GDO1"] },
+      { id: "DGE1", codigo: "09011652", nombre: "Diseño de Instalaciones y Gestión Energética", creditos: 3, estado: "faltante", prereqs: ["SMO1"] },
+      { id: "DNS1", codigo: "09011654", nombre: "Dinámica de Sistemas",                         creditos: 3, estado: "faltante", prereqs: ["PDS1"] },
+      { id: "PCD1", codigo: "09011655", nombre: "Proyecto Culminante de Diseño",                creditos: 2, estado: "faltante", prereqs: ["PII1"] },
+      { id: "ELP3", codigo: "09011659", nombre: "Electiva de Profundización III",               creditos: 2, estado: "faltante", prereqs: [] },
+    ],
+  },
+];
+
+// Malla curricular — Negocios Internacionales
+// Acuerdo Académico N° 07 de 2025
+export const MALLA_NEGOCIOS = [
+  {
+    semestre: 1,
+    materias: [
+      { id: "CAL1", codigo: "01012613", nombre: "Cálculo Diferencial",                             creditos: 4, estado: "faltante", prereqs: [] },
+      { id: "RRM1", codigo: "01012610", nombre: "Razonamiento y Representación Matemática",        creditos: 2, estado: "faltante", prereqs: [] },
+      { id: "PLE1", codigo: "01012612", nombre: "Procesos Lectores y Escriturales",                creditos: 2, estado: "faltante", prereqs: [] },
+      { id: "OFI1", codigo: "01012611", nombre: "Ofimática Avanzada y Bases de Datos",             creditos: 2, estado: "faltante", prereqs: [] },
+      { id: "INI1", codigo: "01012614", nombre: "Introducción a los Negocios Internacionales",    creditos: 2, estado: "faltante", prereqs: [] },
+      { id: "FEC1", codigo: "01012615", nombre: "Fundamentos de Economía",                         creditos: 3, estado: "faltante", prereqs: [] },
+      { id: "TFC1", codigo: "02012619", nombre: "Teoría y Filosofía del Conocimiento",            creditos: 2, estado: "faltante", prereqs: [] },
+      { id: "CGL1", codigo: "03012624", nombre: "Cátedra Global",                                 creditos: 2, estado: "faltante", prereqs: [] },
+      { id: "ENG1", codigo: "01012609", nombre: "General English I",                              creditos: 2, estado: "faltante", prereqs: [] },
+    ],
+  },
+  {
+    semestre: 2,
+    materias: [
+      { id: "CAL2", codigo: "02012620", nombre: "Cálculo Integral",                               creditos: 4, estado: "faltante", prereqs: ["CAL1"] },
+      { id: "CGF1", codigo: "02012621", nombre: "Contabilidad General y Financiera",              creditos: 3, estado: "faltante", prereqs: [] },
+      { id: "MIC1", codigo: "02012622", nombre: "Microeconomía",                                  creditos: 4, estado: "faltante", prereqs: ["FEC1"] },
+      { id: "ECE1", codigo: "04012603", nombre: "Emprendimiento y Creación de Empresas",          creditos: 2, estado: "faltante", prereqs: [] },
+      { id: "EOA1", codigo: "02012617", nombre: "Expresión Oral y Argumentación",                 creditos: 2, estado: "faltante", prereqs: [] },
+      { id: "ETL1", codigo: "02012618", nombre: "Exigencia Tercera Lengua I",                     creditos: 2, estado: "faltante", prereqs: [] },
+      { id: "ENG2", codigo: "02012616", nombre: "General English II",                             creditos: 2, estado: "faltante", prereqs: ["ENG1"] },
+    ],
+  },
+  {
+    semestre: 3,
+    materias: [
+      { id: "MAC1", codigo: "03012629", nombre: "Macroeconomía",                                  creditos: 4, estado: "faltante", prereqs: ["FEC1"] },
+      { id: "NGC1", codigo: "03012627", nombre: "Negocios, Globalización y Cultura",              creditos: 3, estado: "faltante", prereqs: ["INI1"] },
+      { id: "CEX1", codigo: "03012628", nombre: "Comercio Exterior I",                            creditos: 3, estado: "faltante", prereqs: ["INI1"] },
+      { id: "DII1", codigo: "03012656", nombre: "Derecho e Instituciones Internacionales",        creditos: 3, estado: "faltante", prereqs: [] },
+      { id: "MTI1", codigo: "03012625", nombre: "Metodología y Técnicas de la Investigación",     creditos: 2, estado: "faltante", prereqs: ["TFC1"] },
+      { id: "ETL2", codigo: "03012626", nombre: "Exigencia Tercera Lengua II",                    creditos: 2, estado: "faltante", prereqs: ["ETL1"] },
+      { id: "ENG3", codigo: "03012623", nombre: "General English III",                            creditos: 2, estado: "faltante", prereqs: ["ENG2"] },
+    ],
+  },
+  {
+    semestre: 4,
+    materias: [
+      { id: "TPC1", codigo: "04012608", nombre: "Teoría y Política del Comercio Internacional",   creditos: 4, estado: "faltante", prereqs: ["MAC1"] },
+      { id: "CEX2", codigo: "04012602", nombre: "Comercio Exterior II",                           creditos: 3, estado: "faltante", prereqs: ["CEX1"] },
+      { id: "EST1", codigo: "04012604", nombre: "Estadística I",                                  creditos: 3, estado: "faltante", prereqs: [] },
+      { id: "FHC1", codigo: "04012606", nombre: "Formación Humanística y Ciudadana",              creditos: 2, estado: "faltante", prereqs: [] },
+      { id: "STI1", codigo: "04012607", nombre: "Seminario Taller de Investigación I",            creditos: 2, estado: "faltante", prereqs: ["MTI1"] },
+      { id: "ETL3", codigo: "04012605", nombre: "Exigencia Tercera Lengua III",                   creditos: 2, estado: "faltante", prereqs: ["ETL2"] },
+      { id: "ENG4", codigo: "04012601", nombre: "General English IV",                             creditos: 2, estado: "faltante", prereqs: ["ENG3"] },
+    ],
+  },
+  {
+    semestre: 5,
+    materias: [
+      { id: "NGI1", codigo: "05012633", nombre: "Negociación Internacional",                      creditos: 3, estado: "faltante", prereqs: ["NGC1"] },
+      { id: "IPF1", codigo: "05012634", nombre: "Instrumentos de Pago y Financiación del Comercio Exterior", creditos: 3, estado: "faltante", prereqs: ["CEX2"] },
+      { id: "FMK1", codigo: "05012635", nombre: "Fundamentos de Marketing",                       creditos: 3, estado: "faltante", prereqs: ["EST1"] },
+      { id: "EST2", codigo: "05012631", nombre: "Estadística II",                                 creditos: 3, estado: "faltante", prereqs: ["EST1"] },
+      { id: "STI2", codigo: "05012630", nombre: "Seminario Taller de Investigación II",           creditos: 2, estado: "faltante", prereqs: ["STI1"] },
+      { id: "ETL4", codigo: "05012632", nombre: "Exigencia Tercera Lengua IV",                    creditos: 2, estado: "faltante", prereqs: ["ETL3"] },
+      { id: "ENG5", codigo: "05012601", nombre: "General English V",                              creditos: 2, estado: "faltante", prereqs: ["ENG4"] },
+    ],
+  },
+  {
+    semestre: 6,
+    materias: [
+      { id: "LDF1", codigo: "06012639", nombre: "Logística y Distribución Física Internacional",  creditos: 4, estado: "faltante", prereqs: ["CEX2"] },
+      { id: "TOA1", codigo: "06012641", nombre: "Teoría de las Organizaciones y de la Administración", creditos: 4, estado: "faltante", prereqs: [] },
+      { id: "IDM1", codigo: "06012640", nombre: "Investigación de Mercados",                      creditos: 3, estado: "faltante", prereqs: ["FMK1"] },
+      { id: "MFR1", codigo: "06012638", nombre: "Matemática Financiera",                          creditos: 3, estado: "faltante", prereqs: [] },
+      { id: "STI3", codigo: "06012637", nombre: "Seminario Taller de Investigación III",          creditos: 2, estado: "faltante", prereqs: ["STI2"] },
+      { id: "ENG6", codigo: "06012636", nombre: "General English VI",                             creditos: 2, estado: "faltante", prereqs: ["ENG5"] },
+    ],
+  },
+  {
+    semestre: 7,
+    materias: [
+      { id: "PDN1", codigo: "07012645", nombre: "Plan de Negocios",                               creditos: 3, estado: "faltante", prereqs: ["IDM1"] },
+      { id: "ANF1", codigo: "07012646", nombre: "Análisis Financiero",                            creditos: 3, estado: "faltante", prereqs: ["MFR1"] },
+      { id: "PEP1", codigo: "07012647", nombre: "Planeación Estratégica y Prospectiva",           creditos: 3, estado: "faltante", prereqs: ["TOA1"] },
+      { id: "RLI1", codigo: "07012644", nombre: "Relaciones Internacionales",                     creditos: 3, estado: "faltante", prereqs: [] },
+      { id: "MRI1", codigo: "07012643", nombre: "Mercados Regionales e Inteligencia de Mercados", creditos: 3, estado: "faltante", prereqs: ["LDF1"] },
+      { id: "ENG7", codigo: "07012642", nombre: "General English VII",                            creditos: 2, estado: "faltante", prereqs: ["ENG6"] },
+    ],
+  },
+  {
+    semestre: 8,
+    materias: [
+      { id: "FEP1", codigo: "08012652", nombre: "Formulación y Evaluación de Proyectos",          creditos: 4, estado: "faltante", prereqs: ["ANF1"] },
+      { id: "FNI1", codigo: "08012649", nombre: "Finanzas Internacionales",                       creditos: 3, estado: "faltante", prereqs: ["MAC1"] },
+      { id: "TDG1", codigo: "08012650", nombre: "Toma de Decisiones Gerenciales",                 creditos: 3, estado: "faltante", prereqs: ["PEP1"] },
+      { id: "MKI1", codigo: "08012651", nombre: "Marketing Internacional",                        creditos: 3, estado: "faltante", prereqs: ["IDM1"] },
+      { id: "DAD1", codigo: "08012654", nombre: "Derecho Aduanero",                               creditos: 3, estado: "faltante", prereqs: [] },
+      { id: "OPR1", codigo: "08012653", nombre: "Optativa de Profundización",                     creditos: 3, estado: "faltante", prereqs: [] },
+      { id: "ENG8", codigo: "08012648", nombre: "General English VIII",                           creditos: 2, estado: "faltante", prereqs: ["ENG7"] },
+    ],
+  },
+  {
+    semestre: "opt",
+    label: "Optativos",
+    materias: [
+      { id: "OPTL0001", codigo: "OPTL0001", nombre: "Cátedra Interculturalidad, Territorio y Sostenibilidad", creditos: 3, estado: "faltante", prereqs: [], optativa: true },
+      { id: "OPT_0001", codigo: "OPT_0001", nombre: "English Skills for Business Communication I",             creditos: 3, estado: "faltante", prereqs: [], optativa: true },
+      { id: "OPT_0002", codigo: "OPT_0002", nombre: "English Skills for Business Communication II",            creditos: 3, estado: "faltante", prereqs: [], optativa: true },
+      { id: "OPT_0003", codigo: "OPT_0003", nombre: "SARLAFT: Negocios Globales sin Riesgos",                 creditos: 3, estado: "faltante", prereqs: [], optativa: true },
+    ],
+  },
+];
+
 export const MALLAS_POR_CARRERA = {
   "Ingeniería de Sistemas": MALLA_SISTEMAS,
   "Hotelería y Turismo": MALLA_HOTELERIA_TURISMO,
+  "Ingeniería Industrial": MALLA_INDUSTRIAL,
+  "Negocios Internacionales": MALLA_NEGOCIOS,
 };
 
 export function getMallaByCareer(career) {

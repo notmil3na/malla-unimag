@@ -1,9 +1,19 @@
 import React from "react";
 
-// Barrera contra errores de render sin captura. Sin ella, cualquier error no
-// controlado (p. ej. un chunk de React.lazy que falla al cargar) desmonta
-// TODO el árbol y deja la pantalla en blanco con solo la aurora de fondo.
-// Aquí se muestra un aviso amigable con botón de recarga en su lugar.
+function isChunkError(error) {
+  if (!error) return false;
+  const name = String(error.name || "");
+  const msg = String(error.message || "").toLowerCase();
+  return (
+    name.toLowerCase().includes("chunk") ||
+    msg.includes("dynamically imported module") ||
+    msg.includes("failed to fetch dynamically imported") ||
+    msg.includes("loading chunk") ||
+    msg.includes("importing a module script failed") ||
+    msg.includes("loading failed for the")
+  );
+}
+
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -18,14 +28,29 @@ export default class ErrorBoundary extends React.Component {
     console.error("ErrorBoundary capturó un error:", error, info);
   }
 
-  handleReload = () => {
+  handleReload = async () => {
+    try {
+      if ("serviceWorker" in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) {
+          if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
+          await reg.update().catch(() => {});
+        }
+      }
+    } catch (_) {}
     window.location.reload();
+  };
+
+  handleDismiss = () => {
+    this.setState({ error: null });
   };
 
   render() {
     if (!this.state.error) return this.props.children;
 
-    const isView = this.props.view; // variante "en el área principal" vs "pantalla completa"
+    const isChunk = isChunkError(this.state.error);
+    const isView = this.props.view;
+
     const card = {
       display: "flex",
       flexDirection: "column",
@@ -37,44 +62,71 @@ export default class ErrorBoundary extends React.Component {
       color: "var(--text)",
       fontFamily: "var(--font-body)",
     };
+    const rootStyle = isView
+      ? card
+      : { ...card, minHeight: "100dvh", background: "var(--bg)" };
+
     return (
-      <div
-        style={
-          isView
-            ? card
-            : {
-                ...card,
-                minHeight: "100vh",
-                minHeight: "100dvh",
-                background: "var(--bg)",
-              }
-        }
-      >
-        <span style={{ fontSize: "32px", color: "var(--accent)" }}>✦</span>
-        <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 700 }}>
-          {this.props.title || "Algo salió mal"}
-        </h2>
-        <p style={{ margin: 0, fontSize: "13.5px", maxWidth: "340px", color: "var(--text-muted)" }}>
-          {this.props.message ||
-            "Ocurrió un error inesperado. Tus datos están guardados; recarga la página para continuar."}
-        </p>
-        <button
-          onClick={this.handleReload}
+      <div style={rootStyle}>
+        <span
           style={{
-            marginTop: "6px",
-            padding: "10px 20px",
-            borderRadius: "10px",
-            border: "none",
-            background: "var(--accent)",
-            color: "var(--text)",
-            fontSize: "13.5px",
-            fontWeight: 700,
-            cursor: "pointer",
-            boxShadow: "var(--shadow-soft)",
+            fontSize: isChunk ? "30px" : "32px",
+            color: "var(--accent)",
+            animation: isChunk ? "mimallaSpin 2.4s linear infinite" : undefined,
           }}
         >
-          Recargar
-        </button>
+          ✦
+        </span>
+        <style>{`@keyframes mimallaSpin { to { transform: rotate(360deg); } }`}</style>
+        <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 700 }}>
+          {isChunk ? "Actualización disponible" : (this.props.title || "Algo salió mal")}
+        </h2>
+        <p style={{ margin: 0, fontSize: "13.5px", maxWidth: "340px", color: "var(--text-muted)", lineHeight: 1.5 }}>
+          {isChunk
+            ? "Se desplegó una versión nueva de MiMalla. Recarga la página para cargar los últimos cambios."
+            : (this.props.message ||
+              "Ocurrió un error inesperado. Tus datos están guardados; recarga la página para continuar.")}
+        </p>
+        {isChunk && (
+          <p style={{ margin: 0, fontSize: "12px", color: "var(--text-muted)" }}>
+            Tus datos están a salvo: solo se actualiza la interfaz.
+          </p>
+        )}
+        <div style={{ display: "flex", gap: "10px", marginTop: "6px", flexWrap: "wrap", justifyContent: "center" }}>
+          <button
+            onClick={this.handleReload}
+            style={{
+              padding: "10px 20px",
+              borderRadius: "10px",
+              border: "none",
+              background: "var(--accent)",
+              color: "var(--text)",
+              fontSize: "13.5px",
+              fontWeight: 700,
+              cursor: "pointer",
+              boxShadow: "var(--shadow-soft)",
+            }}
+          >
+            {isChunk ? "Recargar ahora" : "Recargar"}
+          </button>
+          {isChunk && (
+            <button
+              onClick={this.handleDismiss}
+              style={{
+                padding: "10px 20px",
+                borderRadius: "10px",
+                border: "1px solid var(--border)",
+                background: "transparent",
+                color: "var(--text-muted)",
+                fontSize: "13.5px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Ahora no
+            </button>
+          )}
+        </div>
       </div>
     );
   }

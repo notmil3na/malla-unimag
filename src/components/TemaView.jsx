@@ -18,7 +18,6 @@ function isLightColor(hex) {
   return (r * 299 + g * 587 + b * 114) / 1000 > 160;
 }
 
-// Fuentes elegibles con muestra de texto
 export const FONT_OPTIONS = [
   { value: "DM Sans",         label: "DM Sans",         sample: "Aa — moderna y limpia" },
   { value: "Outfit",          label: "Outfit",           sample: "Aa — geométrica y suave" },

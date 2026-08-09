@@ -78,6 +78,7 @@
   gap: 20px;
   align-items: start;
 }
+.twoCol > * { min-width: 0; }
 
 @media (max-width: 860px) {
   .twoCol { grid-template-columns: 1fr; }
@@ -89,6 +90,82 @@
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border-radius: var(--radius-lg); padding: 28px 28px 24px;
+}
+
+.semesterOk {
+  font-size: 12px; color: #6ec88a;
+  background: rgba(110, 200, 138, 0.1);
+  border: 1px solid rgba(110, 200, 138, 0.25);
+  border-radius: var(--radius-sm); padding: 8px 12px;
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-bottom: 4px;
+}
+
+/* ── Fechas del semestre (botón + menú) ────────────── */
+.semDateToggle {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: fit-content; margin: 14px auto 0; box-sizing: border-box;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-md); cursor: pointer;
+  color: var(--text-muted); font-size: 12px; font-weight: 600;
+  font-family: var(--font-body); padding: 11px 18px;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.semDateToggle:hover { border-color: var(--accent); color: var(--accent); background: rgba(var(--accent-rgb), 0.06); }
+.semDateToggleOpen { border-color: var(--accent); color: var(--accent); }
+.semDateToggle svg { color: var(--accent); flex-shrink: 0; }
+
+.semDateMenu {
+  margin: 8px 12px 14px;
+  padding: 12px;
+  min-width: 0; max-width: 100%; box-sizing: border-box;
+  overflow: hidden;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px;
+  align-items: start;
+}
+
+.semDateRow {
+  display: flex; flex-direction: column; gap: 6px;
+  min-width: 0; max-width: 100%; overflow: hidden;
+}
+.semDateRow label {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--text-muted);
+}
+.semDateRow input {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  -webkit-appearance: none; appearance: none;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: var(--font-body); font-size: 13px;
+  padding: 9px 10px; outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.semDateRow input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
+}
+
+.semDateMenu .semesterHint,
+.semDateMenu .semesterOk { margin-top: 2px; grid-column: 1 / -1; }
+
+@media (max-width: 600px) {
+  .semDateMenu { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+}
+
+@media (max-width: 480px) {
+  .semDateToggle { margin: 12px auto 0; }
+  .semDateMenu { margin: 8px 10px 12px; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .semDateMenu .semesterOk {
+    display: flex;
+    align-items: flex-start;
+    white-space: normal;
+    flex-wrap: wrap;
+  }
 }
 
 .avatarSection {
@@ -270,6 +347,7 @@
   .cursandoHeader { padding: 12px 14px; }
   .cursandoBadge { font-size: 10px; }
   .cursandoItemBar { height: 42px; }
+  .semDateToggle { padding: 10px 14px; }
 }
 
 @media (max-width: 480px) {
@@ -283,6 +361,7 @@
   .cursandoItem { flex-wrap: wrap; }
   .cursandoItemCred { padding: 0 10px; }
   .cursandoTotal { padding: 10px 14px; }
+  .semDateToggle { padding: 10px 12px; }
 }
 
 @media (max-width: 360px) {

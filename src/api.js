@@ -1,6 +1,3 @@
-// Cliente HTTP del backend propio (/api). La sesión se guarda como
-// { token, user } en localStorage (malla_session). La contraseña NUNCA
-// viaja al cliente: el servidor la valida y devuelve el perfil + JWT.
 const BASE = "/api";
 
 function readSession() {
@@ -43,9 +40,7 @@ export async function api(path, { method = "GET", body } = {}) {
   let data = null;
   try {
     data = await res.json();
-  } catch {
-    /* respuesta no JSON */
-  }
+  } catch {}
 
   if (res.status === 401) {
     clearSession();
@@ -53,7 +48,13 @@ export async function api(path, { method = "GET", body } = {}) {
     throw new Error((data && data.error) || "Sesión expirada");
   }
   if (!res.ok) {
-    throw new Error((data && data.error) || "Error de red");
+    const err = new Error((data && data.error) || "Error de red");
+    if (data) {
+      err.code = data.code;
+      err.needsMigration = data.needsMigration;
+      err.notConfigured = data.notConfigured;
+    }
+    throw err;
   }
   return data;
 }

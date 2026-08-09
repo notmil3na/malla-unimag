@@ -1,8 +1,10 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import styles from "./CalendarioView.module.css";
-import { SEMESTER_START, SEMESTER_END } from "../utils/semesterCountdown.js";
+import { semesterDatesFor } from "../utils/semesterCountdown.js";
+import { REMINDER_OPTIONS } from "../utils/reminders";
+import useBodyScrollLock from "../hooks/useBodyScrollLock";
 import {
-  IconExamen, IconQuiz, IconTarea, IconProyecto, IconEvento,
+  IconExamen, IconQuiz, IconTarea, IconProyecto, IconForo, IconLaboratorio, IconInforme, IconEvento,
   IconInicio, IconFin, IconClose, IconEdit, IconChevronLeft, IconChevronRight, IconPlus
 } from "./Icons";
 
@@ -13,6 +15,9 @@ const TIPO_EVENTO = [
   { id: "quiz",        label: "Quiz",          Icon: IconQuiz, color: "#B882E8" },
   { id: "tarea",       label: "Tarea",         Icon: IconTarea, color: "#6BA3E8" },
   { id: "proyecto",    label: "Proyecto",      Icon: IconProyecto, color: "#E8946B" },
+  { id: "foro",        label: "Foro",          Icon: IconForo, color: "#5CC8A5" },
+  { id: "laboratorio", label: "Laboratorio",   Icon: IconLaboratorio, color: "#E8B86B" },
+  { id: "informe",     label: "Informe",       Icon: IconInforme, color: "#6B8AE8" },
   { id: "evento",      label: "Evento",        Icon: IconEvento, color: "#6EC8A8" },
   { id: "inicio_semestre", label: "Inicio semestre", Icon: IconInicio, color: "#6EC88A" },
   { id: "fin_semestre", label: "Fin semestre",  Icon: IconFin, color: "#e07070" },
@@ -63,7 +68,7 @@ function EventoBadge({ evento, materias }) {
       <div className={styles.eventoBadgeInfo}>
         <span className={styles.eventoBadgeTitle}>{evento.titulo || tipo.label}</span>
         {mat && <span className={styles.eventoBadgeMateria}>{mat.id} - {mat.nombre}</span>}
-        {evento.horaInicio && <span className={styles.eventoBadgeHora}>{formatTime(evento.horaInicio)}{evento.horaFin ? ` – ${formatTime(evento.horaFin)}` : ""}</span>}
+        {evento.hora || evento.horaInicio ? <span className={styles.eventoBadgeHora}>{formatTime(evento.hora || evento.horaInicio)}{evento.horaFin ? ` – ${formatTime(evento.horaFin)}` : ""}</span> : null}
         {evento.lugar && <span className={styles.eventoBadgeLugar}>{evento.lugar}</span>}
       </div>
     </div>
@@ -71,15 +76,31 @@ function EventoBadge({ evento, materias }) {
 }
 
 function EventoModal({ onClose, onSave, evento, materias, cortes }) {
-  const [form, setForm] = useState(evento || {
-    id: uuid(), tipo: "examen", titulo: "", fecha: toISODate(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()),
-    horaInicio: "", horaFin: "", materiaId: "", lugar: "", descripcion: "",
-    valoracion: "", esBinas: false, corteIdx: 0, temas: [],
+  useBodyScrollLock();
+  const [errors, setErrors] = useState({});
+  const [form, setForm] = useState(evento ? {
+    ...evento,
+    hora: evento.hora || evento.horaInicio || "",
+    notificar: evento.notificar !== false,
+    recordatorio: evento.recordatorio ?? 1,
+  } : {
+    id: uuid(), tipo: "examen", fecha: toISODate(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()),
+    hora: "", materiaId: "", lugar: "", descripcion: "",
+    esBinas: false, corteIdx: 0, temas: [], recordatorio: 1, notificar: true,
   });
 
   const update = (field, val) => setForm(f => ({ ...f, [field]: val }));
-  const tipoInfo = TIPO_EVENTO.find(t => t.id === form.tipo);
   const isExamenQuiz = form.tipo === "examen" || form.tipo === "quiz";
+  const tipoInfo = TIPO_EVENTO.find(t => t.id === form.tipo);
+
+  const handleSubmit = () => {
+    const e = {};
+    if (isExamenQuiz && !form.materiaId) e.materia = "Selecciona una materia";
+    if (!form.fecha) e.fecha = "Selecciona la fecha";
+    if (isExamenQuiz && !form.hora) e.hora = "Selecciona la hora";
+    setErrors(e);
+    if (Object.keys(e).length === 0) onSave(form);
+  };
 
   const addTema = () => {
     update("temas", [...(form.temas || []), { id: uuid(), nombre: "", estudiado: false }]);
@@ -111,64 +132,88 @@ function EventoModal({ onClose, onSave, evento, materias, cortes }) {
                     style={{ "--t-color": t.color }}
                     onClick={() => update("tipo", t.id)}
                   >
-                    <span><t.Icon size={13} /></span> {t.label}
+                    <span><t.Icon size={13} /></span> <span className={styles.tipoLabel}>{t.label}</span>
                   </button>
                 ))}
               </div>
             </div>
           </div>
 
-          <div className={styles.formRow2}>
+          {(form.tipo === "evento" || form.tipo === "tarea" || form.tipo === "proyecto") && (
             <div className={styles.formField}>
-              <label>Título</label>
+              <label>Nombre</label>
               <input type="text" className={styles.textInput} value={form.titulo}
                 placeholder={tipoInfo?.label || "Nombre del evento"}
                 onChange={e => update("titulo", e.target.value)} />
             </div>
-            <div className={styles.formField}>
-              <label>Materia</label>
-              <select className={styles.select} value={form.materiaId}
-                onChange={e => update("materiaId", e.target.value)}>
-                <option value="">Sin materia</option>
-                {materias.map(m => <option key={m.id} value={m.id}>{m.id} - {m.nombre}</option>)}
-              </select>
-            </div>
+          )}
+
+          <div className={styles.formField}>
+            <label>Materia</label>
+            <select className={styles.select} value={form.materiaId}
+              aria-invalid={errors.materia ? "true" : undefined}
+              onChange={e => update("materiaId", e.target.value)}>
+              <option value="">Seleccionar...</option>
+              {materias.map(m => <option key={m.id} value={m.id}>{m.id} - {m.nombre}</option>)}
+            </select>
+            {errors.materia && <span className={styles.formError}>{errors.materia}</span>}
           </div>
 
           <div className={styles.formRow2}>
             <div className={styles.formField}>
               <label>Fecha</label>
               <input type="date" className={styles.textInput} value={form.fecha}
+                aria-invalid={errors.fecha ? "true" : undefined}
                 onChange={e => update("fecha", e.target.value)} />
+              {errors.fecha && <span className={styles.formError}>{errors.fecha}</span>}
             </div>
             <div className={styles.formField}>
-              <label>Hora inicio</label>
-              <input type="time" className={styles.textInput} value={form.horaInicio}
-                onChange={e => update("horaInicio", e.target.value)} />
-            </div>
-            <div className={styles.formField}>
-              <label>Hora fin</label>
-              <input type="time" className={styles.textInput} value={form.horaFin}
-                onChange={e => update("horaFin", e.target.value)} />
+              <label>Hora</label>
+              <input type="time" className={styles.textInput} value={form.hora}
+                aria-invalid={errors.hora ? "true" : undefined}
+                onChange={e => update("hora", e.target.value)} />
+              {errors.hora && <span className={styles.formError}>{errors.hora}</span>}
             </div>
           </div>
 
-          <div className={styles.formRow2}>
-            <div className={styles.formField}>
-              <label>Lugar</label>
-              <input type="text" className={styles.textInput} value={form.lugar}
-                placeholder="Salón, edificio..." onChange={e => update("lugar", e.target.value)} />
+          <div className={styles.formField}>
+            <label>Lugar</label>
+            <input type="text" className={styles.textInput} value={form.lugar}
+              placeholder="Salón, edificio..." onChange={e => update("lugar", e.target.value)} />
+          </div>
+
+          <div className={styles.formField}>
+            <label>Notificación del evento</label>
+            <div className={styles.notifyRow}>
+              <button type="button"
+                className={`${styles.toggleBtn} ${form.notificar ? styles.toggleBtnOn : ""}`}
+                onClick={() => update("notificar", !form.notificar)}>
+                {form.notificar ? "Notificar" : "Sin notificación"}
+              </button>
+              <select className={styles.select} value={form.recordatorio ?? 1}
+                disabled={!form.notificar}
+                onChange={e => update("recordatorio", Number(e.target.value))}>
+                {REMINDER_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
             </div>
+          </div>
+
+          <div className={styles.formField}>
+            <label>Nota</label>
+            <textarea className={styles.textarea} value={form.descripcion}
+              placeholder="Notas, detalles..." rows={3}
+              onChange={e => update("descripcion", e.target.value)} />
           </div>
 
           {isExamenQuiz && (
             <>
               <div className={styles.formRow2}>
                 <div className={styles.formField}>
-                  <label>Valoración % del corte</label>
-                  <input type="number" min={1} max={100} className={styles.textInput}
-                    value={form.valoracion} placeholder="30"
-                    onChange={e => update("valoracion", e.target.value)} />
+                  <label>En binas</label>
+                  <button className={`${styles.toggleBtn} ${form.esBinas ? styles.toggleBtnOn : ""}`}
+                    onClick={() => update("esBinas", !form.esBinas)}>
+                    {form.esBinas ? "Sí" : "No"}
+                  </button>
                 </div>
                 <div className={styles.formField}>
                   <label>Corte</label>
@@ -176,13 +221,6 @@ function EventoModal({ onClose, onSave, evento, materias, cortes }) {
                     onChange={e => update("corteIdx", Number(e.target.value))}>
                     {cortes.map((c, i) => <option key={i} value={i}>{c.nombre || `Corte ${i + 1}`}</option>)}
                   </select>
-                </div>
-                <div className={styles.formField}>
-                  <label>En binas</label>
-                  <button className={`${styles.toggleBtn} ${form.esBinas ? styles.toggleBtnOn : ""}`}
-                    onClick={() => update("esBinas", !form.esBinas)}>
-                    {form.esBinas ? "Sí" : "No"}
-                  </button>
                 </div>
               </div>
 
@@ -201,26 +239,17 @@ function EventoModal({ onClose, onSave, evento, materias, cortes }) {
               </div>
             </>
           )}
-
-          {(form.tipo === "evento" || form.tipo === "tarea" || form.tipo === "proyecto") && (
-            <div className={styles.formField}>
-              <label>Descripción</label>
-              <textarea className={styles.textarea} value={form.descripcion}
-                placeholder="Detalles del evento..." rows={3}
-                onChange={e => update("descripcion", e.target.value)} />
-            </div>
-          )}
         </div>
         <div className={styles.modalFooter}>
           <button className={styles.btnSecondary} onClick={onClose}>Cancelar</button>
-          <button className={styles.btnPrimary} onClick={() => onSave(form)}>Guardar</button>
+          <button className={styles.btnPrimary} onClick={handleSubmit}>Guardar</button>
         </div>
       </div>
     </div>
   );
 }
 
-export default function CalendarioView({ malla, calendarioData, onSave, user, horarioData }) {
+export default function CalendarioView({ malla, calendarioData, onSave, user, horarioData, asignacionesData, onSaveAsignaciones }) {
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [month, setMonth] = useState(() => new Date().getMonth());
   const [selectedDay, setSelectedDay] = useState(null);
@@ -228,29 +257,40 @@ export default function CalendarioView({ malla, calendarioData, onSave, user, ho
   const [showModal, setShowModal] = useState(false);
 
   const eventos = calendarioData?.eventos || [];
+  const allAsignaciones = asignacionesData?.items || [];
+  const semestreCfg = calendarioData?.semestre || null;
+  const semStart = semesterDatesFor(semestreCfg).start;
+  const semEnd = semesterDatesFor(semestreCfg).end;
   const allMaterias = malla.flatMap(s => s.materias);
   const cortesMaterias = malla.flatMap(s => s.materias).filter(m => m.estado === "cursando");
 
-  const ensureSemesterEvents = useCallback(() => {
-    const evts = [...eventos];
-    const hasInicio = evts.some(e => e.tipo === "inicio_semestre" && e.fecha === toISODate(SEMESTER_START.getFullYear(), SEMESTER_START.getMonth(), SEMESTER_START.getDate()));
-    const hasFin = evts.some(e => e.tipo === "fin_semestre" && e.fecha === toISODate(SEMESTER_END.getFullYear(), SEMESTER_END.getMonth(), SEMESTER_END.getDate()));
-    if (!hasInicio) {
-      evts.push({
-        id: uuid(), tipo: "inicio_semestre", titulo: "Inicio de semestre",
-        fecha: toISODate(SEMESTER_START.getFullYear(), SEMESTER_START.getMonth(), SEMESTER_START.getDate()),
-      });
-    }
-    if (!hasFin) {
-      evts.push({
-        id: uuid(), tipo: "fin_semestre", titulo: "Fin de semestre",
-        fecha: toISODate(SEMESTER_END.getFullYear(), SEMESTER_END.getMonth(), SEMESTER_END.getDate()),
-      });
-    }
-    if (!hasInicio || !hasFin) onSave({ eventos: evts });
-  }, [eventos, onSave]);
+  const semStartISO = toISODate(semStart.getFullYear(), semStart.getMonth(), semStart.getDate());
+  const semEndISO = toISODate(semEnd.getFullYear(), semEnd.getMonth(), semEnd.getDate());
 
-  useMemo(() => { ensureSemesterEvents(); }, []);
+  const syncSemesterEvents = useCallback(() => {
+    const evts = [...eventos];
+    let changed = false;
+
+    const setEvent = (tipo, titulo, fecha) => {
+      const idx = evts.findIndex(e => e.tipo === tipo);
+      if (idx >= 0) {
+        if (evts[idx].fecha !== fecha) {
+          evts[idx] = { ...evts[idx], fecha };
+          changed = true;
+        }
+      } else {
+        evts.push({ id: uuid(), tipo, titulo, fecha });
+        changed = true;
+      }
+    };
+
+    setEvent("inicio_semestre", "Inicio de semestre", semStartISO);
+    setEvent("fin_semestre", "Fin de semestre", semEndISO);
+
+    if (changed) onSave({ eventos: evts, ...(semestreCfg ? { semestre: semestreCfg } : {}) });
+  }, [eventos, onSave, semStartISO, semEndISO, semestreCfg]);
+
+  useEffect(() => { syncSemesterEvents(); }, [syncSemesterEvents]);
 
   const eventosPorFecha = useMemo(() => {
     const map = {};
@@ -258,6 +298,25 @@ export default function CalendarioView({ malla, calendarioData, onSave, user, ho
       if (!map[ev.fecha]) map[ev.fecha] = [];
       map[ev.fecha].push(ev);
     });
+    return map;
+  }, [eventos]);
+
+  const rangoEventosPorFecha = useMemo(() => {
+    const map = {};
+    for (const ev of eventos) {
+      if (!ev.fecha || !ev.fechaFin || ev.fechaFin <= ev.fecha) continue;
+      const [y0, m0, d0] = ev.fecha.split("-").map(Number);
+      const [y1, m1, d1] = ev.fechaFin.split("-").map(Number);
+      if (!y0 || !m0 || !d0 || !y1 || !m1 || !d1) continue;
+      const start = new Date(y0, m0 - 1, d0);
+      const end = new Date(y1, m1 - 1, d1);
+      if ((end - start) / 86400000 > 366) continue;
+      for (let cur = start; cur <= end; cur.setDate(cur.getDate() + 1)) {
+        const key = toISODate(cur.getFullYear(), cur.getMonth(), cur.getDate());
+        if (!map[key]) map[key] = [];
+        map[key].push(ev);
+      }
+    }
     return map;
   }, [eventos]);
 
@@ -293,14 +352,56 @@ export default function CalendarioView({ malla, calendarioData, onSave, user, ho
 
   const handleSaveEvento = (ev) => {
     const exists = eventos.findIndex(e => e.id === ev.id);
-    const updated = exists >= 0 ? eventos.map((e, i) => i === exists ? ev : e) : [...eventos, ev];
-    onSave({ eventos: updated });
+    const prev = exists >= 0 ? eventos[exists] : null;
+    const isAsignacion = ev.tipo === "examen" || ev.tipo === "quiz" || ev.tipo === "tarea" || ev.tipo === "proyecto" || ev.tipo === "foro" || ev.tipo === "laboratorio" || ev.tipo === "informe";
+
+    const evFinal = { ...ev };
+    let items = [...allAsignaciones];
+    if (isAsignacion) {
+      const prevAsign = prev?.assignmentId ? allAsignaciones.find(a => a.id === prev.assignmentId) : null;
+      const newItem = {
+        id: prevAsign?.id || ev.assignmentId || uuid(),
+        calendarId: evFinal.id,
+        tipo: ev.tipo, titulo: ev.titulo || "", materiaId: ev.materiaId || "",
+        lugar: ev.lugar || "", descripcion: ev.descripcion || "",
+        esBinas: !!ev.esBinas, corteIdx: ev.corteIdx ?? 0, temas: ev.temas || [],
+        recordatorio: ev.recordatorio ?? 1, notificar: ev.notificar !== false,
+        completada: prevAsign?.completada || false,
+        valoracion: prevAsign?.valoracion ?? "",
+        nota: prevAsign?.nota,
+        fechaFin: ev.fechaFin || "",
+      };
+      if (ev.tipo === "examen" || ev.tipo === "quiz") {
+        newItem.fechaExamen = ev.fecha || "";
+        newItem.fechaEntrega = "";
+        newItem.horaExamen = ev.hora || "";
+        newItem.horaEntrega = "";
+      } else {
+        newItem.fechaExamen = "";
+        newItem.fechaEntrega = ev.fecha || "";
+        newItem.horaExamen = "";
+        newItem.horaEntrega = ev.hora || "";
+      }
+      evFinal.assignmentId = newItem.id;
+      if (prevAsign) items = items.map(a => a.id === prevAsign.id ? newItem : a);
+      else items = [...items, newItem];
+    } else if (prev?.assignmentId) {
+      items = items.filter(a => a.id !== prev.assignmentId);
+    }
+
+    const updated = exists >= 0 ? eventos.map((e, i) => i === exists ? evFinal : e) : [...eventos, evFinal];
+    onSave({ eventos: updated, ...(semestreCfg ? { semestre: semestreCfg } : {}) });
+    if (isAsignacion || prev?.assignmentId) onSaveAsignaciones({ items });
     setShowModal(false);
     setModalEvent(null);
   };
 
   const handleDeleteEvento = (id) => {
-    onSave({ eventos: eventos.filter(e => e.id !== id) });
+    const ev = eventos.find(e => e.id === id);
+    onSave({ eventos: eventos.filter(e => e.id !== id), ...(semestreCfg ? { semestre: semestreCfg } : {}) });
+    if (ev?.assignmentId) {
+      onSaveAsignaciones({ items: allAsignaciones.filter(a => a.id !== ev.assignmentId) });
+    }
     setShowModal(false);
     setModalEvent(null);
     setSelectedDay(null);
@@ -334,12 +435,15 @@ export default function CalendarioView({ malla, calendarioData, onSave, user, ho
               if (day === null) return <div key={`empty-${i}`} className={styles.calCellEmpty} />;
               const fecha = toISODate(year, month, day);
               const evs = eventosPorFecha[fecha] || [];
+              const rangeEvs = rangoEventosPorFecha[fecha] || [];
+              const rangeTipo = rangeEvs[0] ? (TIPO_EVENTO.find(t => t.id === rangeEvs[0].tipo) || TIPO_EVENTO[4]) : null;
               const isToday = isCurrentMonth && today.getDate() === day;
               const isSelected = selectedDay === day;
               return (
                 <div
                   key={day}
-                  className={`${styles.calCell} ${isToday ? styles.calCellToday : ""} ${isSelected ? styles.calCellSelected : ""}`}
+                  className={`${styles.calCell} ${isToday ? styles.calCellToday : ""} ${isSelected ? styles.calCellSelected : ""} ${rangeTipo ? styles.calCellRange : ""}`}
+                  style={rangeTipo ? { "--range-color": rangeTipo.color } : undefined}
                   onClick={() => setSelectedDay(isSelected ? null : day)}
                 >
                   <span className={styles.calDayNum}>{day}</span>
@@ -361,13 +465,12 @@ export default function CalendarioView({ malla, calendarioData, onSave, user, ho
                   {selectedDay} de {MESES[month]}
                 </h3>
                 <button className={styles.addSmallBtn} onClick={() => {
-                  setModalEvent({ id: uuid(), tipo: "examen", titulo: "", fecha: toISODate(year, month, selectedDay), horaInicio: "", horaFin: "", materiaId: "", lugar: "", descripcion: "", valoracion: "", esBinas: false, corteIdx: 0, temas: [] });
+                  setModalEvent({ id: uuid(), tipo: "examen", fecha: toISODate(year, month, selectedDay), hora: "", materiaId: "", lugar: "", descripcion: "", esBinas: false, corteIdx: 0, temas: [], recordatorio: 1, notificar: true });
                   setShowModal(true);
                 }}>+ Agregar</button>
               </div>
               {eventosSeleccionados.length === 0 && (
-                <p className={styles.noEvents}>Sin eventos este día</p>
-              )}
+                <p className={styles.noEvents}>Sin eventos este día</p>              )}
               {eventosSeleccionados.map(ev => (
                 <div key={ev.id} className={styles.selectedEvento}>
                   <EventoBadge evento={ev} materias={allMaterias} />
@@ -384,7 +487,7 @@ export default function CalendarioView({ malla, calendarioData, onSave, user, ho
         <div className={styles.sidebar}>
           <h3 className={styles.sidebarTitle}>Próximos eventos</h3>
           {proximosEventos.length === 0 && (
-            <p className={styles.sidebarEmpty}>No hay eventos próximos</p>
+            <p className={styles.sidebarEmpty}>Todavía no hay eventos próximos</p>
           )}
           <div className={styles.sidebarList}>
             {proximosEventos.map(ev => {
@@ -398,8 +501,8 @@ export default function CalendarioView({ malla, calendarioData, onSave, user, ho
                     <span className={styles.sidebarItemTitle}>{ev.titulo || tipo.label}</span>
                     {mat && <span className={styles.sidebarItemMateria}>{mat.id}</span>}
                     <span className={styles.sidebarItemDate}>
-                      {fecha.getDate()} {MESES_CORTOS[fecha.getMonth()]}
-                      {ev.horaInicio ? ` · ${formatTime(ev.horaInicio)}` : ""}
+                      {fecha.getDate()} {MESES_CORTOS[fecha.getMonth() + 1]}
+                      {ev.hora || ev.horaInicio ? ` · ${formatTime(ev.hora || ev.horaInicio)}` : ""}
                     </span>
                   </div>
                    <span className={styles.sidebarItemIcon}><tipo.Icon size={13} /></span>

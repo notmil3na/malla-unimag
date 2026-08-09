@@ -7,9 +7,9 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 32px;
+  padding: max(32px, env(safe-area-inset-top)) max(32px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(32px, env(safe-area-inset-left));
   text-align: center;
-  overflow: hidden;
+  overflow-y: auto;
   background:
     radial-gradient(640px 360px at 18% 8%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
     radial-gradient(640px 360px at 86% 18%, color-mix(in srgb, var(--accent2) 13%, transparent), transparent 70%),
@@ -119,4 +119,9 @@
   color: var(--text-muted);
   opacity: 0.75;
   margin: 4px 0 0;
+}
+
+@media (max-width: 480px) {
+  .overlay { padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  .title { font-size: 20px; }
 }

@@ -2,7 +2,7 @@ import { APP_THEMES } from "../App";
 import styles from "./Sidebar.module.css";
 import { IconStar, IconSun, IconMoon, IconLogout } from "./Icons";
 
-export default function Sidebar({ user, tabs, activeTab, onTabChange, onLogout, onUpdateUser }) {
+export default function Sidebar({ user, tabs, activeTab, onTabChange, onLogout, onUpdateUser, bell }) {
   const initial = user.name ? user.name[0].toUpperCase() : "U";
   const mode    = user.appMode || "dark";
   const theme   = APP_THEMES[user.appTheme] || APP_THEMES.ambar;
@@ -14,15 +14,18 @@ export default function Sidebar({ user, tabs, activeTab, onTabChange, onLogout, 
 
   return (
     <aside className={styles.sidebar}>
-      {/* Brand + mode toggle */}
+      {/* Brand + mode toggle + recordatorios */}
       <div className={styles.brandRow}>
         <div className={styles.brand}>
           <span className={styles.brandIcon}><IconStar size={20} /></span>
           <span className={styles.brandText}>MiMalla</span>
         </div>
-        <button className={styles.modeToggle} onClick={toggleMode} title={mode === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
-          {mode === "dark" ? <IconSun size={16} /> : <IconMoon size={16} />}
-        </button>
+        <div className={styles.brandActions}>
+          {bell}
+          <button className={styles.modeToggle} onClick={toggleMode} title={mode === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
+            {mode === "dark" ? <IconSun size={16} /> : <IconMoon size={16} />}
+          </button>
+        </div>
       </div>
 
       {/* Theme dot indicator */}

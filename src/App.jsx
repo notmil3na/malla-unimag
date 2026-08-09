@@ -7,41 +7,59 @@ import "./App.css";
 
 // ── Theme definitions ──────────────────────────────────────────────────────
 export const APP_THEMES = {
+  rojo: {
+    name: "Rojo",
+    accent: "#FF3B4D",
+    accent2: "#D1212F",
+    accentRgb: "255,59,77",
+  },
+  naranja: {
+    name: "Naranja",
+    accent: "#FF7A1A",
+    accent2: "#E35E00",
+    accentRgb: "255,122,26",
+  },
   ambar: {
     name: "Ámbar",
-    accent: "#EECE7B",
-    accent2: "#D0783B",
-    accentRgb: "238,206,123",
+    accent: "#FFC94D",
+    accent2: "#F2A900",
+    accentRgb: "255,201,77",
   },
-  oceano: {
-    name: "Océano",
-    accent: "#6BA3E8",
-    accent2: "#3A70B0",
-    accentRgb: "107,163,232",
+  verde: {
+    name: "Verde",
+    accent: "#2BD06E",
+    accent2: "#0FA84F",
+    accentRgb: "43,208,110",
+  },
+  turquesa: {
+    name: "Turquesa",
+    accent: "#00D1B2",
+    accent2: "#00A28A",
+    accentRgb: "0,209,178",
+  },
+  azul: {
+    name: "Azul",
+    accent: "#3B82F6",
+    accent2: "#1D4ED8",
+    accentRgb: "59,130,246",
   },
   violeta: {
     name: "Violeta",
-    accent: "#B882E8",
-    accent2: "#7B50B0",
-    accentRgb: "184,130,232",
+    accent: "#8B5CF6",
+    accent2: "#6D28D9",
+    accentRgb: "139,92,246",
   },
   rosa: {
     name: "Rosa",
-    accent: "#E87098",
-    accent2: "#C04070",
-    accentRgb: "232,112,152",
+    accent: "#FF4D8D",
+    accent2: "#E02A6D",
+    accentRgb: "255,77,141",
   },
-  esmeralda: {
-    name: "Esmeralda",
-    accent: "#6EC8A8",
-    accent2: "#3A8B6A",
-    accentRgb: "110,200,168",
-  },
-  coral: {
-    name: "Coral",
-    accent: "#E8946B",
-    accent2: "#C06840",
-    accentRgb: "232,148,107",
+  gris: {
+    name: "Gris",
+    accent: "#9AA5B8",
+    accent2: "#5F6B82",
+    accentRgb: "154,165,184",
   },
 };
 
@@ -76,9 +94,6 @@ export function applyTheme(themeKey, mode, fontBody) {
   root.style.setProperty("--accent",     t.accent);
   root.style.setProperty("--accent2",    t.accent2);
   root.style.setProperty("--accent-rgb", t.accentRgb);
-  // Sin meta theme-color a propósito: en Safari iOS (pestaña normal) un
-  // theme-color fuerza una banda sólida opaca en la barra de estado. El tint
-  // de las barras lo da el background-color del html/body (var(--bg)).
   if (fontBody) {
     root.style.setProperty("--font-body", `'${fontBody}', system-ui, sans-serif`);
   } else {
@@ -94,6 +109,7 @@ export async function saveUser(userData) {
     career:       userData.career,
     semester:     userData.semester,
     ingresoCorte: userData.ingresoCorte,
+    birthdate:    userData.birthdate,
     photo:        userData.photo ?? null,
     appMode:      userData.appMode,
     appTheme:     userData.appTheme,
@@ -111,17 +127,12 @@ export async function saveUser(userData) {
   }
 }
 
-// El tema inicial se aplica ANTES del primer pintado desde un script inline en
-// index.html (lee malla_session y fija data-theme + variables), evitando el
-// flash de tema al recargar. Aquí solo se reaplica desde la sesión restaurada.
-
 // ── App root ───────────────────────────────────────────────────────────────
 export default function App() {
   const [user, setUser]   = useState(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Recuperar sesión de localStorage (fallback rápido antes de validar).
     try {
       const saved = localStorage.getItem("malla_session");
       if (saved) {
@@ -135,7 +146,6 @@ export default function App() {
     setReady(true);
   }, []);
 
-  // auth = { token, user } devuelto por POST /api/auth/login
   const handleLogin = (auth) => {
     saveSession(auth.token, auth.user);
     setUser(auth.user);

@@ -16,10 +16,6 @@
   position: relative;
   margin: 16px 16px 16px 0;
   padding-bottom: env(safe-area-inset-bottom);
-  /* IMPORTANTE: sin backdrop-filter aquí. `backdrop-filter` en un ancestro
-     convierte a ese ancestro en el bloque contenedor de los `position: fixed`
-     descendientes (modales, overlays, panels), rompiendo su posición con
-     respecto al viewport al hacer scroll en pantalla completa. */
 }
 
 .toast {
@@ -142,6 +138,20 @@
   font-weight: 500;
 }
 
+.tabLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 100%;
+  min-height: 50dvh;
+  padding: 40px 16px;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  text-align: center;
+}
+
 @media (max-width: 900px) {
   .layout {
     flex-direction: column;
@@ -170,10 +180,8 @@
   .hoyCardTitle { font-size: 12px; }
 }
 
-/* Avisos flotantes (toast y barra offline): que nunca se salgan de la pantalla
-   ni tapen contenido en celulares angostos. */
 @media (max-width: 560px) {
-  .toast {
+.toast {
     left: 12px;
     right: 12px;
     bottom: calc(env(safe-area-inset-bottom) + 12px);

@@ -68,6 +68,18 @@
   background: rgba(var(--accent-rgb), 0.12);
   box-shadow: inset 0 0 0 2px var(--accent);
 }
+.calCellRange {
+  background: color-mix(in srgb, var(--range-color) 15%, var(--surface));
+}
+.calCellRange:hover {
+  background: color-mix(in srgb, var(--range-color) 25%, var(--surface2));
+}
+.calCellRange.calCellToday {
+  background: color-mix(in srgb, var(--range-color) 20%, rgba(var(--accent-rgb), 0.06));
+}
+.calCellRange.calCellSelected {
+  background: color-mix(in srgb, var(--range-color) 22%, rgba(var(--accent-rgb), 0.12));
+}
 .calDayNum { font-size: 13px; font-weight: 500; color: var(--text); }
 .calCellToday .calDayNum { color: var(--accent); font-weight: 700; }
 .calDots { display: flex; gap: 3px; }
@@ -148,17 +160,20 @@
 .modalOverlay {
   position: fixed; inset: 0; z-index: 200;
   background: rgba(0, 0, 0, 0.42);
-  display: flex;
-  padding: 16px; animation: fadeIn 0.15s ease;
-  overflow-y: auto;
+  display: flex; align-items: center; justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  animation: fadeIn 0.15s ease;
+  overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; touch-action: pan-y;
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .modal {
   margin: auto;
   background: var(--modal-bg); border: 1px solid var(--modal-border);
-  border-radius: var(--radius-lg); width: 100%; max-width: 540px;
-  max-height: none;
+  border-radius: var(--radius-lg); width: 100%; max-width: min(92vw, 480px);
+  max-height: 85dvh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
   box-shadow: 0 20px 60px rgba(0,0,0,0.18);
   animation: slideUp 0.2s ease;
 }
@@ -203,6 +218,8 @@
 .modalHeader {
   display: flex; align-items: center; justify-content: space-between;
   padding: 20px 22px 16px; border-bottom: 1px solid var(--border);
+  border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);
+  flex-shrink: 0;
 }
 .modalTitle { font-family: var(--font-display); font-size: 20px; font-weight: 400; color: var(--text); }
 .modalClose {
@@ -212,17 +229,29 @@
 }
 .modalClose:hover { background: var(--surface2); }
 
-.modalBody { padding: 20px 22px; display: flex; flex-direction: column; gap: 16px; }
+.modalBody {
+  padding: 20px 22px; display: flex; flex-direction: column; gap: 16px;
+  flex: 1 1 auto; min-height: 0;
+  overflow-y: auto; overflow-x: hidden;
+  overscroll-behavior: contain; touch-action: pan-y;
+}
+.modalBody > * { flex-shrink: 0; }
 .modalFooter {
   padding: 16px 22px; border-top: 1px solid var(--border);
   display: flex; justify-content: flex-end; gap: 10px;
+  flex-shrink: 0;
+  border-bottom-left-radius: var(--radius-lg); border-bottom-right-radius: var(--radius-lg);
+  position: relative; z-index: 1; background: var(--modal-bg);
 }
 
 /* ── Form ─────────────────────────────────────────── */
 .formRow { display: flex; flex-direction: column; gap: 12px; }
-.formRow2 { display: flex; gap: 12px; flex-wrap: wrap; }
-.formRow2 .formField { flex: 1; min-width: 100px; }
-.formField { display: flex; flex-direction: column; gap: 7px; }
+.formRow2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.formField { display: flex; flex-direction: column; gap: 7px; min-width: 0; overflow: hidden; }
+.formField input[type="date"], .formField input[type="time"] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; min-width: 0; max-width: 100%;
+}
 .formField label {
   font-size: 11px; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.07em; color: var(--text-muted);
@@ -233,6 +262,7 @@
   border-radius: var(--radius-sm); color: var(--text);
   font-family: var(--font-body); font-size: 13px;
   padding: 9px 12px; outline: none; width: 100%;
+  min-width: 0; max-width: 100%;
   transition: border-color 0.2s;
 }
 .textInput:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
@@ -242,6 +272,7 @@
   border-radius: var(--radius-sm); color: var(--text);
   font-family: var(--font-body); font-size: 13px;
   padding: 9px 12px; outline: none; width: 100%; resize: vertical;
+  min-width: 0; max-width: 100%;
   transition: border-color 0.2s;
 }
 .textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
@@ -251,6 +282,7 @@
   border-radius: var(--radius-sm); color: var(--text);
   font-family: var(--font-body); font-size: 13px;
   padding: 9px 12px; outline: none; width: 100%;
+  min-width: 0; max-width: 100%;
   appearance: none; -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a7a9a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 12px center;
@@ -258,14 +290,21 @@
 }
 .select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
 
+.textInput[aria-invalid="true"], .select[aria-invalid="true"] { border-color: #e07070; }
+.formError { color: #e07070; font-size: 11px; font-weight: 600; }
+
 /* ── Tipo grid ────────────────────────────────────── */
 .tipoGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .tipoBtn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
+  min-width: 0;
   background: var(--surface2); border: 1px solid var(--border);
   border-radius: var(--radius-sm); padding: 8px 6px;
   cursor: pointer; font-family: var(--font-body); font-size: 11px;
   color: var(--text-muted); transition: all 0.15s;
+}
+.tipoLabel {
+  min-width: 0; overflow-wrap: anywhere; text-align: center; line-height: 1.25;
 }
 .tipoBtn:hover { border-color: var(--t-color, var(--accent)); }
 .tipoBtnActive {
@@ -280,6 +319,11 @@
   color: var(--text-muted); transition: all 0.15s;
 }
 .toggleBtnOn { border-color: var(--accent) !important; color: var(--accent) !important; }
+
+.notifyRow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.notifyRow .toggleBtn { flex-shrink: 0; }
+.notifyRow .select { flex: 1; min-width: 0; }
+.select:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .temasList { display: flex; flex-direction: column; gap: 6px; }
 .temaRow { display: flex; gap: 6px; align-items: center; }
@@ -337,7 +381,7 @@
   .calDayNum { font-size: 11px; }
   .calDayHeader { font-size: 9px; padding: 7px 0; }
   .tipoGrid { grid-template-columns: repeat(2, 1fr); }
-  .formRow2 { flex-direction: column; }
+  .formRow2 { grid-template-columns: minmax(0, 1fr); }
   .selectedDayPanel { padding: 10px 12px; }
   .selectedEvento { gap: 6px; }
   .eventoBadgeTitle { font-size: 11px; }
@@ -348,7 +392,8 @@
   .sidebarItemTitle { font-size: 11px; }
   .sidebarItemMateria { font-size: 9px; }
   .sidebarItemDate { font-size: 9px; }
-  .modal { max-width: 100%; margin: 0 4px; }
+  .modalOverlay { padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); }
+  .modal { max-width: 100%; margin: 0; }
   .modalHeader { padding: 16px 16px 12px; }
   .modalTitle { font-size: 17px; }
   .modalBody { padding: 16px; gap: 12px; }

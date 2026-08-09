@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import styles from "./UpdatePrompt.module.css";
 import { IconStar } from "./Icons";
+import useBodyScrollLock from "../hooks/useBodyScrollLock";
 
 export default function UpdatePrompt() {
   const [show, setShow] = useState(false);
+
+  useBodyScrollLock(show);
 
   useEffect(() => {
     const onUpdate = () => setShow(true);

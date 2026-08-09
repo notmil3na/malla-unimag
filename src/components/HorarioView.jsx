@@ -11,11 +11,14 @@ import {
 } from "../utils/horarioHelpers.js";
 import styles from "./HorarioView.module.css";
 import {
-  IconMar, IconCienaga, IconSierra, IconInnovacion, IconBloque, IconHangar,
+  IconMar, IconCienaga, IconSierra, IconInnovacion, IconBloque, IconHangar, IconVirtual,
   IconLocation, IconTrash, IconExternalLink, IconEdit, IconClose,
-  IconSchedule, IconStar, IconCheck, IconWarning, IconDownload
+  IconSchedule, IconStar, IconCheck, IconWarning, IconDownload,
+  IconChevronLeft, IconChevronRight
 } from "./Icons";
 import HorarioExport from "./HorarioExport";
+import HorarioWallpaper from "./HorarioWallpaper";
+import useBodyScrollLock from "../hooks/useBodyScrollLock";
 
 // ── Edificios y salones ───────────────────────────────────────────────────
 const EDIFICIOS = [
@@ -26,17 +29,18 @@ const EDIFICIOS = [
   { id:"sierra_nevada", nombre:"Sierra Nevada", IconComp:IconSierra, lados:["Norte","Sur"],
     salones: Array.from({length:18},(_,i)=>`${100*(Math.floor(i/6)+1)+(i%6+1)}`), },
   { id:"edf_innovacion", nombre:"Edificio de Innovación y Emprendimiento", IconComp:IconInnovacion, lados:null,
-    salones:["Lab. de Mecánica I"], },
+    salones:["Lab. de Mecánica I", "Lab. de Calor y Ondas"], },
   { id:"bloque_3", nombre:"Bloque 3", IconComp:IconBloque, lados:null,
     salones: Array.from({length:8},(_,i)=>`${i+1}`), },
   { id:"bloque_8", nombre:"Bloque 8", IconComp:IconBloque, lados:null,
     salones: Array.from({length:8},(_,i)=>`${i+1}`), },
   { id:"hangar_a", nombre:"Hangar A", IconComp:IconHangar, lados:null,
     salones:["Lab. Modelado y Simulación", "Lab. Redes"], },
+  { id:"espacio_virtual", nombre:"Espacio Virtual", IconComp:IconVirtual, lados:null,
+    salones:[], },
 ];
 
-// Edificios donde se permite escribir un salón/laboratorio personalizado.
-const OTRO_SALON_IDS = ["bloque_3", "bloque_8"];
+const OTRO_SALON_IDS = ["bloque_3", "bloque_8", "hangar_a", "edf_innovacion"];
 const CUSTOM_SALONES_KEY = "horario_custom_salones_v1";
 function getCustomSalones() {
   try {
@@ -46,6 +50,23 @@ function getCustomSalones() {
 }
 function saveCustomSalones(obj) {
   try { localStorage.setItem(CUSTOM_SALONES_KEY, JSON.stringify(obj)); } catch {}
+}
+
+// ── Detección de móvil (coincide con el media query de la vista) ─────────
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    if (mq.addEventListener) mq.addEventListener("change", update);
+    else mq.addListener(update);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", update);
+      else mq.removeListener(update);
+    };
+  }, []);
+  return isMobile;
 }
 
 const TODOS_DIAS = [
@@ -61,9 +82,6 @@ function buildSalonLabel(edificioId, lado, salon) {
   return `${ed.nombre} ${lado} ${salon}`;
 }
 
-// Dado un arreglo de clases y el índice en el que se hizo click, arma el
-// objeto que precarga el modal: si la clase tiene "pairId" y existe su
-// pareja (el otro día), las combina para editarlas juntas en un solo modal.
 function buildEditando(clases, idx) {
   const clase = clases[idx];
   if (!clase) return null;
@@ -111,6 +129,7 @@ function computeConflictIdxs(clases) {
 
 // ── ClaseModal ────────────────────────────────────────────────────────────
 function ClaseModal({ materiasDisponibles, allMaterias, existingClases, editIdxSet, prefill, diasActivos, onSave, onClose, editando, onDelete, onNotify }) {
+  useBodyScrollLock();
   const [form, setForm] = useState(editando ? {
     materiaId: editando.materiaId||"", grupo: editando.grupo||"", profesor: editando.profesor||"",
     dia: editando.dia||diasActivos[0]||"L",
@@ -140,8 +159,6 @@ function ClaseModal({ materiasDisponibles, allMaterias, existingClases, editIdxS
 
   const materiaById = new Map((allMaterias || []).map((m) => [m.id, m]));
 
-  // Choques en vivo: comparar el horario actual del formulario contra las
-  // clases existentes (excluyendo las que se están editando).
   const pendingClases = [
     { dia: form.dia, horaInicio: form.horaInicio, horaFin: form.horaFin },
     ...(form.segundoDiaActivo && form.dia2 && form.horaInicio2 && form.horaFin2
@@ -234,7 +251,7 @@ function ClaseModal({ materiasDisponibles, allMaterias, existingClases, editIdxS
             </select>
             {blockedSelected && (
               <div className={styles.blockedHint}>
-                <IconWarning size={12} /> Esta materia requiere aprobar antes:{" "}
+                <IconWarning size={12} /> Necesitas aprobar antes:{" "}
                 {selectedMateria.prereqs
                   .map((pid) => materiaById.get(pid)?.id || pid)
                   .join(", ")}
@@ -303,7 +320,7 @@ function ClaseModal({ materiasDisponibles, allMaterias, existingClases, editIdxS
                 <button key={edif.id}
                   className={`${styles.edificioBtn} ${form.edificio===edif.id?styles.edificioBtnActive:""}`}
                   onClick={()=>setForm(f=>({...f,edificio:edif.id,lado:"",salon:""}))}>
-                  <span>{edif.icon}</span><span>{edif.nombre}</span>
+                  <span>{edif.IconComp ? <edif.IconComp size={14} /> : null}</span><span>{edif.nombre}</span>
                 </button>
               ))}
             </div>
@@ -469,15 +486,23 @@ function ClaseBloque({ clase, materia, color, horaStart, duracion, onClick, isCo
         <span className={styles.claseId}>{materia?.id||clase.materiaId}{clase.grupo ? ` - ${clase.grupo}` : ""}</span>
         {showName && materia?.nombre && <span className={styles.claseNombre}>{materia.nombre}</span>}
         {clase.profesor && <span className={styles.claseProfesor}>{clase.profesor}</span>}
-        <span className={styles.claseHora}>{toViewHora(clase.horaInicio)}–{toViewHora(clase.horaFin)}</span>
-        {clase.salonLabel && <span className={styles.claseSalon}>{clase.salonLabel}</span>}
+        <span className={styles.claseHora}>
+          <IconSchedule size={11} className={styles.claseIcon} />
+          {toViewHora(clase.horaInicio)}–{toViewHora(clase.horaFin)}
+        </span>
+        {clase.salonLabel && (
+          <span className={styles.claseSalon} title={clase.salonLabel}>
+            <IconLocation size={11} className={styles.claseIcon} />
+            {clase.salonLabel}
+          </span>
+        )}
       </div>
     </div>
   );
 }
 
 // ── MiniHorario: small schedule card for planner ─────────────────────────
-function MiniHorario({ opcion, priority, colorMap, materiasRef, diasActivos, onEdit, onDelete, onRename, isSelected, onSelect, onAddClase, onTransfer }) {
+function MiniHorario({ opcion, priority, colorMap, materiasRef, diasActivos, onEdit, onDelete, onRename, isSelected, onSelect, onAddClase, onTransfer, onMove }) {
   const [editingName, setEditingName] = useState(false);
   const [tempName, setTempName] = useState(opcion.nombre);
 
@@ -487,7 +512,6 @@ function MiniHorario({ opcion, priority, colorMap, materiasRef, diasActivos, onE
     diasActivos.includes(d.id) || diasConClases.includes(d.id)
   );
 
-  // Rango de horas usado
   const usedHoras = clases.flatMap(c=>{
     const s=horaIdx(c.horaInicio), e=horaIdx(c.horaFin);
     return s>=0&&e>s ? Array.from({length:e-s+1},(_,i)=>s+i) : [];
@@ -527,8 +551,14 @@ function MiniHorario({ opcion, priority, colorMap, materiasRef, diasActivos, onE
           {isSelected && <span className={styles.miniCardBadge}>Activa</span>}
         </div>
         <div className={styles.miniCardActions}>
+          <button className={`${styles.miniActionBtn} ${styles.miniMoveBtn}`}
+            title="Mover opción hacia atrás"
+            onClick={e=>{ e.stopPropagation(); onMove?.(-1); }}><IconChevronLeft size={13} /></button>
+          <button className={`${styles.miniActionBtn} ${styles.miniMoveBtn}`}
+            title="Mover opción hacia adelante"
+            onClick={e=>{ e.stopPropagation(); onMove?.(1); }}><IconChevronRight size={13} /></button>
           <button className={styles.miniActionBtn}
-            title={clases.length ? "Transferir a horario: este será tu horario del semestre" : "Agrega clases antes de transferir"}
+            title={clases.length ? "Transferir: este será tu horario del semestre" : "Agrega clases antes de transferir"}
             disabled={!clases.length}
             onClick={e=>{ e.stopPropagation(); if(clases.length) onTransfer(); }}><IconExternalLink size={13} /></button>
           <button className={styles.miniActionBtn} title="Renombrar"
@@ -602,12 +632,38 @@ function MiniHorario({ opcion, priority, colorMap, materiasRef, diasActivos, onE
   );
 }
 
+// ── TransferConfirmModal ─────────────────────────────────────────────────
+function TransferConfirmModal({ nombre, onEnrollMaterias, onCancel, onConfirm }) {
+  useBodyScrollLock();
+  return (
+    <div className={styles.modalOverlay} onClick={onCancel}>
+      <div className={styles.modal} onClick={e=>e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <h3 className={styles.modalTitle}>Transferir a horario</h3>
+          <button className={styles.modalClose} onClick={onCancel}><IconClose size={14} /></button>
+        </div>
+        <div className={styles.modalBody}>
+          <p>
+            <strong>"{nombre}"</strong> se convertirá en tu <strong>horario de este semestre</strong> (pestaña "Mi horario").
+          </p>
+          <p style={{color:"var(--text-muted)",fontSize:13}}>
+            Esto reemplaza el contenido actual de "Mi horario"
+            {onEnrollMaterias ? " y marca las materias de esta opción como \"Cursando\"." : "."}
+          </p>
+        </div>
+        <div className={styles.modalFooter}>
+          <button className={styles.btnSecondary} onClick={onCancel}>Cancelar</button>
+          <button className={styles.btnPrimary} onClick={onConfirm}>Sí, transferir</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── PlanificadorView ──────────────────────────────────────────────────────
 function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDias, onTransferToHorario, onEnrollMaterias }) {
   const allMaterias = malla.flatMap((s) => s.materias);
   const materiasActuales = allMaterias.filter((m) => m.estado === "cursando");
-  // Incluye materias con prerequisitos pendientes para marcarlas visualmente
-  // (no se pueden agendar hasta cumplir los prereqs).
   const materiasDisponibles = allMaterias
     .filter((m) => m.estado === "cursando" || m.estado === "faltante")
     .map((m) => ({
@@ -626,10 +682,11 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
 
   const [opciones, setOpciones] = useState(planData?.opciones || []);
   const [selectedIdx, setSelectedIdx] = useState(planData?.selectedIdx ?? 0);
-  const [modalState, setModalState] = useState(null); // {opcionIdx, editando?}
+  const [modalState, setModalState] = useState(null);
   const [dragIdx, setDragIdx] = useState(null);
   const [dragOverIdx, setDragOverIdx] = useState(null);
   const [confirmTransferIdx, setConfirmTransferIdx] = useState(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     setOpciones(planData?.opciones || []);
@@ -744,12 +801,73 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
         </div>
       </div>
 
+      {/* Resumen de matrícula de la opción seleccionada */}
+      {opciones[selectedIdx] && (() => {
+        const opSel = opciones[selectedIdx];
+        const clasesSel = opSel.clases || [];
+        const mById = new Map(allMaterias.map((m) => [m.id, m]));
+        const materiaIds = [...new Set(clasesSel.filter((c) => c.materiaId).map((c) => c.materiaId))];
+        const materiasSel = materiaIds.map((id) => mById.get(id)).filter(Boolean);
+        const creditosSel = materiasSel.reduce((a, m) => a + (m.creditos || 0), 0);
+        const conflictSetSel = computeConflictIdxs(clasesSel);
+        const prereqOkSel = (m) =>
+          !(m.prereqs || []).some((pid) => mById.get(pid)?.estado !== "aprobada");
+        const conObservaciones = materiasSel.some((m) => !prereqOkSel(m) && m.estado !== "cursando") || conflictSetSel.size > 0;
+        return (
+          <div className={styles.planResumen}>
+            <div className={styles.planResumenHeader}>
+              <div>
+                <span className={styles.planResumenTitle}>Matrícula · {opSel.nombre}</span>
+                <span className={styles.planResumenSub}>
+                  {materiasSel.length} materia{materiasSel.length !== 1 ? "s" : ""} ·{" "}
+                  {creditosSel} créditos
+                </span>
+              </div>
+              <span className={`${styles.planResumenBadge} ${conObservaciones ? styles.planResumenBadgeWarn : styles.planResumenBadgeOk}`}>
+                {conObservaciones ? "Con observaciones" : "Listo para matricular"}
+              </span>
+            </div>
+            <div className={styles.planResumenList}>
+              {materiasSel.length === 0 && (
+                <p className={styles.planResumenEmpty}>
+                  Agrega materias a esta opción para ver el resumen de matrícula.
+                </p>
+              )}
+              {materiasSel.map((m) => {
+                const faltantes = (m.prereqs || []).filter((pid) => mById.get(pid)?.estado !== "aprobada");
+                const ok = m.estado === "cursando" || prereqOkSel(m);
+                return (
+                  <div key={m.id} className={styles.planResumenMateria}>
+                    <span className={`${styles.planResumenDot} ${ok ? styles.planResumenDotOk : styles.planResumenDotWarn}`} />
+                    <div className={styles.planResumenMateriaBody}>
+                      <span className={styles.planResumenMateriaId}>{m.id}</span>
+                      <span className={styles.planResumenMateriaNombre}>{m.nombre}</span>
+                    </div>
+                    <span className={styles.planResumenMateriaCred}>{m.creditos} cr</span>
+                    {!ok && (
+                      <span className={styles.planResumenWarn}>
+                        <IconWarning size={11} /> Falta: {faltantes.join(", ")}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+              {conflictSetSel.size > 0 && (
+                <p className={styles.planResumenConflict}>
+                  <IconWarning size={12} /> {conflictSetSel.size} choque{conflictSetSel.size > 1 ? "s" : ""} de horario dentro de esta opción.
+                </p>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Opciones en grid mini */}
       {opciones.length === 0 ? (
         <div className={styles.planEmptyState}>
           <span className={styles.planEmptyIcon}><IconSchedule size={36} /></span>
           <p style={{fontWeight:600,marginBottom:6}}>Aún no tienes opciones de horario</p>
-          <p style={{fontSize:13}}>Crea varias opciones y compara cuál te acomoda mejor.</p>
+          <p style={{fontSize:13}}>Crea varias opciones y compara cuál te queda mejor.</p>
           <button className={styles.planAddBtn} style={{marginTop:16}} onClick={addOpcion}>
             + Crear primera opción
           </button>
@@ -759,7 +877,7 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
           {opciones.map((op,i)=>(
             <div key={i}
               className={`${styles.miniCardDragWrap} ${dragIdx===i?styles.miniCardDragging:""} ${dragOverIdx===i&&dragIdx!==null&&dragIdx!==i?styles.miniCardDragOver:""}`}
-              draggable
+              draggable={!isMobile}
               onDragStart={()=>setDragIdx(i)}
               onDragOver={e=>{ e.preventDefault(); setDragOverIdx(i); }}
               onDrop={()=>{ if(dragIdx!==null) reorderOpciones(dragIdx,i); setDragIdx(null); setDragOverIdx(null); }}
@@ -777,6 +895,7 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
                 onEdit={(editando)=>setModalState({opcionIdx:i,editando})}
                 onAddClase={()=>setModalState({opcionIdx:i})}
                 onTransfer={()=>setConfirmTransferIdx(i)}
+                onMove={(dir)=>{ const to=i+dir; if(to>=0 && to<opciones.length) reorderOpciones(i,to); }}
               />
             </div>
           ))}
@@ -803,27 +922,12 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
 
       {/* Confirmación de transferencia a Mi horario */}
       {confirmTransferIdx !== null && opciones[confirmTransferIdx] && (
-        <div className={styles.modalOverlay} onClick={()=>setConfirmTransferIdx(null)}>
-          <div className={styles.modal} onClick={e=>e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Transferir a horario</h3>
-              <button className={styles.modalClose} onClick={()=>setConfirmTransferIdx(null)}><IconClose size={14} /></button>
-            </div>
-            <div className={styles.modalBody}>
-              <p>
-                <strong>"{opciones[confirmTransferIdx].nombre}"</strong> se convertirá en tu <strong>horario de este semestre</strong> (pestaña "Mi horario").
-              </p>
-              <p style={{color:"var(--text-muted)",fontSize:13}}>
-                Esto reemplaza el contenido actual de "Mi horario"
-                {onEnrollMaterias ? " y marca las materias de esta opción como \"Cursando\"." : "."}
-              </p>
-            </div>
-            <div className={styles.modalFooter}>
-              <button className={styles.btnSecondary} onClick={()=>setConfirmTransferIdx(null)}>Cancelar</button>
-              <button className={styles.btnPrimary} onClick={handleTransferConfirmed}>Sí, transferir</button>
-            </div>
-          </div>
-        </div>
+        <TransferConfirmModal
+          nombre={opciones[confirmTransferIdx].nombre}
+          onEnrollMaterias={onEnrollMaterias}
+          onCancel={()=>setConfirmTransferIdx(null)}
+          onConfirm={handleTransferConfirmed}
+        />
       )}
     </div>
   );
@@ -831,14 +935,18 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
 
 // ── Vista principal ───────────────────────────────────────────────────────
 export default function HorarioView({ malla, horarioData, planData, onSave, onSavePlan, user, onNotify, onEnrollMaterias }) {
-  const [mode, setMode] = useState("horario"); // "horario" | "planificador"
+  const [mode, setMode] = useState("horario");
   const [data, setData] = useState(horarioData || {dias:["L","M","X","J","V"],clases:[]});
   const [showModal, setShowModal] = useState(false);
   const [editando, setEditando] = useState(null);
   const [modalPrefill, setModalPrefill] = useState(null);
   const [showExport, setShowExport] = useState(false);
+  const [showWallpaper, setShowWallpaper] = useState(false);
   const [dragMateriaId, setDragMateriaId] = useState(null);
-  const [dragHover, setDragHover] = useState(null); // {dia, start, end}
+  const [dragHover, setDragHover] = useState(null);
+  const [touchDrag, setTouchDrag] = useState(null);
+  const [touchPos, setTouchPos] = useState(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     setData(horarioData || {dias:["L","M","X","J","V"],clases:[]});
@@ -892,9 +1000,13 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
     setMode("horario");
   };
 
+  const handleOpenWallpaper = () => {
+    setShowExport(false);
+    setShowWallpaper(true);
+  };
+
   const diasActivos=TODOS_DIAS.filter(d=>data.dias.includes(d.id));
 
-  // Rango visible del horario + choques persistentes
   const schedule = (() => {
     const claseIdxs = data.clases.flatMap(c => {
       const s = horaIdx(c.horaInicio), e = horaIdx(c.horaFin);
@@ -964,7 +1076,65 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
   const clearDrag = () => {
     setDragMateriaId(null);
     setDragHover(null);
+    setTouchDrag(null);
+    setTouchPos(null);
   };
+
+  // ── Arrastrar por toque (móvil): el HTML5 DnD no funciona en táctil ──
+  useEffect(() => {
+    if (!touchDrag) return;
+    const findTarget = (clientX, clientY) => {
+      const el = document.elementFromPoint(clientX, clientY);
+      const col = el?.closest?.("[data-dia]");
+      if (!col) return null;
+      const rect = col.getBoundingClientRect();
+      const y = clientY - rect.top;
+      const h = Math.max(schedule.visStart, Math.min(schedule.visEnd, Math.floor(y / 64)));
+      const end = Math.min(h + 2, schedule.visEnd + 1);
+      return { dia: col.dataset.dia, start: h, end };
+    };
+    const onMove = (e) => {
+      if (e.pointerType !== "touch") return;
+      setTouchPos({ x: e.clientX, y: e.clientY });
+      setDragHover(findTarget(e.clientX, e.clientY));
+    };
+    const onUp = (e) => {
+      if (e.pointerType !== "touch") return;
+      const dx = e.clientX - touchDrag.startX;
+      const dy = e.clientY - touchDrag.startY;
+      if (Math.abs(dx) + Math.abs(dy) < 10) {
+        // Toque sin arrastre → abrir modal con la materia preseleccionada
+        setEditando(null);
+        setModalPrefill({ materiaId: touchDrag.materiaId });
+        setShowModal(true);
+      } else {
+        // Arrastre real → soltar sobre la franja
+        const t = findTarget(e.clientX, e.clientY);
+        if (t) {
+          setModalPrefill({
+            materiaId: touchDrag.materiaId,
+            dia: t.dia,
+            horaInicio: HORAS_FORM[t.start] || HORAS_FORM[schedule.visStart],
+            horaFin: HORAS_FORM[t.end] || HORAS_FORM[schedule.visEnd],
+          });
+          setEditando(null);
+          setShowModal(true);
+        }
+      }
+      setDragMateriaId(null);
+      setDragHover(null);
+      setTouchPos(null);
+      setTouchDrag(null);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, [touchDrag]);
 
   return (
     <div className={styles.wrap}>
@@ -1015,14 +1185,24 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
         {materiasActuales.length>0 && (
           <div className={styles.legendRow} onDragOver={e=>e.preventDefault()} onDrop={e=>e.preventDefault()}>
             <span className={styles.legendDragHint}>
-              <IconSchedule size={11} /> Arrastra una materia al horario para agendar
+              <IconSchedule size={11} />
+              {isMobile ? "Toca una materia para agendarla" : "Arrastra una materia a una franja para agendar"}
             </span>
             {materiasActuales.map(m=>(
-              <div key={m.id} className={styles.legendItem}
-                draggable
-                title={`Arrastra ${m.id} a una franja del horario`}
+              <div key={m.id}
+                className={`${styles.legendItem} ${isMobile?styles.legendItemTap:""} ${dragMateriaId===m.id?styles.legendItemDragging:""}`}
+                draggable={!isMobile}
+                title={isMobile ? `Toca o arrastra ${m.id} a una franja para agendarla` : `Arrastra ${m.id} a una franja del horario`}
                 onDragStart={(e)=>{ setDragMateriaId(m.id); e.dataTransfer.effectAllowed="move"; }}
-                onDragEnd={clearDrag}>
+                onDragEnd={clearDrag}
+                onPointerDown={(e)=>{
+                  if (e.pointerType === "touch") {
+                    e.preventDefault();
+                    setDragMateriaId(m.id);
+                    setTouchDrag({ materiaId: m.id, startX: e.clientX, startY: e.clientY });
+                    setTouchPos({ x: e.clientX, y: e.clientY });
+                  }
+                }}>
                 <span className={styles.legendDot} style={{background:colorMap[m.id]}}/>
                 <span className={styles.legendId}>{m.id}</span>
                 <span className={styles.legendNombre}>{m.nombre}</span>
@@ -1051,7 +1231,7 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
               <div className={styles.emptyState}>
                 <span className={styles.emptyIcon}><IconSchedule size={36} /></span>
                 <p>No hay clases en el horario.</p>
-                <p>Haz clic en <strong>+ Añadir clase</strong> o arrastra una materia de la leyenda.</p>
+                <p>Toca <strong>+ Añadir clase</strong> o arrastra una materia desde la leyenda.</p>
               </div>
             );
           }
@@ -1068,7 +1248,7 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
                       <span className={styles.diaLabelCorto}>{dia.id}</span>
                       <span className={styles.diaLabelLargo}>{dia.label}</span>
                     </div>
-                    <div className={styles.diaBody}
+                    <div className={styles.diaBody} data-dia={dia.id}
                       onDragOver={(e)=>handleDragOver(e, dia.id)}
                       onDrop={(e)=>handleDrop(e, dia.id)}
                       onDragLeave={(e)=>{
@@ -1107,6 +1287,14 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
             </div>
           );
         })()}
+
+        {touchDrag && touchPos && (
+          <div className={styles.touchGhost}
+            style={{ transform: `translate(${touchPos.x}px, ${touchPos.y}px)` }}>
+            <IconSchedule size={11} />
+            {materiasActuales.find(m=>m.id===touchDrag.materiaId)?.id || touchDrag.materiaId}
+          </div>
+        )}
       </>)}
 
       {/* ── MODO PLANIFICADOR ── */}
@@ -1147,7 +1335,19 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
           horarioData={data}
           malla={malla}
           onNotify={onNotify}
+          onOpenWallpaper={handleOpenWallpaper}
           onClose={()=>setShowExport(false)}
+        />
+      )}
+
+      {/* Fondo de pantalla */}
+      {showWallpaper && (
+        <HorarioWallpaper
+          user={user}
+          horarioData={data}
+          malla={malla}
+          onNotify={onNotify}
+          onClose={()=>setShowWallpaper(false)}
         />
       )}
     </div>

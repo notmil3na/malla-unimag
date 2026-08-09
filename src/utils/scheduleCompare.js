@@ -1,20 +1,17 @@
 import { HORAS_FORM, horaIdx, toViewHora } from "./horarioHelpers.js";
 
 // ── Ventana académica ─────────────────────────────────────────────────────
-// La comparación se hace sobre franjas de 06:00 a 22:00 (índices de HORAS_FORM).
 export const WINDOW_START = 0;
 export const WINDOW_END   = HORAS_FORM.length; // exclusivo (22:00)
 
 export const DAY_ORDER = ["L", "M", "X", "J", "V", "S"];
 export const DAY_LABELS = { L: "Lunes", M: "Martes", X: "Miércoles", J: "Jueves", V: "Viernes", S: "Sábado" };
 
-// Formato corto de una hora por índice (0 → 6:00, 16 → 22:00).
 export function formatHourIdx(idx) {
   const h = idx + 6;
   return `${h}:00`;
 }
 
-// Formato "9:00" a partir de una hora en formato de la app.
 export function compactHour(hora) {
   const idx = horaIdx(hora);
   if (idx < 0) return toViewHora(hora) || "";
@@ -63,9 +60,6 @@ export function freeSlotsPerDay(busy) {
 }
 
 // ── Huecos en común ───────────────────────────────────────────────────────
-// Intersección de las franjas libres de ambos usuarios. `minDuracion` en
-// horas (1 = al menos una franja de 60 min). Devuelve [{dia, inicio, fin, duracion}]
-// ordenado por duración descendente.
 export function commonFreeSlots(myBusy, friendBusy, minDuracion = 1) {
   const aFree = freeSlotsPerDay(myBusy || {});
   const bFree = freeSlotsPerDay(friendBusy || {});
@@ -93,8 +87,69 @@ export function commonFreeSlots(myBusy, friendBusy, minDuracion = 1) {
   return result;
 }
 
+// ── Comparación de clases (coincidencias de horario) ──────────────────────
+function hourSetByDay(clases) {
+  const out = {};
+  for (const c of clases || []) {
+    if (!c || !c.dia) continue;
+    const s = horaIdx(c.horaInicio);
+    const e = horaIdx(c.horaFin);
+    if (s < WINDOW_START || e > WINDOW_END || s >= e) continue;
+    (out[c.dia] = out[c.dia] || new Set());
+    for (let h = s; h < e; h++) out[c.dia].add(h);
+  }
+  return out;
+}
+
+// Horas (índices) donde AMBOS tienen clase, por día.
+export function overlapHoursByDay(myClases, frClases) {
+  const mine = hourSetByDay(myClases || []);
+  const theirs = hourSetByDay(frClases || []);
+  const out = {};
+  for (const d of DAY_ORDER) {
+    const a = mine[d], b = theirs[d];
+    if (!a || !b) continue;
+    const set = new Set();
+    for (const h of a) if (b.has(h)) set.add(h);
+    if (set.size) out[d] = set;
+  }
+  return out;
+}
+
+// Parejas de clases (una tuya, una del amigo) que se solapan en tiempo.
+export function overlappingClasses(myClases, frClases) {
+  const valid = (c) => c && c.dia && horaIdx(c.horaInicio) >= 0 && horaIdx(c.horaFin) > horaIdx(c.horaInicio);
+  const mine = (myClases || []).filter(valid);
+  const theirs = (frClases || []).filter(valid);
+  const result = [];
+  for (const a of mine) {
+    for (const b of theirs) {
+      if (a.dia !== b.dia) continue;
+      const s1 = horaIdx(a.horaInicio), e1 = horaIdx(a.horaFin);
+      const s2 = horaIdx(b.horaInicio), e2 = horaIdx(b.horaFin);
+      if (!(s1 < e2 && s2 < e1)) continue;
+      result.push({
+        dia: a.dia,
+        inicio: Math.max(s1, s2),
+        fin: Math.min(e1, e2),
+        duracion: Math.min(e1, e2) - Math.max(s1, s2),
+        mismaMateria: !!a.materiaId && a.materiaId === b.materiaId,
+        mismoSalon: !!a.salonLabel && a.salonLabel === b.salonLabel,
+        miClase: a,
+        frClase: b,
+      });
+    }
+  }
+  result.sort(
+    (x, y) =>
+      DAY_ORDER.indexOf(x.dia) - DAY_ORDER.indexOf(y.dia) ||
+      x.inicio - y.inicio ||
+      (x.mismaMateria === y.mismaMateria ? 0 : x.mismaMateria ? -1 : 1)
+  );
+  return result;
+}
+
 // ── Matriz para la cuadrícula visual ──────────────────────────────────────
-// day -> array (WINDOW_END - WINDOW_START) con 'libre'|'yo'|'amigo'|'ambos'.
 export function cellStatuses(myBusy, friendBusy) {
   const toSet = (intervals) => {
     const set = new Set();
