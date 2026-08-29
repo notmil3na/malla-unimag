@@ -1,5 +1,7 @@
 /* ── Layout ───────────────────────────────────────── */
 .wrap { padding: 28px 32px; min-height: 100%; }
+/* Al abrir el chat ocupamos la vista completa */
+.chatOpen { padding: 18px 24px; }
 
 .header {
   display: flex; align-items: flex-start; justify-content: space-between;
@@ -508,6 +510,7 @@
 
 @media (max-width: 900px) {
   .wrap { padding: 18px 14px; }
+  .chatOpen { padding: 12px 10px; }
   .horariosDual { flex-direction: column; }
   .miniSched { min-width: 0; }
 }

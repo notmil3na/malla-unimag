@@ -1,5 +1,5 @@
 /* MiMalla – Service Worker */
-const CACHE = "mimalla-v1788038792617";
+const CACHE = "mimalla-v1788039790378";
 const CORE = [
   "/",
   "/manifest.webmanifest",

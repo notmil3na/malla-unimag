@@ -538,7 +538,7 @@ export default function ColaboracionView({
   const [friendHorarios, setFriendHorarios] = useState({});
   const [dispLoading, setDispLoading] = useState(false);
   const [searching, setSearching] = useState(false);
-  const [showChat, setShowChat] = useState(false);
+  const [chatFriend, setChatFriend] = useState(null);
 
   const reloadFriendships = useCallback(async () => {
     const res = await fetchFriendships(user.username);
@@ -704,7 +704,27 @@ export default function ColaboracionView({
   }
 
   return (
-    <div className={`${styles.wrap} view-fade`}>
+    <div className={`${styles.wrap} view-fade ${chatFriend ? styles.chatOpen : ""}`}>
+      {/* Chat entre amigos (pantalla completa) */}
+      {chatFriend && (
+        <ChatView
+          user={user}
+          amigos={amigos}
+          onBack={() => setChatFriend(null)}
+          onNotify={onNotify}
+          initialFriend={chatFriend}
+          shareData={{
+            malla,
+            notas: notas || {},
+            cursandoData: cursandoData || {},
+            notasClaseData: notasClaseData || {},
+            asignacionesData: asignacionesData || { items: [] },
+            semestre: semestre ?? null,
+          }}
+        />
+      )}
+
+      {!chatFriend && (<>)}
       <div className={styles.header}>
         <div>
           <h2 className={styles.title}>Amigos</h2>
@@ -872,7 +892,7 @@ export default function ColaboracionView({
                     </button>
                     <button
                       className={styles.btnGhost}
-                      onClick={() => setShowChat(true)}
+                      onClick={() => setChatFriend(u.username)}
                     >
                       <IconSend size={12} /> Chat
                     </button>
@@ -912,24 +932,7 @@ export default function ColaboracionView({
         {selectedUser && !comparing && !friendData && !selectedRel && (
           <p className={styles.errorBanner}><IconWarning size={13} /> No se pudo cargar la comparación.</p>
         )}
-
-        {/* Chat entre amigos */}
-        {showChat && (
-          <ChatView
-            user={user}
-            amigos={amigos}
-            onBack={() => setShowChat(false)}
-            onNotify={onNotify}
-            shareData={{
-              malla,
-              notas: notas || {},
-              cursandoData: cursandoData || {},
-              notasClaseData: notasClaseData || {},
-              asignacionesData: asignacionesData || { items: [] },
-              semestre: semestre ?? null,
-            }}
-          />
-        )}
+      </>)}
       </>)}
     </div>
   );

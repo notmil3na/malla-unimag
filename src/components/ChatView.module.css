@@ -1,6 +1,6 @@
 /* ── Chat (estética iMessage) ─────────────────────── */
 .chatWrap {
-  display: flex; flex-direction: column;
+  display: flex; flex-direction: row;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -11,21 +11,41 @@
   min-height: 480px;
 }
 
-.chatHeader {
+.chatHeaderCount {
+  font-family: var(--font-body); font-size: 11px; font-weight: 700;
+  color: #14101f; background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 999px; padding: 2px 8px;
+}
+
+/* ── Sidebar (lista de amigos) ───────────────────── */
+.chatSidebar {
+  display: flex; flex-direction: column;
+  width: 320px; flex-shrink: 0; min-width: 0;
+  border-right: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface2) 45%, transparent);
+}
+.sidebarHeader {
   display: flex; align-items: center; gap: 10px;
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface2) 70%, transparent);
   flex-shrink: 0;
 }
-.chatHeaderTitle {
+.sidebarTitle {
   display: inline-flex; align-items: center; gap: 8px;
-  font-family: var(--font-display); font-size: 20px; color: var(--text);
+  font-family: var(--font-display); font-size: 18px; color: var(--text);
 }
-.chatHeaderCount {
-  font-family: var(--font-body); font-size: 11px; font-weight: 700;
-  color: #14101f; background: linear-gradient(135deg, var(--accent), var(--accent2));
-  border-radius: 999px; padding: 2px 8px;
+.sidebarTitle svg { color: var(--accent); }
+
+/* ── Panel principal (thread / placeholder) ──────── */
+.chatMain { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--surface); }
+.threadPlaceholder {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; text-align: center; padding: 30px 20px; color: var(--text-muted);
+  font-size: 14px; line-height: 1.6;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(var(--accent-rgb), 0.05), transparent 45%),
+    radial-gradient(circle at 80% 85%, rgba(232, 112, 152, 0.05), transparent 45%);
 }
 
 .threadBack {
@@ -50,6 +70,11 @@
 }
 .convRow:hover { background: color-mix(in srgb, var(--surface2) 60%, transparent); }
 .convRow:last-child { border-bottom: none; }
+.convRowActive {
+  background: color-mix(in srgb, var(--surface2) 85%, transparent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.convRowActive:hover { background: color-mix(in srgb, var(--surface2) 85%, transparent); }
 
 .convAvatar { position: relative; flex-shrink: 0; display: inline-flex; }
 .convUnreadBadge {
@@ -274,12 +299,22 @@
 /* ── Responsive (móvil) ──────────────────────────── */
 @media (max-width: 900px) {
   .chatWrap { height: calc(100dvh - 150px); border-radius: var(--radius-md); }
+  .chatSidebar { width: 280px; }
+}
+@media (max-width: 800px) {
+  .chatWrap { flex-direction: column; }
+  .chatSidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+  .chatMain { flex: 1; min-height: 0; }
+  /* Solo se muestra una de las dos columnas en estrecho */
+  .chatWrap.hasActive .chatSidebar { display: none; }
+  .chatWrap:not(.hasActive) .chatMain { display: none; }
 }
 @media (max-width: 600px) {
   .chatWrap { height: calc(100dvh - 128px); border-radius: 16px; min-height: 400px; }
   .bubble { max-width: 82%; }
   .threadBody { padding: 12px 10px; }
   .composer { padding: 8px 10px; }
+  .chatSidebar { width: 100%; }
 }
 @media (max-width: 360px) {
   .bubble { max-width: 88%; }

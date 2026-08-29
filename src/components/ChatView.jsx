@@ -396,12 +396,12 @@ function ThreadView({ user, friend, onBack, onNotify, shareData }) {
   );
 }
 
-// ── Conversaciones (lista) ─────────────────────────────────────────────────
-export default function ChatView({ user, amigos, onBack, onNotify, shareData }) {
+// ── Chat (sidebar de amigos + thread) ───────────────────────────────────────
+export default function ChatView({ user, amigos, onBack, onNotify, shareData, initialFriend }) {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [needsMig, setNeedsMig] = useState(false);
-  const [active, setActive] = useState(null);
+  const [active, setActive] = useState(initialFriend || null);
 
   const amigoInfo = useMemo(() => {
     const map = {};
@@ -423,83 +423,74 @@ export default function ChatView({ user, amigos, onBack, onNotify, shareData }) 
     return () => clearInterval(id);
   }, [load]);
 
-  // Combina las conversaciones con el último mensaje para la lista.
-  const sorted = useMemo(() => {
-    return [...conversations].sort((a, b) => {
-      const ta = a.last ? a.last.created_at : "";
-      const tb = b.last ? b.last.created_at : "";
-      return (ta < tb ? 1 : ta > tb ? -1 : 0);
-    });
+  // Mapa de conversaciones por pareja para enriquecer la lista de amigos.
+  const convByPartner = useMemo(() => {
+    const map = {};
+    (conversations || []).forEach((c) => { map[c.partner] = c; });
+    return map;
   }, [conversations]);
 
   const unreadTotal = conversations.reduce((a, c) => a + (c.unread || 0), 0);
 
-  if (needsMig) {
-    return (
-      <div className={styles.chatWrap}>
-        <Header title="Chat" count={0} onBack={onBack} />
-        <div className={styles.chatEmpty}>
-          <span className={styles.threadEmptyIcon}><IconSparkle size={26} /></span>
-          <p>El chat aún no está activado.</p>
-          <p className={styles.threadEmptySub}>Aplica la migración del chat para empezar a usar esta función.</p>
-        </div>
-      </div>
-    );
-  }
+  const previewOf = (u) => {
+    const c = convByPartner[u.username];
+    const lastKind = c && c.last ? c.last.kind : "texto";
+    if (!c || !c.last) return "Inicia una conversación";
+    if (lastKind === "texto") return "Mensaje";
+    if (lastKind === "imagen") return "📷 Imagen";
+    if (lastKind === "apuntes") return "📒 Compartió apuntes";
+    if (lastKind === "notas") return "📊 Compartió notas del semestre";
+    if (lastKind === "asignaciones") return "🗓 Compartió asignaciones";
+    return "Mensaje";
+  };
 
   return (
-    <div className={styles.chatWrap}>
-      <Header title="Chat" count={unreadTotal} onBack={onBack} />
+    <div className={`${styles.chatWrap} ${active ? styles.hasActive : ""}`}>
+      {/* Sidebar: lista de amigos */}
+      <div className={styles.chatSidebar}>
+        <div className={styles.sidebarHeader}>
+          <button className={styles.threadBack} onClick={onBack} title="Volver a amigos"><IconArrowLeft size={17} /></button>
+          <div className={styles.sidebarTitle}>
+            <IconSend size={15} /> Chat
+            {unreadTotal > 0 && <span className={styles.chatHeaderCount}>{unreadTotal}</span>}
+          </div>
+        </div>
 
-      {active ? (
-        <ThreadView
-          user={user}
-          friend={amigoInfo[active] || { username: active, name: active }}
-          onBack={() => { setActive(null); load(); }}
-          onNotify={onNotify}
-          shareData={shareData}
-        />
-      ) : (
         <div className={styles.convList}>
-          {loading ? (
-            <div className={styles.chatEmpty}><span className={styles.loadingSpinner} /> Cargando conversaciones…</div>
+          {needsMig ? (
+            <div className={styles.chatEmpty}>
+              <span className={styles.threadEmptyIcon}><IconSparkle size={26} /></span>
+              <p>El chat aún no está activado.</p>
+              <p className={styles.threadEmptySub}>Aplica la migración del chat para empezar a usar esta función.</p>
+            </div>
+          ) : loading ? (
+            <div className={styles.chatEmpty}><span className={styles.loadingSpinner} /> Cargando…</div>
           ) : amigos.length === 0 ? (
             <div className={styles.chatEmpty}>
               <span className={styles.threadEmptyIcon}><IconUser size={26} /></span>
               <p>Agrega amigos para chatear.</p>
               <p className={styles.threadEmptySub}>Solo puedes conversar con personas que ya son tus amigos.</p>
             </div>
-          ) : sorted.length === 0 ? (
-            <div className={styles.chatEmpty}>
-              <span className={styles.threadEmptyIcon}><IconUser size={26} /></span>
-              <p>No tienes conversaciones todavía.</p>
-              <p className={styles.threadEmptySub}>Toca a un amigo para iniciar un chat.</p>
-            </div>
           ) : (
-            sorted.map((c) => {
-              const u = amigoInfo[c.partner] || { username: c.partner, name: c.partner };
-              const lastKind = c.last ? c.last.kind : "texto";
-              const preview =
-                c.last
-                  ? (lastKind === "texto" ? "Mensaje"
-                     : lastKind === "imagen" ? "📷 Imagen"
-                     : lastKind === "apuntes" ? "📒 Compartió apuntes"
-                     : lastKind === "notas" ? "📊 Compartió notas del semestre"
-                     : lastKind === "asignaciones" ? "🗓 Compartió asignaciones"
-                     : "Mensaje")
-                  : "Inicia una conversación";
+            amigos.map((u) => {
+              const c = convByPartner[u.username];
+              const hasConv = !!c && !!c.last;
               return (
-                <button key={c.partner} className={styles.convRow} onClick={() => setActive(c.partner)}>
+                <button
+                  key={u.username}
+                  className={`${styles.convRow} ${active === u.username ? styles.convRowActive : ""}`}
+                  onClick={() => setActive(u.username)}
+                >
                   <span className={styles.convAvatar}>
                     <Avatar u={u} size={46} />
-                    {c.unread > 0 && <span className={styles.convUnreadBadge}>{c.unread}</span>}
+                    {hasConv && c.unread > 0 && <span className={styles.convUnreadBadge}>{c.unread}</span>}
                   </span>
                   <span className={styles.convInfo}>
                     <span className={styles.convTop}>
                       <span className={styles.convName}>{u.name || u.username}</span>
-                      {c.last && <span className={styles.convTime}>{fmtTimeFull(c.last.created_at)}</span>}
+                      {hasConv && <span className={styles.convTime}>{fmtTimeFull(c.last.created_at)}</span>}
                     </span>
-                    <span className={styles.convPreview}>{preview}</span>
+                    <span className={styles.convPreview}>{previewOf(u)}</span>
                   </span>
                   <span className={styles.convChevron}>›</span>
                 </button>
@@ -507,18 +498,25 @@ export default function ChatView({ user, amigos, onBack, onNotify, shareData }) 
             })
           )}
         </div>
-      )}
-    </div>
-  );
-}
+      </div>
 
-function Header({ title, count, onBack }) {
-  return (
-    <div className={styles.chatHeader}>
-      <button className={styles.threadBack} onClick={onBack} title="Volver a amigos"><IconArrowLeft size={17} /></button>
-      <div className={styles.chatHeaderTitle}>
-        <span>{title}</span>
-        {count > 0 && <span className={styles.chatHeaderCount}>{count}</span>}
+      {/* Panel principal: thread */}
+      <div className={styles.chatMain}>
+        {active ? (
+          <ThreadView
+            user={user}
+            friend={amigoInfo[active] || { username: active, name: active }}
+            onBack={() => { setActive(null); load(); }}
+            onNotify={onNotify}
+            shareData={shareData}
+          />
+        ) : (
+          <div className={styles.threadPlaceholder}>
+            <span className={styles.threadEmptyIcon}><IconSend size={30} /></span>
+            <p>Selecciona un amigo</p>
+            <p className={styles.threadEmptySub}>Elige a quién a la izquierda para iniciar el chat.</p>
+          </div>
+        )}
       </div>
     </div>
   );
