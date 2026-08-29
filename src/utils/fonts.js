@@ -21,7 +21,7 @@ const EXTRA_FONTS = {
   "Fraunces":        "Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300",
 };
 
-const loaded = new Set(["DM Sans", "DM Serif Display"]);
+const loaded = new Set(["DM Sans", "Inter"]);
 
 export function ensureFont(family) {
   if (!family || loaded.has(family)) return;

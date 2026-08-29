@@ -16,10 +16,21 @@ colors:
   deep-nebula: "#1e1a2e"
 typography:
   display:
-    fontFamily: "'DM Serif Display', Georgia, serif"
+    fontFamily: "'Inter', system-ui, sans-serif"
     fontWeight: 400
     lineHeight: 1.1
-    fontStyle: "italic-optional"
+    fontStyle: "normal"
+  displayItalic:
+    fontFamily: "'Inter', system-ui, sans-serif"
+    fontWeight: 500
+    lineHeight: 1.1
+    fontStyle: "italic"
+    color: "var(--accent)"
+  numeral:
+    fontFamily: "'Inter', system-ui, sans-serif"
+    fontWeight: 600
+    letterSpacing: "-0.02em"
+    fontVariantNumeric: "tabular-nums"
   body:
     fontFamily: "'DM Sans', system-ui, sans-serif"
     fontWeight: 400
@@ -101,8 +112,8 @@ significando "esto es tuyo, está activo, mira acá". La estrella ✦ — que gi
 prisa en el logotipo — es la marca y la única pieza en movimiento perpetuo.
 
 La actitud es serena y contemplativa, como una lámpara de escritorio encendida a
-media noche. Tipografía serif itálica (DM Serif Display) para los títulos y
-números grandes, una sans humanista (DM Sans) para el cuerpo, y etiquetas en
+media noche. Tipografía sans UI (Inter) para los títulos y números grandes, una
+sans humanista (DM Sans) para el cuerpo, y etiquetas en
 mayúsculas espaciadas. La profundidad se construye por capas — aurora abajo,
 vidrio arriba — con sombras suaves y ambientales, nunca drop-shadows duras. La
 densidad es media: la información respira en paneles de esquinas generosas
@@ -175,22 +186,31 @@ se vuelve opaco, la aurora desaparece y con ella la identidad.
 
 ## Typography
 
-**Display Font:** DM Serif Display (con Georgia, serif)
+**Display Font:** Inter (con system-ui, sans-serif) — 400, 22–30px, line-height 1.1
 **Body Font:** DM Sans (con system-ui, sans-serif) — sustituible por el usuario
 (Outfit, Syne, Space Grotesk, Josefin Sans, Raleway, Lora, Playfair Display,
 Fraunces).
 **Label/Mono Font:** DM Sans en mayúsculas; fórmulas y código usan monospace del
 sistema.
 
-**Character:** El emparejamiento es clásico-cálido: un serif itálico con
-personalidad para lo que se anuncia (títulos, marcas, cifras grandes) y una sans
-limpia y legible para el trabajo diario. La voz resultante es de estudio
-nocturno — un poco editorial, nunca técnica.
+**Character:** El emparejamiento es UI-moderno con relieve editorial: una sans
+neutral y legible (Inter) para lo que se anuncia (títulos, marcas, cifras
+grandes) y una sans limpia para el trabajo diario. La variación tipográfica es
+el acento de la voz — palabras clave en itálica de Inter teñida con el acento,
+pesos contrastados en las cifras de datos — siempre queda en el display y la
+marca, nunca en párrafos ni en el cuerpo.
 
 ### Hierarchy
-- **Display** (DM Serif Display, 400, 22–30px, line-height 1.1): Marca "MiMalla",
+- **Display** (Inter 400/500/600, 22–30px, line-height 1.1): Marca "MiMalla",
   títulos de sección (26px), fechas del widget "Hoy" (13px), cifras de ponderado
-  (40px). El itálico `em` usa Oro Estelar.
+  (40px).
+- **Énfasis editorial** (Inter itálica 500, color `--accent`): la palabra clave
+  de un título o de la marca va en `em` directo hijo de `h1/h2/h3`, siempre en
+  una sola palabra por línea de título.
+- **Numerales** (Inter 600, `tabular-nums`, `letter-spacing: -0.02em`): todas
+  las cifras grandes de datos (ponderado 40px, notas de clase 26px, promedios
+  38/24px) usan tabulares y un peso semibold para que la información sea lectura
+  de números, no decoración.
 - **Title** (DM Sans 600, 13–15px, line-height 1.35): Nombres de materia,
   cabeceras de tarjetas, secciones dentro de una vista.
 - **Body** (DM Sans 400, 13–14px, line-height 1.5): Contenido, tablas, subtítulos.
@@ -200,8 +220,10 @@ nocturno — un poco editorial, nunca técnica.
   en estas etiquetas, no en textos más grandes.
 
 ### Named Rules
-**La Regla del Serif en Énfasis.** El serif es para el display y el énfasis
-itálico del logotipo; nunca para párrafos. El cuerpo permanece en sans.
+**La Regla del Alivio Itálico.** La itálica se permite solo como acento editorial
+de display: la marca ("Mi*Malla*"), una palabra clave por título, nunca líneas
+completas y nunca en párrafos o cuerpo. Va siempre cargada en su peso real (Inter
+1,500), nunca sintetizada por el navegador.
 
 **La Regla de la Letra Espaciada.** Si una etiqueta no está en mayúsculas con
 tracking 0.08em, no es una etiqueta del sistema: es texto de contenido.

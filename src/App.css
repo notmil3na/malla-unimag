@@ -2,8 +2,16 @@
 
 /* ── Dark theme (default) ─────────────────────────── */
 :root, [data-theme="dark"] {
-  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-display: 'Inter', system-ui, sans-serif;
   --font-body: 'DM Sans', system-ui, sans-serif;
+
+/* ── Tipografía editorial ───────────────────────────── */
+/* Palabra clave en itálica + acento dentro de títulos */
+h1 > em, h2 > em, h3 > em {
+  font-style: italic;
+  font-weight: 500;
+  color: var(--accent);
+}
 
   --bg:       #0e0a18;
   --surface:  rgba(255,255,255,0.045);

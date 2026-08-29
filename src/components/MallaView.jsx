@@ -269,7 +269,7 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <div>
-            <h2 className={styles.title}>Malla Curricular</h2>
+            <h2 className={styles.title}>Malla <em>Curricular</em></h2>
             <p className={styles.subtitle}>{user.career} · {user.university}</p>
           </div>
           <button type="button" className={styles.downloadBtn} onClick={handleDownload}>

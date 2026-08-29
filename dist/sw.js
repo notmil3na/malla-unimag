@@ -1,5 +1,5 @@
 /* MiMalla – Service Worker */
-const CACHE = "mimalla-v1788039790378";
+const CACHE = "mimalla-v1788044349347";
 const CORE = [
   "/",
   "/manifest.webmanifest",
@@ -8,16 +8,127 @@ const CORE = [
   "/icons/icon-512-maskable.png",
   "/icons/apple-touch-icon.png",
 ];
+// PRECACHE se llena en cada build (vite.config.js) con todos los .js/.css con
+// hash de este release. Así el SW nuevo descarga la versión completa en segundo
+// plano y, al pulsar "Recargar ahora", la app abre al instante desde el caché.
+const PRECACHE = ["/assets/AsignacionesView-66c2ec2a.js","/assets/AsignacionesView-eae2c64e.css","/assets/CalendarioView-a41bf883.js","/assets/CalendarioView-ba797205.css","/assets/ColaboracionView-21e9c4cb.css","/assets/ColaboracionView-8ad103c3.js","/assets/CursandoView-32b5748e.css","/assets/CursandoView-b56c1d10.js","/assets/CustomCursor-90bf99bb.css","/assets/CustomCursor-de18c6e0.js","/assets/Dashboard-6d0de401.js","/assets/Dashboard-7cf091f4.css","/assets/HorarioExport-584b13f0.js","/assets/HorarioExport-c424b9ab.css","/assets/HorarioView-413e2a8a.css","/assets/HorarioView-634a1a79.js","/assets/HorarioWallpaper-5f1cc687.js","/assets/HorarioWallpaper-9442894b.css","/assets/Login-aa3f8f79.css","/assets/Login-ca5a8ee6.js","/assets/MallaView-d43b257d.css","/assets/MallaView-d8078a1d.js","/assets/NotasView-6c623032.js","/assets/NotasView-ce7e8ec4.css","/assets/SettingsView-a16686a6.css","/assets/SettingsView-e5c41b4f.js","/assets/UpdatePrompt-53502737.css","/assets/UpdatePrompt-ef893e71.js","/assets/careerProgress-f7b3e54e.js","/assets/horarioHelpers-52dd78e7.js","/assets/html2canvas.esm-f16e60ff.js","/assets/index-78d07bdb.css","/assets/index-88640b16.js","/assets/index-a7cba66d.js","/assets/index.es-fb8af838.js","/assets/purify.es-541be1bb.js","/assets/semesterCountdown-a51eb9e3.js","/assets/useBodyScrollLock-ecf2eeec.js","/assets/vendor-27d6d7f2.js","/icons/apple-touch-icon.png","/icons/icon-192.png","/icons/icon-512-maskable.png","/icons/icon-512.png","/manifest.webmanifest"];
+
+const isSwVersion = (key) => key.startsWith("mimalla-v");
+const toNumber = (key) => Number(key.replace(/^mimalla-v/, "")) || 0;
+
+// Busca primero en el caché actual; si falta, en versiones anteriores (aún válidas).
+function findInCaches(req) {
+  return caches
+    .keys()
+    .then((keys) =>
+      keys
+        .filter(isSwVersion)
+        .sort((a, b) => toNumber(b) - toNumber(a))
+        .reduce(
+          (chain, name) =>
+            chain.then((hit) => (hit ? hit : caches.open(name).then((c) => c.match(req)))),
+          Promise.resolve()
+        )
+    );
+}
+
+function cacheFirst(req) {
+  return findInCaches(req).then((cached) => cached || networkFirst(req));
+}
+
+function networkFirst(req) {
+  return fetch(req).then((res) => {
+    if (res && res.ok) {
+      const copy = res.clone();
+      caches.open(CACHE).then((c) => c.put(req, copy));
+    }
+    return res;
+  });
+}
+
+// HTML stale-while-revalidate: sirve la copia en caché al instante y la
+// refresca en segundo plano. Solo el recargo post-actualización (?_sw=) va
+// primero a la red. La versión nueva se aplica con el aviso de recarga.
+const HTML_NETWORK_TIMEOUT = 1500;
+
+function fetchWithTimeout(req, ms) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => resolve(undefined), ms);
+    fetch(req)
+      .then((res) => { clearTimeout(timer); resolve(res); })
+      .catch((err) => { clearTimeout(timer); reject(err); });
+  });
+}
+
+function htmlKey(url) {
+  return new Request(url.origin + url.pathname, { method: "GET" });
+}
+
+function putHtml(key, res) {
+  if (!res || !res.ok) return;
+  const copy = res.clone();
+  caches.open(CACHE).then((cache) => cache.put(key, copy));
+}
+
+function offlineResponse() {
+  return new Response("Sin conexión", {
+    status: 503,
+    headers: { "Content-Type": "text/plain" },
+  });
+}
+
+async function serveHtml(req, url) {
+  const key = htmlKey(url);
+  const cached = await findInCaches(key).catch(() => undefined);
+
+  if (url.searchParams.has("_sw")) {
+    // Recargo tras la actualización: siempre a la red primero.
+    let res;
+    try { res = await fetch(req); } catch (_) {}
+    putHtml(key, res);
+    if (res && res.ok) return res;
+    return cached || offlineResponse();
+  }
+
+  if (cached) {
+    // Pintar al instante y refrescar el caché en segundo plano.
+    fetch(req).then((res) => putHtml(key, res)).catch(() => {});
+    return cached;
+  }
+
+  let res;
+  try { res = await fetchWithTimeout(req, HTML_NETWORK_TIMEOUT); } catch (_) {}
+  putHtml(key, res);
+  if (res && res.ok) return res;
+  const root = await findInCaches(htmlKey(new URL(url.origin + "/"))).catch(() => undefined);
+  return root || res || offlineResponse();
+}
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(CORE)).then(() => {
-      if (self.registration.active) {
-        return self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
-          list.forEach((client) => client.postMessage({ type: "SW_WAITING" }));
+    caches
+      .open(CACHE)
+      .then(async (c) => {
+        // En la primera visita precachea solo lo esencial (sin duplicar las
+        // descargas de la página). Al actualizar (ya hay SW activo) precachea
+        // la versión completa → el recargo tras el aviso es instantáneo.
+        const list = self.registration.active ? [...CORE, ...PRECACHE] : CORE;
+        const jobs = [...new Set(list)].map(async (url) => {
+          try {
+            const req = new Request(url, { cache: "no-store" });
+            const res = await fetch(req);
+            if (res && res.ok) await c.put(url, res);
+          } catch (_) {}
         });
-      }
-    })
+        await Promise.all(jobs);
+      })
+      .then(() => {
+        if (self.registration.active) {
+          return self.clients
+            .matchAll({ type: "window", includeUncontrolled: true })
+            .then((list) => list.forEach((client) => client.postMessage({ type: "SW_WAITING" })));
+        }
+      })
   );
 });
 
@@ -70,25 +181,6 @@ self.addEventListener("notificationclick", (e) => {
   );
 });
 
-function networkFirst(req, fallback) {
-  return fetch(req)
-    .then((res) => {
-      if (res && res.ok) {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(req, copy));
-      }
-      return res;
-    })
-    .catch(() => fallback);
-}
-
-function cacheFirst(req) {
-  return caches.match(req).then((cached) => {
-    if (cached) return cached;
-    return networkFirst(req);
-  });
-}
-
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
@@ -100,15 +192,12 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(req.url);
   if (url.pathname === "/sw.js") return;
 
-  // HTML (navegación) y raíz: red primero para recibir actualizaciones.
+  // HTML (navegación) y raíz: caché al instante, refresco en segundo plano.
   if (req.mode === "navigate" || url.pathname === "/" || url.pathname.endsWith(".html")) {
-    e.respondWith(
-      networkFirst(req, caches.match(req).then((r) => r || caches.match("/")))
-    );
+    e.respondWith(serveHtml(req, url));
     return;
   }
 
-  // JS/CSS con hash (inmutables), iconos y manifest: caché primero.
-  // La recarga y el cambio de pestaña son instantáneos tras la primera visita.
+  // JS/CSS con hash (inmutables), iconos, fuentes y manifest: caché primero.
   e.respondWith(cacheFirst(req));
 });

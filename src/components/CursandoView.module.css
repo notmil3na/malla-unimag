@@ -97,7 +97,7 @@
 .ponderadoLabel { font-size: 14px; font-weight: 600; color: var(--text); }
 .ponderadoFormula { font-size: 11px; color: var(--text-muted); margin-top: 3px; font-family: monospace; }
 .ponderadoRight { display: flex; align-items: baseline; gap: 6px; }
-.ponderadoVal { font-family: var(--font-display); font-size: 40px; font-weight: 400; line-height: 1; }
+.ponderadoVal { font-family: var(--font-display); font-size: 40px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .ponderadoMax { font-size: 18px; color: var(--text-muted); }
 .ponderadoEquiv { font-size: 13px; color: var(--text-muted); margin-left: 4px; }
 
@@ -156,7 +156,7 @@
   padding: 12px 16px; gap: 4px; flex-shrink: 0;
 }
 .notaDisplay { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
-.notaNum { font-family: var(--font-display); font-size: 26px; font-weight: 400; line-height: 1; }
+.notaNum { font-family: var(--font-display); font-size: 26px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .notaMax { font-size: 11px; color: var(--text-muted); }
 .notaStatus { font-size: 11px; color: var(--text-muted); }
 .notaEmpty { font-size: 12px; color: var(--border); }

@@ -773,7 +773,7 @@
 }
 
 .confirmTitle {
-  font-family: var(--font-display, "DM Serif Display", Georgia, serif);
+  font-family: var(--font-display, "Inter", system-ui, sans-serif);
   font-size: 18px;
   font-weight: 400;
   color: var(--text, #f4f1fb);

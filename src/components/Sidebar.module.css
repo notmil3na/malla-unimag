@@ -47,7 +47,7 @@
   font-size: 22px; font-weight: 400; color: var(--text);
   letter-spacing: 0.01em;
 }
-.brandText em { color: var(--accent); font-style: italic; }
+.brandText em { color: var(--accent); font-style: italic; font-weight: 500; }
 
 .modeToggle {
   background: var(--surface2); border: 1px solid var(--border);

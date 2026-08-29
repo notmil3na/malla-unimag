@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import styles from "./ColaboracionView.module.css";
-import ChatView from "./ChatView";
 import {
   IconUsers, IconSearch, IconUserPlus, IconCheck, IconClose, IconWarning,
-  IconTrash, IconSchedule, IconStar, IconScale, IconSend,
+  IconTrash, IconSchedule, IconStar, IconScale,
 } from "./Icons";
 import { ACCENT_COLORS } from "../utils/horarioHelpers.js";
 import { usePhoto } from "../utils/photo";
@@ -81,7 +80,7 @@ function DisponiblesWidget({ amigos, horarios, loading }) {
         <div className={styles.dispHeaderMain}>
           <span className={styles.dispIcon}><IconSchedule size={15} /></span>
           <div>
-            <span className={styles.dispTitle}>¿Quién está disponible?</span>
+            <span className={styles.dispTitle}>¿Quién está <em>disponible</em>?</span>
             <span className={styles.dispSub}>
               Ahora · {timeStr}{resumen ? ` · ${resumen}` : ""}
             </span>
@@ -538,7 +537,6 @@ export default function ColaboracionView({
   const [friendHorarios, setFriendHorarios] = useState({});
   const [dispLoading, setDispLoading] = useState(false);
   const [searching, setSearching] = useState(false);
-  const [chatFriend, setChatFriend] = useState(null);
 
   const reloadFriendships = useCallback(async () => {
     const res = await fetchFriendships(user.username);
@@ -704,27 +702,7 @@ export default function ColaboracionView({
   }
 
   return (
-    <div className={`${styles.wrap} view-fade ${chatFriend ? styles.chatOpen : ""}`}>
-      {/* Chat entre amigos (pantalla completa) */}
-      {chatFriend && (
-        <ChatView
-          user={user}
-          amigos={amigos}
-          onBack={() => setChatFriend(null)}
-          onNotify={onNotify}
-          initialFriend={chatFriend}
-          shareData={{
-            malla,
-            notas: notas || {},
-            cursandoData: cursandoData || {},
-            notasClaseData: notasClaseData || {},
-            asignacionesData: asignacionesData || { items: [] },
-            semestre: semestre ?? null,
-          }}
-        />
-      )}
-
-      {!chatFriend && (<>)}
+    <div className={`${styles.wrap} view-fade`}>
       <div className={styles.header}>
         <div>
           <h2 className={styles.title}>Amigos</h2>
@@ -891,12 +869,6 @@ export default function ColaboracionView({
                       <IconSchedule size={12} /> Comparar
                     </button>
                     <button
-                      className={styles.btnGhost}
-                      onClick={() => setChatFriend(u.username)}
-                    >
-                      <IconSend size={12} /> Chat
-                    </button>
-                    <button
                       className={styles.btnIconDanger}
                       title="Quitar amigo"
                       onClick={() => handleRemove(u.username)}
@@ -932,7 +904,6 @@ export default function ColaboracionView({
         {selectedUser && !comparing && !friendData && !selectedRel && (
           <p className={styles.errorBanner}><IconWarning size={13} /> No se pudo cargar la comparación.</p>
         )}
-      </>)}
       </>)}
     </div>
   );

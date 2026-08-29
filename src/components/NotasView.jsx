@@ -293,7 +293,7 @@ export default function NotasView({ malla, notas, onSave, user }) {
     <div className={styles.wrap}>
       <div className={styles.header}>
         <div>
-          <h2 className={styles.title}>Notas y Promedios</h2>
+          <h2 className={styles.title}>Notas y <em>Promedios</em></h2>
           <p className={styles.subtitle}>{user.career} · {user.university}</p>
         </div>
         <div className={styles.headerActions}>

@@ -1,7 +1,5 @@
 /* ── Layout ───────────────────────────────────────── */
 .wrap { padding: 28px 32px; min-height: 100%; }
-/* Al abrir el chat ocupamos la vista completa */
-.chatOpen { padding: 18px 24px; }
 
 .header {
   display: flex; align-items: flex-start; justify-content: space-between;
@@ -437,6 +435,7 @@
   display: block; font-family: var(--font-display);
   font-size: 16px; font-weight: 500; color: var(--text); line-height: 1.2;
 }
+.dispTitle em { font-style: italic; font-weight: 500; color: var(--accent); }
 .dispSub {
   display: block; font-size: 12px; color: var(--text-muted); margin-top: 1px;
 }
@@ -510,7 +509,6 @@
 
 @media (max-width: 900px) {
   .wrap { padding: 18px 14px; }
-  .chatOpen { padding: 12px 10px; }
   .horariosDual { flex-direction: column; }
   .miniSched { min-width: 0; }
 }
