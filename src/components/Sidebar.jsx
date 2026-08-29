@@ -1,10 +1,12 @@
 import { APP_THEMES } from "../App";
 import styles from "./Sidebar.module.css";
 import { IconStar, IconSun, IconMoon, IconLogout } from "./Icons";
+import { usePhoto } from "../utils/photo";
 
 export default function Sidebar({ user, tabs, activeTab, onTabChange, onLogout, onUpdateUser, bell }) {
   const initial = user.name ? user.name[0].toUpperCase() : "U";
-  const mode    = user.appMode || "dark";
+  const photo   = usePhoto(user.username, !!user.hasPhoto);
+  const mode    = user.appMode || "light";
   const theme   = APP_THEMES[user.appTheme] || APP_THEMES.ambar;
 
   const toggleMode = () => {
@@ -18,7 +20,7 @@ export default function Sidebar({ user, tabs, activeTab, onTabChange, onLogout, 
       <div className={styles.brandRow}>
         <div className={styles.brand}>
           <span className={styles.brandIcon}><IconStar size={20} /></span>
-          <span className={styles.brandText}>MiMalla</span>
+          <span className={styles.brandText}>Mi<em>Malla</em></span>
         </div>
         <div className={styles.brandActions}>
           {bell}
@@ -37,8 +39,8 @@ export default function Sidebar({ user, tabs, activeTab, onTabChange, onLogout, 
       {/* Profile */}
       <div className={styles.profile}>
         <div className={styles.avatar}>
-          {user.photo
-            ? <img src={user.photo} alt={user.name} className={styles.avatarImg} />
+          {photo
+            ? <img src={photo} alt={user.name} className={styles.avatarImg} />
             : <span>{initial}</span>
           }
           <div className={styles.avatarRing} />
@@ -47,6 +49,13 @@ export default function Sidebar({ user, tabs, activeTab, onTabChange, onLogout, 
           <p className={styles.profileName}>{user.name}</p>
           <p className={styles.profileSub}>Semestre {user.semester}</p>
         </div>
+        <button
+          className={styles.profileLogout}
+          onClick={() => { if (window.confirm("¿Cerrar sesión?")) onLogout(); }}
+          title="Cerrar sesión"
+        >
+          <IconLogout size={14} />
+        </button>
       </div>
 
       {/* Nav */}
@@ -58,6 +67,7 @@ export default function Sidebar({ user, tabs, activeTab, onTabChange, onLogout, 
               key={t.id}
               className={`${styles.navBtn} ${activeTab === t.id ? styles.active : ""}`}
               onClick={() => onTabChange(t.id)}
+              aria-current={activeTab === t.id ? "page" : undefined}
             >
               <span className={styles.navIcon}>
                 {IconComp ? <IconComp size={16} /> : t.icon}
@@ -67,10 +77,6 @@ export default function Sidebar({ user, tabs, activeTab, onTabChange, onLogout, 
           );
         })}
       </nav>
-
-      <button className={styles.logout} onClick={onLogout}>
-        <IconLogout size={14} /> Cerrar sesión
-      </button>
     </aside>
   );
 }

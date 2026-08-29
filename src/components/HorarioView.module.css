@@ -1,28 +1,97 @@
 /* ── Layout ───────────────────────────────────────── */
-.wrap { padding: 28px 32px; min-height: 100%; }
+.wrap {
+  position: relative;
+  padding: 28px 32px 36px;
+  min-height: 100%;
+  overflow: hidden;
+}
+
+.wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--accent) 12%, transparent) 0, transparent 24%),
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent2) 10%, transparent) 0, transparent 22%);
+  pointer-events: none;
+}
 
 .header {
-  display: flex; align-items: flex-start; justify-content: space-between;
+  position: relative;
+  z-index: 1;
+  display: flex; align-items: center; justify-content: space-between;
   gap: 14px; margin-bottom: 18px; flex-wrap: wrap;
+  padding: 22px 24px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface2) 90%, transparent));
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: 24px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
 }
-.title { font-family: var(--font-display); font-size: 26px; font-weight: 400; color: var(--text); }
+.title { font-family: var(--font-display); font-size: 28px; font-weight: 400; color: var(--text); }
 .subtitle { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+
+/* ── Clases de hoy ─────────────────────────────────── */
+.hoyWidget {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 18px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface2) 90%, transparent));
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: 22px;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.07);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+.hoyList { display: flex; flex-direction: column; }
+.hoyItem { display: flex; align-items: center; gap: 12px; padding: 10px 2px; }
+.hoyItem + .hoyItem { border-top: 1px solid var(--border); }
+.hoyTime {
+  flex-shrink: 0; min-width: 58px; text-align: center;
+  font-size: 11px; font-weight: 700; color: var(--text);
+  background: color-mix(in srgb, var(--clase-color, var(--accent)) 13%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--clase-color, var(--accent)) 24%, var(--border));
+  border-radius: 999px; padding: 5px 10px;
+}
+.hoyInfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.hoyTitleRow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.hoyMateriaId {
+  font-size: 10px; font-weight: 700; color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  border-radius: 5px; padding: 1px 7px; letter-spacing: 0.03em;
+}
+.hoyGrupo {
+  font-size: 10px; font-weight: 700; color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px;
+}
+.hoyMateriaNombre { font-size: 13px; font-weight: 600; color: var(--text); }
+.hoyHora { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+.hoySalon {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; color: var(--text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
 .addBtn {
   background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #14101f;
-  border: none; border-radius: var(--radius-sm);
-  font-family: var(--font-body); font-size: 13px; font-weight: 600;
-  padding: 9px 20px; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+  border: none; border-radius: 999px;
+  font-family: var(--font-body); font-size: 13px; font-weight: 700;
+  padding: 9px 18px; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+  box-shadow: 0 8px 24px rgba(var(--accent-rgb), 0.22);
 }
-.addBtn:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.35); }
+.addBtn:hover { opacity: 0.95; transform: translateY(-1px); box-shadow: 0 12px 28px rgba(var(--accent-rgb), 0.3); }
 
 .headerActions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 .exportBtn {
-  background: var(--surface); border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border: 1px solid var(--border);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  border-radius: var(--radius-sm); color: var(--text);
+  border-radius: 999px; color: var(--text);
   font-family: var(--font-body); font-size: 13px; font-weight: 600;
   padding: 9px 18px; cursor: pointer; transition: all 0.2s;
   display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0;
@@ -31,34 +100,41 @@
 
 /* ── Días selector ────────────────────────────────── */
 .diasRow {
+  position: relative;
+  z-index: 1;
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   margin-bottom: 16px;
 }
 .diasLabel { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-right: 4px; }
 .diaBtn {
-  background: var(--surface); border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border: 1px solid var(--border);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  border-radius: var(--radius-sm); color: var(--text-muted);
-  font-family: var(--font-body); font-size: 12px; font-weight: 500;
+  border-radius: 999px; color: var(--text-muted);
+  font-family: var(--font-body); font-size: 12px; font-weight: 600;
   padding: 6px 14px; cursor: pointer; transition: all 0.15s;
 }
 .diaBtn:hover { border-color: var(--accent); color: var(--text); }
 .diaBtnActive {
   border-color: var(--accent) !important;
   color: var(--accent) !important;
-  background: rgba(var(--accent-rgb), 0.16) !important;
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface)) !important;
 }
 
 /* ── Leyenda ──────────────────────────────────────── */
 .legendRow {
+  position: relative;
+  z-index: 1;
   display: flex; gap: 12px; flex-wrap: wrap;
-  padding: 10px 14px; margin-bottom: 16px;
-  background: var(--surface); border: 1px solid var(--border);
+  padding: 12px 14px; margin-bottom: 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface2) 90%, transparent));
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  border-radius: var(--radius-sm);
+  border-radius: 18px;
   align-items: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
 }
 .legendDragHint {
   display: inline-flex; align-items: center; gap: 6px;
@@ -88,24 +164,32 @@
 
 /* ── Empty state ──────────────────────────────────── */
 .emptyState {
+  position: relative;
+  z-index: 1;
   text-align: center; padding: 48px 20px;
   color: var(--text-muted); line-height: 2;
-  background: var(--surface); border: 1px solid var(--border);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface2) 90%, transparent));
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  border-radius: var(--radius-md);
+  border-radius: 24px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
 }
 .emptyIcon { display: block; font-size: 32px; margin-bottom: 12px; }
 
 /* ── Grid wrapper ─────────────────────────────────── */
 .gridWrap {
+  position: relative;
+  z-index: 1;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: 24px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface2) 90%, transparent));
+  padding: 4px;
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
 }
 
 .grid {
@@ -128,7 +212,7 @@
 .diaHeader {
   height: 44px; display: flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 600; color: var(--text);
-  border-bottom: 1px solid var(--border); background: var(--surface2);
+  border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--surface2) 94%, transparent);
 }
 .diaLabelCorto { display: none; }
 .diaBody {
@@ -141,24 +225,25 @@
 /* ── Bloque de clase ──────────────────────────────── */
 .claseBloque {
   position: absolute; left: 4px; right: 4px;
-  background: color-mix(in srgb, var(--clase-color) 22%, transparent);
-  border: 1.5px solid color-mix(in srgb, var(--clase-color) 55%, transparent);
-  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--clase-color) 18%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--clase-color) 48%, transparent);
+  border-radius: 16px;
   overflow: hidden; cursor: pointer;
   transition: all 0.18s ease;
   display: flex;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--clase-color) 10%, rgba(0,0,0,0.16));
 }
 .claseBloque:hover {
-  background: color-mix(in srgb, var(--clase-color) 36%, transparent);
+  background: color-mix(in srgb, var(--clase-color) 28%, transparent);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px color-mix(in srgb, var(--clase-color) 18%, rgba(0,0,0,0.25));
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--clase-color) 16%, rgba(0,0,0,0.22));
   z-index: 2;
 }
 
 .claseAccent {
   width: 5px; flex-shrink: 0;
   background: var(--clase-color);
-  border-radius: 0 2px 2px 0;
+  border-radius: 0 3px 3px 0;
 }
 
 .claseBloqueContent {
@@ -171,17 +256,17 @@
   letter-spacing: 0.02em; line-height: 1.35;
 }
 .claseNombre {
-  font-size: 10.5px; font-weight: 500; color: var(--text);
+  font-size: 10.5px; font-weight: 600; color: var(--text);
   line-height: 1.3; white-space: nowrap; overflow: hidden;
   text-overflow: ellipsis; margin-bottom: 1px;
 }
-.claseProfesor { font-size: 10.5px; color: var(--text-muted); font-weight: 400; line-height: 1.35; }
+.claseProfesor { font-size: 10.5px; color: var(--text-muted); font-weight: 500; line-height: 1.35; }
 .claseHora {
-  font-size: 10px; color: var(--text-muted); font-weight: 400;
+  font-size: 10px; color: var(--text-muted); font-weight: 500;
   line-height: 1.35; margin-top: auto; padding-top: 2px;
 }
 .claseSalon {
-  font-size: 10px; color: var(--text-muted); font-weight: 400;
+  font-size: 10px; color: var(--text-muted); font-weight: 500;
   line-height: 1.35; white-space: nowrap; overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -388,25 +473,50 @@
   .miniGridInner { min-width: 260px; }
   .miniCardHeader { padding: 8px 12px; }
   .miniCardName { font-size: 12px; }
-  .planTopBar { flex-direction: column; align-items: stretch; }
-  .planOpciones { justify-content: center; }
-  .planAcciones { justify-content: center; }
-  .header { flex-direction: column; gap: 10px; }
-  .addBtn { align-self: flex-start; }
+  .planTopBar { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .planOpciones { justify-content: flex-start; width: 100%; }
+  .planAcciones { justify-content: flex-start; flex-wrap: wrap; width: 100%; }
+  .header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .headerActions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
+  .addBtn { align-self: auto; }
 }
 
 @media (max-width: 480px) {
   .wrap { padding: 14px 10px; }
-  .title { font-size: 20px; }
-  .headerActions { width: 100%; }
+  .title { font-size: 20px; text-align: left; }
+  .subtitle { text-align: left; }
+  .header { padding: 14px 12px; align-items: flex-start; gap: 10px; }
+  .headerActions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
   .headerActions .exportBtn,
-  .headerActions .addBtn { flex: 1; justify-content: center; text-align: center; }
-  .diasRow { gap: 5px; }
+  .headerActions .addBtn {
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+    text-align: left;
+    padding: 10px 14px;
+  }
+  .diasRow { gap: 5px; justify-content: flex-start; }
+  .hoyWidget { padding: 10px 12px; border-radius: 18px; margin-bottom: 14px; }
+  .hoyTime { min-width: 52px; font-size: 10px; padding: 5px 8px; }
+  .hoyItem { gap: 10px; }
+  .hoyMateriaNombre { font-size: 12.5px; }
   .diaBtn { padding: 5px 10px; font-size: 11px; }
+  .legendRow { padding: 8px 10px; gap: 8px; justify-content: flex-start; }
+  .legendDragHint { width: 100%; border-right: none; padding-right: 0; text-align: left; }
   .planOpcionBtn { padding: 5px 10px; font-size: 11px; }
   .planAddBtn { padding: 5px 10px; font-size: 11px; }
   .formRow { flex-direction: column; }
   .formRow .formField { min-width: 0; }
+  .claseBloqueContent { padding: 8px 8px; }
+  .claseId { font-size: 11px; }
+  .claseNombre { font-size: 12px; }
+  .claseProfesor, .claseHora, .claseSalon { font-size: 11px; }
 }
 
 /* ── Móvil: grid semanal con scroll horizontal y snap por día (Opción B) ──
@@ -414,6 +524,19 @@
    tiene un ancho fijo y el usuario desliza horizontalmente. La columna de
    hora queda pegada a la izquierda. */
 @media (max-width: 768px) {
+  .modeBar { margin-bottom: 12px; }
+  .modeToggleGroup { width: 100%; display: flex; }
+  .modeToggleBtn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    text-align: left;
+    padding: 8px 12px;
+    min-width: 0;
+  }
+
   .gridWrap {
     scroll-snap-type: x mandatory;
     scroll-padding-left: 42px; /* ancho de la columna de hora + separación */
@@ -939,6 +1062,16 @@
 @media (max-width: 900px) {
   .legendDragHint { border-right: none; padding-right: 0; width: 100%; }
   .legendRow { gap: 8px; }
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: 36px repeat(var(--num-dias, 5), minmax(220px, 1fr));
+  }
+  .horaCell {
+    font-size: 8px;
+    padding: 5px 4px 0 0;
+  }
 }
 
 @media (max-width: 360px) {

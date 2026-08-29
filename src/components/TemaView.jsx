@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { APP_THEMES } from "../App";
+import { ensureFont, FONT_OPTIONS } from "../utils/fonts";
 import styles from "./TemaView.module.css";
 import { IconSun, IconMoon, IconCheck } from "./Icons";
 
 const MALLA_PRESETS = [
-  { name: "Aurora",          colors: { cursando: "#B882E8", aprobada: "#6EC8A8", faltante: "#1E1A2E" }, borderRadius: 12 },
-  { name: "Océano profundo", colors: { cursando: "#6BA3E8", aprobada: "#6EC8B4", faltante: "#1A2234" }, borderRadius: 10 },
-  { name: "Jardín",          colors: { cursando: "#D4A84B", aprobada: "#6EC88A", faltante: "#1E2418" }, borderRadius: 14 },
-  { name: "Crepúsculo",      colors: { cursando: "#E8946B", aprobada: "#E8C86B", faltante: "#2A1E1A" }, borderRadius: 8 },
-  { name: "Hielo",           colors: { cursando: "#A0C8E8", aprobada: "#E0E8F0", faltante: "#1A1E28" }, borderRadius: 16 },
+  { name: "Aurora",          colors: { cursando: "#B882E8", aprobada: "#6EC8A8", faltante: "#7C8CFF" }, borderRadius: 12 },
+  { name: "Océano profundo", colors: { cursando: "#6BA3E8", aprobada: "#6EC8B4", faltante: "#6E8DFF" }, borderRadius: 10 },
+  { name: "Jardín",          colors: { cursando: "#D4A84B", aprobada: "#6EC88A", faltante: "#7A9BFF" }, borderRadius: 14 },
+  { name: "Crepúsculo",      colors: { cursando: "#E8946B", aprobada: "#E8C86B", faltante: "#8A7CFF" }, borderRadius: 8 },
+  { name: "Hielo",           colors: { cursando: "#A0C8E8", aprobada: "#E0E8F0", faltante: "#7FA3FF" }, borderRadius: 16 },
 ];
 
 function isLightColor(hex) {
@@ -18,18 +19,6 @@ function isLightColor(hex) {
   return (r * 299 + g * 587 + b * 114) / 1000 > 160;
 }
 
-export const FONT_OPTIONS = [
-  { value: "DM Sans",         label: "DM Sans",         sample: "Aa — moderna y limpia" },
-  { value: "Outfit",          label: "Outfit",           sample: "Aa — geométrica y suave" },
-  { value: "Syne",            label: "Syne",             sample: "Aa — editorial y audaz" },
-  { value: "Space Grotesk",   label: "Space Grotesk",    sample: "Aa — técnica y legible" },
-  { value: "Josefin Sans",    label: "Josefin Sans",     sample: "Aa — art deco minimalista" },
-  { value: "Raleway",         label: "Raleway",          sample: "Aa — elegante y delgada" },
-  { value: "Lora",            label: "Lora",             sample: "Aa — serif clásica" },
-  { value: "Playfair Display",label: "Playfair Display", sample: "Aa — serif de lujo" },
-  { value: "Fraunces",        label: "Fraunces",         sample: "Aa — serif expresiva" },
-];
-
 export default function TemaView({ user, onUpdate }) {
   const [colors, setColors]             = useState(user.themeColors || MALLA_PRESETS[0].colors);
   const [borderRadius, setBorderRadius] = useState(user.borderRadius ?? 12);
@@ -38,6 +27,8 @@ export default function TemaView({ user, onUpdate }) {
   const [appTheme, setAppTheme]         = useState(user.appTheme || "ambar");
   const [fontBody, setFontBody]         = useState(user.fontBody || "DM Sans");
   const [saved, setSaved]               = useState(false);
+
+  useEffect(() => { ensureFont(user.fontBody); }, [user.fontBody]);
 
   const handleSave = () => {
     onUpdate({ ...user, themeColors: colors, borderRadius, fontScale, appMode, appTheme, fontBody });
@@ -102,7 +93,7 @@ export default function TemaView({ user, onUpdate }) {
           {FONT_OPTIONS.map(f => (
             <button key={f.value}
               className={`${styles.fontOptionBtn} ${fontBody === f.value ? styles.fontOptionActive : ""}`}
-              onClick={() => setFontBody(f.value)}
+              onClick={() => { ensureFont(f.value); setFontBody(f.value); }}
               style={{ fontFamily: `'${f.value}', system-ui, sans-serif` }}>
               <span className={styles.fontOptionName}>{f.label}</span>
               <span className={styles.fontOptionSample}>{f.sample}</span>

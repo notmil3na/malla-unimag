@@ -31,5 +31,15 @@ export default async function handler(req, res) {
     await admin.from("users").update({ password: hashed }).eq("username", data.username);
   }
 
-  return json(res, 200, { token: signToken({ username: data.username }), user: publicUser(data) });
+  const { data: userData } = await admin
+    .from("user_data")
+    .select("*")
+    .eq("username", data.username)
+    .maybeSingle();
+
+  return json(res, 200, {
+    token: signToken({ username: data.username }),
+    user: publicUser(data),
+    data: userData || null,
+  });
 }

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import styles from "./CursandoView.module.css";
 import { IconCheck, IconX, IconUser, IconPlus, IconClose, IconChevronUp, IconChevronDown, IconSemester } from "./Icons";
 import NotasClaseView from "./NotasClaseView";
@@ -99,7 +99,7 @@ function CorteItemRow({ item, idx, onChange, onRemove, max }) {
           onChange={e => onChange({ ...item, nota: e.target.value })}
         />
       </div>
-      <button className={styles.removeBtn} onClick={onRemove} title="Eliminar item"><IconClose size={11} /></button>
+      <button className={styles.removeBtn} onClick={onRemove} aria-label="Eliminar evaluación" title="Eliminar item"><IconClose size={11} /></button>
     </div>
   );
 }
@@ -147,7 +147,7 @@ function CorteRow({ corte, idx, onChange, onRemove, canRemove }) {
             />
           </div>
           {canRemove && (
-            <button className={styles.removeBtn} onClick={onRemove} title="Eliminar corte"><IconClose size={11} /></button>
+            <button className={styles.removeBtn} onClick={onRemove} aria-label="Eliminar corte" title="Eliminar corte"><IconClose size={11} /></button>
           )}
         </div>
       </div>
@@ -240,7 +240,7 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius, horarioCla
       className={`${styles.card} ${perdio ? styles.cardFailed : ""}`}
       style={{ "--card-color": cardColor, borderRadius: `${borderRadius ?? 12}px` }}
     >
-      <div className={styles.cardHeader} onClick={() => setExpanded(v => !v)}>
+      <button className={styles.cardHeader} onClick={() => setExpanded(v => !v)} aria-expanded={expanded}>
         <div className={styles.cardColorBar} style={{ background: cardColor }} />
         <div className={styles.cardMeta}>
           <div className={styles.cardTop}>
@@ -267,7 +267,7 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius, horarioCla
           )}
            <span className={styles.expandIcon}>{expanded ? <IconChevronUp size={10} /> : <IconChevronDown size={10} />}</span>
         </div>
-      </div>
+      </button>
 
       {expanded && (
         <div className={styles.cardBody}>
@@ -373,7 +373,7 @@ function MateriaCard({ materia, data, onChange, colors, borderRadius, horarioCla
                       </span>
                     </div>
                   )}
-                   <button className={styles.removeBtn} onClick={() => removeRep(i)}><IconClose size={11} /></button>
+                   <button className={styles.removeBtn} aria-label="Eliminar repetición" onClick={() => removeRep(i)}><IconClose size={11} /></button>
                 </div>
               ))}
             </div>
@@ -391,6 +391,9 @@ export default function CursandoView({
   const [data, setData]   = useState(cursandoData || {});
   const [saved, setSaved] = useState(false);
   const [subView, setSubView] = useState("semestre");
+
+  const isLocalEdit = useRef(false);
+  const saveTimerRef = useRef(null);
 
   const horarioClases = horarioData?.clases || [];
   const materiaMap = useMemo(() => {
@@ -420,14 +423,21 @@ export default function CursandoView({
   };
 
   const handleChange = (id, val) => {
+    isLocalEdit.current = true;
     setData(prev => ({ ...prev, [id]: val }));
   };
 
-  const handleSave = () => {
-    onSave(data);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
+  useEffect(() => {
+    if (!isLocalEdit.current) return;
+    isLocalEdit.current = false;
+    window.clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = window.setTimeout(() => {
+      onSave(data);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1800);
+    }, 800);
+    return () => window.clearTimeout(saveTimerRef.current);
+  }, [data, onSave]);
 
   const ponderado = calcPonderado(materiasCursando, data);
   const colors       = user?.themeColors || {};
@@ -468,12 +478,11 @@ export default function CursandoView({
             · {totalCreditos} créditos
           </p>
         </div>
-        <button
-          className={`${styles.saveBtn} ${saved ? styles.saveBtnDone : ""}`}
-          onClick={handleSave}
-        >
-           {saved ? <><IconCheck size={13} /> Guardado</> : "Guardar"}
-        </button>
+        {saved && (
+          <span className={styles.saveBtnDone}>
+            <IconCheck size={13} /> Guardado
+          </span>
+        )}
       </div>
 
       {ponderado && (

@@ -15,7 +15,8 @@ const DEFAULT_REMINDER = 1;
 
 const TIPO_LABEL = {
   examen: "Examen", quiz: "Quiz", tarea: "Tarea",
-  proyecto: "Proyecto", inicio_semestre: "Inicio de semestre",
+  proyecto: "Proyecto", laboratorio: "Laboratorio", informe: "Informe",
+  taller: "Taller", inicio_semestre: "Inicio de semestre",
   fin_semestre: "Fin de semestre",
 };
 
@@ -271,8 +272,7 @@ export default async function handler(req, res) {
       if (!endpoint) return json(res, 400, { error: "Faltan datos" });
       subs = subs.filter((s) => s.endpoint !== endpoint);
     } else if (action === "test") {
-      const sub = subs[0];
-      if (!sub) return json(res, 400, { error: "Sin suscripción activa" });
+      if (subs.length === 0) return json(res, 400, { error: "Sin suscripción activa. Toca 'Activar push' o dale permiso a las notificaciones." });
       if (!VAPID_PUBLIC || !VAPID_PRIVATE) {
         return json(res, 503, { error: "Push no configurado" });
       }
@@ -283,22 +283,32 @@ export default async function handler(req, res) {
         tag: "mimalla-test-" + Date.now(),
         url: "/",
       });
-      const result = await webpush.sendNotification(sub, payload, { TTL: 60 }).then(
-        () => ({ ok: true }),
-        (err) => ({ ok: false, code: err && err.statusCode })
+      const results = await Promise.all(
+        subs.map((s) =>
+          webpush.sendNotification(s, payload, { TTL: 60 }).then(
+            () => ({ ok: true }),
+            (err) => ({ ok: false, code: err && err.statusCode })
+          )
+        )
       );
-      if (result.ok) return json(res, 200, { ok: true });
-      if (result.code === 404 || result.code === 410) {
-        subs = subs.filter((s) => s.endpoint !== sub.endpoint);
-        ajustes.push = { subs, sentKeys };
+      const liveSubs = [];
+      let okCount = 0;
+      subs.forEach((s, i) => {
+        const r = results[i];
+        if (!r.ok && (r.code === 404 || r.code === 410)) return;
+        liveSubs.push(s);
+        if (r.ok) okCount++;
+      });
+      if (liveSubs.length !== subs.length) {
+        ajustes.push = { subs: liveSubs, sentKeys };
         await admin
           .from("user_data")
           .update({ ajustes })
           .eq("username", me.username)
           .catch(() => {});
-        return json(res, 200, { ok: false, error: "Suscripción ya no es válida" });
       }
-      return json(res, 502, { ok: false, error: `Error del proveedor (${result.code || "desconocido"})` });
+      if (okCount > 0) return json(res, 200, { ok: true });
+      return json(res, 502, { ok: false, error: `No se pudo entregar la notificación (${results[0]?.code || "desconocido"})` });
     } else if (action === "mark") {
       const keys = Array.isArray(body.keys)
         ? body.keys.filter((k) => typeof k === "string")

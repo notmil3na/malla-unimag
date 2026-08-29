@@ -1,6 +1,8 @@
 .wrap {
   min-height: 100vh;
   min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -8,30 +10,12 @@
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   overflow: hidden;
+  background: #070b16;
 }
 
-/* Constelación decorativa (puntos + destello sutil), no interactiva */
+/* Constelación decorativa reemplazada por WebGLBackground */
 .wrap::before {
-  content: "";
-  position: absolute;
-  top: 12%; left: 8%;
-  width: 3px; height: 3px; border-radius: 50%;
-  background: var(--accent);
-  box-shadow:
-    120px 40px 0 -0.5px rgba(var(--accent-rgb), 0.6),
-    260px 10px 0 -1px rgba(var(--accent-rgb), 0.4),
-    60px 140px 0 -1px rgba(var(--accent-rgb), 0.5),
-    340px 180px 0 -0.5px rgba(var(--accent-rgb), 0.35),
-    620px 60px 0 -1px rgba(var(--accent-rgb), 0.45),
-    780px 220px 0 -1px rgba(var(--accent-rgb), 0.3);
-  opacity: 0.7;
-  animation: twinkle 5s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.5; }
-  50%      { opacity: 0.9; }
+  display: none;
 }
 
 .card {
@@ -75,11 +59,10 @@
 .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
 
 .logoIcon {
-  font-size: 26px; color: var(--accent);
-  display: inline-block;
-  animation: spin 10s linear infinite;
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
 }
-@keyframes spin { to { transform: rotate(360deg); } }
 
 .logoText {
   font-family: var(--font-display);
@@ -166,6 +149,52 @@
 .selectInput:disabled { opacity: 0.4; cursor: not-allowed; }
 .selectInput option { background: var(--surface2); color: var(--text); }
 
+.hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: -2px;
+}
+
+.fieldHint { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.fieldOk { font-size: 11px; color: #6ec88a; margin-top: 2px; }
+.fieldError { font-size: 11px; color: #e07070; margin-top: 2px; }
+
+.forgotBtn {
+  background: none; border: none;
+  color: var(--text-muted); font-size: 12px;
+  font-family: var(--font-body); cursor: pointer;
+  text-align: left; padding: 0;
+  transition: color 0.2s;
+}
+.forgotBtn:hover { color: var(--accent); }
+
+.modalOverlay {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(10, 12, 22, 0.62);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 18px; overflow-y: auto;
+}
+.modalCard {
+  position: relative; width: 100%; max-width: 400px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 28px 26px 22px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+}
+.modalClose {
+  position: absolute; top: 12px; right: 14px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 22px; padding: 4px;
+  line-height: 1; transition: color 0.2s;
+}
+.modalClose:hover { color: var(--text); }
+.modalTitle {
+  font-family: var(--font-display); font-size: 18px;
+  font-weight: 400; color: var(--text); margin: 0 0 14px;
+}
+.modalForm { display: flex; flex-direction: column; gap: 14px; }
+.modalText { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin: 0; }
+
 .error {
   font-size: 13px; color: #e07070;
   padding: 10px 14px;
@@ -183,6 +212,8 @@
 }
 
 .btn {
+  position: relative;
+  overflow: hidden;
   margin-top: 4px;
   background: var(--accent);
   color: #0e0e14;
@@ -192,6 +223,21 @@
   cursor: pointer;
   transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
 }
+.btn::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(
+    400px circle at var(--x, 50%) var(--y, 50%),
+    rgba(255, 255, 255, 0.25),
+    transparent 40%
+  );
+}
+.btn:hover::before { opacity: 1; }
 .btn:hover {
   opacity: 0.92;
   transform: translateY(-1px);
@@ -204,7 +250,6 @@
     align-items: flex-start;
     padding: calc(env(safe-area-inset-top) + 14px) 14px calc(env(safe-area-inset-bottom) + 14px);
   }
-  .wrap::before { display: none; }
   .card { margin: auto; border-radius: 14px; padding: 24px 18px 20px; max-width: 100%; }
   .logoText { font-size: 26px; }
   .sub { margin-bottom: 16px; }

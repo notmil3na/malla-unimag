@@ -1,15 +1,14 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { uuid, toISODate, DESTINO_LABEL, formatFecha } from "../utils/notasClase";
-import { IconSparkle, IconTrash, IconCheck, IconCalendar, IconClipboard, IconSemester } from "./Icons";
+import { IconSparkle, IconTrash, IconCheck, IconCalendar, IconClipboard, IconSemester, IconEdit } from "./Icons";
 import styles from "./NotasClaseView.module.css";
-
-const ES_AI = n => n && (n.destino || n.tipo || n.titulo || n.fechaEvento || n.refId);
 
 export default function NotasClaseView({
   materiasAll, cursandoIds,
   notasClaseData, onSaveNotasClase,
 }) {
   const [draft, setDraft] = useState("");
+  const [editingId, setEditingId] = useState(null);
   const [materiaId, setMateriaId] = useState(() => {
     const primero = (materiasAll || []).find(m => cursandoIds.has(m.id));
     return primero ? primero.id : "general";
@@ -23,25 +22,34 @@ export default function NotasClaseView({
 
   const hoy = new Date();
 
-  useEffect(() => {
-    const data = notasClaseData || {};
-    const cleaned = {};
-    let dirty = false;
-    for (const [key, lista] of Object.entries(data)) {
-      const filtrados = (lista || []).filter(n => !ES_AI(n));
-      if (filtrados.length !== (lista || []).length) dirty = true;
-      if (filtrados.length > 0) cleaned[key] = filtrados;
-    }
-    if (dirty) onSaveNotasClase(cleaned);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const guardar = () => {
     if (!draft.trim()) return;
     const key = materiaId || "general";
     const listaPrev = notasClaseData?.[key] || [];
-    const entry = { id: uuid(), texto: draft.trim(), fecha: toISODate(hoy) };
-    onSaveNotasClase({ ...(notasClaseData || {}), [key]: [...listaPrev, entry] });
+
+    if (editingId) {
+      const listaEditada = listaPrev.map(n =>
+        n.id === editingId
+          ? { ...n, texto: draft.trim(), fecha: toISODate(hoy) }
+          : n
+      );
+      onSaveNotasClase({ ...(notasClaseData || {}), [key]: listaEditada });
+      setEditingId(null);
+    } else {
+      const entry = { id: uuid(), texto: draft.trim(), fecha: toISODate(hoy) };
+      onSaveNotasClase({ ...(notasClaseData || {}), [key]: [...listaPrev, entry] });
+    }
+    setDraft("");
+  };
+
+  const empezarEdicion = (key, n) => {
+    setEditingId(n.id);
+    setDraft(n.texto || "");
+    setMateriaId(key);
+  };
+
+  const cancelarEdicion = () => {
+    setEditingId(null);
     setDraft("");
   };
 
@@ -82,7 +90,7 @@ export default function NotasClaseView({
       <div className={styles.composer}>
         <div className={styles.composerTop}>
           <label className={styles.composerLabel}>
-            <IconSparkle size={13} /> Nueva nota
+            <IconSparkle size={13} /> {editingId ? "Editando apunte" : "Nueva nota"}
           </label>
           <select
             className={styles.materiaSelect}
@@ -105,13 +113,20 @@ export default function NotasClaseView({
         />
         <div className={styles.composerFooter}>
           <span className={styles.charHint}>{draft.length} caracteres</span>
-          <button
-            className={styles.saveBtn}
-            onClick={guardar}
-            disabled={!draft.trim()}
-          >
-            <IconCheck size={13} /> Guardar apunte
-          </button>
+          <div className={styles.composerActions}>
+            {editingId && (
+              <button className={styles.cancelBtn} onClick={cancelarEdicion}>
+                Cancelar
+              </button>
+            )}
+            <button
+              className={styles.saveBtn}
+              onClick={guardar}
+              disabled={!draft.trim()}
+            >
+              <IconCheck size={13} /> {editingId ? "Guardar cambios" : "Guardar apunte"}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -160,9 +175,14 @@ export default function NotasClaseView({
                       {n.titulo ? ` · ${n.titulo}` : ""}
                     </span>
                   </div>
-                  <button className={styles.deleteBtn} onClick={() => eliminarNota(key, n.id)} title="Eliminar registro">
-                    <IconTrash size={13} />
-                  </button>
+                  <div className={styles.notaActions}>
+                    <button className={styles.editBtn} onClick={() => empezarEdicion(key, n)} title="Editar registro">
+                      <IconEdit size={13} />
+                    </button>
+                    <button className={styles.deleteBtn} onClick={() => eliminarNota(key, n.id)} title="Eliminar registro">
+                      <IconTrash size={13} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

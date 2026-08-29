@@ -1,9 +1,10 @@
 import { memo } from "react";
+import { ESTADOS } from "../data/malla.js";
 import styles from "./MateriaCard.module.css";
-import { IconCircle, IconCircleHalf, IconStar, IconMalla } from "./Icons";
+import { IconCircleDash, IconCircleHalf, IconStar, IconMalla } from "./Icons";
 
 const ESTADO_GLYPH = {
-  faltante: IconCircle,
+  faltante: IconCircleDash,
   cursando: IconCircleHalf,
   aprobada: IconStar,
 };
@@ -27,29 +28,37 @@ function MateriaCardInner({
   return (
     <div
       className={cardClass}
+      role="button"
+      tabIndex={0}
+      aria-label={`${materia.nombre}, ${ESTADOS[materia.estado]?.label || materia.estado}`}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick?.(); } }}
       style={{
         "--card-color": color,
         borderRadius: `${br}px`,
-        fontSize: `calc(11px * ${fs})`,
+        fontSize: `calc(12px * ${fs})`,
       }}
       onClick={onClick}
     >
-      <div className={styles.colorBar} style={{ background: color, borderRadius: `${br}px ${br}px 0 0` }} />
+      <div className={styles.colorBar} style={{ background: color }} />
       <span className={styles.estadoGlyph} style={{ color }}><GlyphIcon size={14} /></span>
       <div className={styles.content}>
         <div className={styles.top}>
           <span className={styles.id}>{materia.id}</span>
-          <span className={styles.creditos}>{materia.creditos}cr</span>
         </div>
         <p className={styles.nombre}>{materia.nombre}</p>
         {isMatriculable && (
           <div className={styles.matriculableBadge}><IconStar size={10} /> Puedes matricular</div>
         )}
-        {materia.prereqs?.length > 0 && (
-          <div className={styles.prereqBadge}>
-            <IconMalla size={10} /> {materia.prereqs.length} prereq{materia.prereqs.length > 1 ? "s" : ""}
-          </div>
-        )}
+        <div className={styles.meta}>
+          <span className={styles.creditos} style={{ borderColor: color, color }}>
+            {materia.creditos} cr
+          </span>
+          {materia.prereqs?.length > 0 && (
+            <div className={styles.prereqBadge}>
+              <IconMalla size={10} /> {materia.prereqs.length} prereq{materia.prereqs.length > 1 ? "s" : ""}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import styles from "./AsignacionesView.module.css";
 import {
-  IconExamen, IconQuiz, IconTarea, IconProyecto, IconForo, IconLaboratorio, IconInforme, IconClose, IconEdit, IconTrash, IconClipboard, IconCheck, IconChevronUp, IconChevronDown
+  IconExamen, IconQuiz, IconTarea, IconProyecto, IconForo, IconLaboratorio, IconInforme, IconTaller, IconClose, IconEdit, IconTrash, IconClipboard, IconCheck, IconChevronUp, IconChevronDown
 } from "./Icons";
 import { HORAS_FORM } from "../utils/horarioHelpers";
 import { semesterDatesFor, semesterCorteFor } from "../utils/semesterCountdown";
@@ -42,6 +42,15 @@ function formatTime(h) {
   return mm === 0 ? `${h12} ${period}` : `${h12}:${String(mm).padStart(2, "0")} ${period}`;
 }
 
+function getAssignmentStatus(item) {
+  if (item.completada) return { label: "Completada", tone: "done" };
+  const dueIso = item.fechaExamen || item.fechaEntrega || item.fechaFin;
+  if (!dueIso) return { label: "Sin fecha", tone: "neutral" };
+  const today = new Date();
+  const dueDate = new Date(`${dueIso}T23:59:59`);
+  return dueDate < today ? { label: "Vencida", tone: "overdue" } : { label: "Pendiente", tone: "pending" };
+}
+
 const TIPO_INFO = {
   examen:      { label: "Examen",      Icon: IconExamen,      color: "#E87098" },
   quiz:        { label: "Quiz",        Icon: IconQuiz,        color: "#B882E8" },
@@ -50,6 +59,7 @@ const TIPO_INFO = {
   foro:        { label: "Foro",        Icon: IconForo,        color: "#5CC8A5" },
   laboratorio: { label: "Laboratorio", Icon: IconLaboratorio, color: "#E8B86B" },
   informe:     { label: "Informe",     Icon: IconInforme,     color: "#6B8AE8" },
+  taller:      { label: "Taller",      Icon: IconTaller,      color: "#C87CE0" },
 };
 
 function uuid() {
@@ -106,6 +116,15 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onEdit, onSyncC
   const info = TIPO_INFO[item.tipo] || TIPO_INFO.tarea;
   const mat = allMaterias.find(m => m.id === item.materiaId);
   const isExamenQuiz = item.tipo === "examen" || item.tipo === "quiz";
+  const status = getAssignmentStatus(item);
+  const dueIso = item.fechaExamen || item.fechaEntrega || item.fechaFin;
+  const statusClass = status.tone === "done"
+    ? styles.cardStatusDone
+    : status.tone === "overdue"
+      ? styles.cardStatusOverdue
+      : status.tone === "pending"
+        ? styles.cardStatusPending
+        : styles.cardStatusNeutral;
 
   const toggleTema = (i) => {
     const temas = [...item.temas];
@@ -155,16 +174,14 @@ function AsignacionCard({ item, allMaterias, onUpdate, onDelete, onEdit, onSyncC
   const temasTotal = (item.temas || []).length;
 
   return (
-    <div className={`${styles.card} ${item.nota ? styles.cardGraded : ""}`} style={{ "--card-color": info.color }}>
+    <div className={`${styles.card} ${item.nota ? styles.cardGraded : ""} ${item.completada ? styles.cardCompleted : ""}`} style={{ "--card-color": info.color }}>
       <div className={styles.cardHeader} onClick={() => setExpanded(v => !v)}>
         <div className={styles.cardAccent} style={{ background: info.color }} />
         <div className={styles.cardBody}>
           <div className={styles.cardTop}>
             <span className={styles.cardTipo} style={{ color: info.color }}><info.Icon size={11} /> {info.label}</span>
-            {item.fechaExamen && !item.fechaFin && <span className={styles.cardFecha}>{formatDate(item.fechaExamen)}</span>}
-            {item.fechaExamen && item.fechaFin && <span className={styles.cardFecha}>Del {formatDate(item.fechaExamen)} al {formatDate(item.fechaFin)}</span>}
-            {item.fechaEntrega && !item.fechaFin && <span className={styles.cardFecha}>Entrega: {formatDate(item.fechaEntrega)}</span>}
-            {item.fechaEntrega && item.fechaFin && <span className={styles.cardFecha}>Del {formatDate(item.fechaEntrega)} al {formatDate(item.fechaFin)}</span>}
+            <span className={`${styles.cardStatus} ${statusClass}`}>{status.label}</span>
+            {dueIso ? <span className={styles.cardDatePill}>{formatDate(dueIso)}</span> : null}
           </div>
           <p className={styles.cardTitle}>{item.titulo || info.label}</p>
           {mat && <p className={styles.cardMateria}>{mat.id} — {mat.nombre}</p>}
@@ -266,10 +283,16 @@ export default function AsignacionesView({ malla, asignacionesData, onSave, user
     if (filterTipo !== "todos") result = result.filter(it => it.tipo === filterTipo);
     if (filterMateria !== "todas") result = result.filter(it => it.materiaId === filterMateria);
     if (!showCompleted) result = result.filter(it => !it.completada);
-    return result;
+    return result.slice().sort((a, b) => {
+      const da = a.fechaExamen || a.fechaEntrega || a.fechaFin || "";
+      const db = b.fechaExamen || b.fechaEntrega || b.fechaFin || "";
+      if (!da && !db) return 0;
+      if (!da) return 1;
+      if (!db) return -1;
+      return da < db ? -1 : da > db ? 1 : 0;
+    });
   }, [items, filterTipo, filterMateria, showCompleted]);
 
-  const pendingCount = items.filter(it => !it.completada).length;
   const completedCount = items.filter(it => it.completada).length;
 
   const handleAdd = (newItem) => {
@@ -364,9 +387,10 @@ export default function AsignacionesView({ malla, asignacionesData, onSave, user
   return (
     <div className={styles.wrap}>
       <div className={styles.header}>
-        <div>
+        <div className={styles.headerIntro}>
+          <span className={styles.headerBadge}><IconClipboard size={13} /> Gestor de tareas</span>
           <h2 className={styles.title}>Asignaciones</h2>
-          <p className={styles.subtitle}>{pendingCount} pendiente{pendingCount !== 1 ? "s" : ""} · {completedCount} completada{completedCount !== 1 ? "s" : ""}</p>
+          <p className={styles.subtitle}>{items.length} asignación{items.length !== 1 ? "es" : ""}</p>
         </div>
         <div className={styles.headerActions}>
           <button className={styles.showCompletedBtn} onClick={() => setShowCompleted(v => !v)}>

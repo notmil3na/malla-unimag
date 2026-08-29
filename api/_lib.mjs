@@ -148,7 +148,7 @@ export function publicUser(row) {
     semester: row.semester ?? 1,
     ingresoCorte: row.ingreso_corte ?? "2023-2",
     birthdate: row.birthdate ?? "",
-    photo: row.photo ?? null,
+    hasPhoto: !!row.photo,
     appMode: row.app_mode ?? "dark",
     appTheme: row.app_theme ?? "ambar",
     themeColors: row.theme_colors ?? null,

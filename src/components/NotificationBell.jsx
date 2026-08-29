@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import styles from "./NotificationBell.module.css";
-import { IconBell, IconClose, IconWarning } from "./Icons";
+import { IconBell, IconClose, IconWarning, IconCheck } from "./Icons";
 import { formatDue, labelFromTipo } from "../utils/reminders.js";
-import { isStandalone } from "../utils/push.js";
+import { isStandalone, isMobileDevice } from "../utils/push.js";
 
 function dropdownPos(el) {
   if (!el) return null;
@@ -17,12 +17,13 @@ function dropdownPos(el) {
   return { top: r.bottom + 10, left };
 }
 
-export default function NotificationBell({ due, permission, requestPermission, dismiss, sendTest, pushEnabled, pushError, activatePush, disablePush }) {
+export default function NotificationBell({ due, permission, requestPermission, dismiss, sendTest, pushEnabled, subscribed, pushError, pushFeedback, activatePush, disablePush }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState(null);
   const wrapRef = useRef(null);
   const dropdownRef = useRef(null);
   const standalone = isStandalone();
+  const isPhone = isMobileDevice();
 
   useEffect(() => {
     const onClick = (e) => {
@@ -56,6 +57,7 @@ export default function NotificationBell({ due, permission, requestPermission, d
       <button
         className={`${styles.bellBtn} ${open ? styles.bellBtnOpen : ""}`}
         onClick={toggle}
+        aria-label={`Recordatorios${due.length > 0 ? `, ${due.length} pendiente${due.length > 1 ? "s" : ""}` : ""}`}
         title="Recordatorios"
       >
         <IconBell size={18} />
@@ -90,7 +92,7 @@ export default function NotificationBell({ due, permission, requestPermission, d
               </button>
             </div>
           )}
-          {standalone && permission === "granted" && (
+          {isPhone && standalone && permission === "granted" && (
             <div className={styles.pushRow}>
               {pushEnabled ? (
                 <>
@@ -109,9 +111,14 @@ export default function NotificationBell({ due, permission, requestPermission, d
               )}
             </div>
           )}
-          {standalone && pushError && (
+          {pushError && (
             <p className={styles.pushErr}>
               <IconWarning size={12} /> {pushError}
+            </p>
+          )}
+          {pushFeedback && (
+            <p className={styles.pushOk}>
+              <IconCheck size={12} /> {pushFeedback}
             </p>
           )}
 

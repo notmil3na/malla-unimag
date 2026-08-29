@@ -194,8 +194,12 @@ export function commonSubjects(myMalla, friendMalla) {
 }
 
 // ── Progreso de carrera a partir de la malla guardada ─────────────────────
+// Solo cuenta materias de semestres numéricos (obligatorias), igual que la
+// vista "Malla"; así el % es comparable entre compañeros de la misma carrera.
 export function progressFromMalla(malla) {
-  const materias = (malla || []).flatMap((s) => s.materias || []);
+  const materias = (malla || [])
+    .filter((s) => typeof s.semestre === "number")
+    .flatMap((s) => s.materias || []);
   const aprobadas = materias.filter((m) => m.estado === "aprobada");
   const totalCred = materias.reduce((a, m) => a + (m.creditos || 0), 0);
   const aprobCred = aprobadas.reduce((a, m) => a + (m.creditos || 0), 0);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import styles from "./NotasView.module.css";
 import {
   MAX_GRADE,
@@ -190,7 +190,7 @@ function MateriaRow({ mat, semestre, notaData, onChange, colorAprobada, colorCur
                         <GradeBadge mat={mat} semestre={semestre} nota={it.nota} />
                       </div>
                     </div>
-                     <button type="button" className={styles.removeBtn} onClick={() => removeIntento(idx)}><IconClose size={11} /></button>
+                     <button type="button" className={styles.removeBtn} aria-label="Eliminar intento" onClick={() => removeIntento(idx)}><IconClose size={11} /></button>
                   </div>
                 ))}
               </div>
@@ -221,15 +221,25 @@ export default function NotasView({ malla, notas, onSave, user }) {
 
   const semestreById = buildSemestreMap(malla);
 
+  const isLocalEdit = useRef(false);
+  const saveTimerRef = useRef(null);
+
   const updateNota = (id, data) => {
+    isLocalEdit.current = true;
     setLocalNotas((prev) => ({ ...prev, [id]: data }));
   };
 
-  const handleSave = () => {
-    onSave(localNotas);
-    setSavedMsg(true);
-    setTimeout(() => setSavedMsg(false), 2000);
-  };
+  useEffect(() => {
+    if (!isLocalEdit.current) return;
+    isLocalEdit.current = false;
+    window.clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = window.setTimeout(() => {
+      onSave(localNotas);
+      setSavedMsg(true);
+      setTimeout(() => setSavedMsg(false), 1800);
+    }, 800);
+    return () => window.clearTimeout(saveTimerRef.current);
+  }, [localNotas, onSave]);
 
   const activeSemesters = malla.filter((sem) =>
     typeof sem.semestre === "number"
@@ -295,9 +305,11 @@ export default function NotasView({ malla, notas, onSave, user }) {
               Resumen global
             </button>
           </div>
-          <button className={`${styles.saveBtn} ${savedMsg ? styles.saveBtnDone : ""}`} onClick={handleSave}>
-             {savedMsg ? <><IconCheck size={12} /> Guardado</> : "Guardar"}
-          </button>
+          {savedMsg && (
+            <span className={styles.saveBtnDone}>
+              <IconCheck size={12} /> Guardado
+            </span>
+          )}
         </div>
       </div>
 
@@ -308,14 +320,14 @@ export default function NotasView({ malla, notas, onSave, user }) {
             {globalPond ? `${globalPond.creditos} créditos con nota registrada` : "Todavía sin notas registradas"}
           </p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
-          <div style={{ textAlign: "center" }}>
-            <p style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "2px" }}>Créditos aprobados</p>
-            <p style={{ fontFamily: "var(--font-display)", fontSize: "28px", color: colorA, lineHeight: 1 }}>
+        <div className={styles.creditStats}>
+          <div className={styles.creditStat}>
+            <p className={styles.creditStatLabel}>Créditos aprobados</p>
+            <p className={styles.creditStatVal} style={{ color: colorA }}>
               {creditosAprobados}
-              <span style={{ fontSize: "14px", color: "var(--text-muted)", marginLeft: "4px" }}>/ {totalCreditos}</span>
+              <span className={styles.creditStatSuffix}>/ {totalCreditos}</span>
             </p>
-            <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>{pctAprobados}% del total</p>
+            <p className={styles.creditStatSub}>{pctAprobados}% del total</p>
           </div>
           {globalPond && (
             <span className={styles.globalVal} style={{ color: colorA }}>

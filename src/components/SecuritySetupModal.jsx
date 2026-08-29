@@ -131,17 +131,13 @@ export default function SecuritySetupModal() {
           </>
         ) : (
           <>
-            <div className={styles.icon}><IconWarning size={26} /></div>
-            <h3 className={styles.title}>Migración pendiente</h3>
+            <div className={styles.icon}><IconShield size={26} /></div>
+            <h3 className={styles.title}>Función no disponible</h3>
             <p className={styles.text}>
-              Para activar la pregunta de seguridad, pega este script en el{" "}
-              <strong>SQL Editor</strong> del dashboard de Supabase y presiona{" "}
-              <strong>Run</strong>. Luego recarga la página.
+              La recuperación de contraseña aún no está disponible en tu cuenta.
+              Por favor contacta al administrador para activarla.
             </p>
-            <pre className={styles.pre}>{SECURITY_MIGRATION_SQL}</pre>
-            {msg && <p className={styles.ok}><IconCheck size={12} /> {msg}</p>}
-            <button type="button" className={styles.btn} onClick={copyMigration}>Copiar script</button>
-            <button type="button" className={styles.later} onClick={dismiss}>Entendido</button>
+            <button type="button" className={styles.btn} onClick={dismiss}>Entendido</button>
           </>
         )}
       </div>

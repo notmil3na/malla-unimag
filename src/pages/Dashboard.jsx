@@ -5,12 +5,13 @@ import NotificationBell from "../components/NotificationBell";
 import SecuritySetupModal from "../components/SecuritySetupModal";
 import useReminders from "../hooks/useReminders";
 import { getMallaByCareer } from "../data/malla.js";
-import { api } from "../api";
+import { api, getSessionData, updateSessionData } from "../api";
 import { getPendingSaves, hasPendingSaves, queueSave, clearPendingSave } from "../utils/offlineQueue.js";
 import styles from "./Dashboard.module.css";
 import {
   IconSchedule, IconCalendar, IconClipboard, IconSemester,
-  IconGrades, IconMalla, IconUser, IconPaint, IconUsers
+  IconGrades, IconMalla, IconSettings, IconUsers,
+  IconCheck
 } from "../components/Icons";
 
 function loadView(loader) {
@@ -22,68 +23,25 @@ function loadView(loader) {
   });
 }
 
-const MallaView = lazy(() => loadView(() => import("../components/MallaView")));
-const CursandoView = lazy(() => loadView(() => import("../components/CursandoView")));
-const HorarioView = lazy(() => loadView(() => import("../components/HorarioView")));
-const NotasView = lazy(() => loadView(() => import("../components/NotasView")));
-const PerfilView = lazy(() => loadView(() => import("../components/PerfilView")));
-const TemaView = lazy(() => loadView(() => import("../components/TemaView")));
-const CalendarioView = lazy(() => loadView(() => import("../components/CalendarioView")));
-const AsignacionesView = lazy(() => loadView(() => import("../components/AsignacionesView")));
-const ColaboracionView = lazy(() => loadView(() => import("../components/ColaboracionView")));
+const VIEW_LOADERS = {
+  malla:        () => import("../components/MallaView"),
+  cursando:     () => import("../components/CursandoView"),
+  horario:      () => import("../components/HorarioView"),
+  notas:        () => import("../components/NotasView"),
+  config:       () => import("../components/SettingsView"),
+  calendario:   () => import("../components/CalendarioView"),
+  asignaciones: () => import("../components/AsignacionesView"),
+  colaboracion: () => import("../components/ColaboracionView"),
+};
 
-const DIA_MAP = { 0: "D", 1: "L", 2: "M", 3: "X", 4: "J", 5: "V", 6: "S" };
-const DIA_NAMES = { L: "Lunes", M: "Martes", X: "Miércoles", J: "Jueves", V: "Viernes", S: "Sábado" };
-const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-
-function parseHora(h) {
-  if (!h) return 0;
-  if (h.includes(":")) {
-    const [time, period] = h.split(" ");
-    let [hh, mm] = time.split(":").map(Number);
-    if (period && period.includes("p") && hh !== 12) hh += 12;
-    if (period && period.includes("a") && hh === 12) hh = 0;
-    return hh + mm / 60;
-  }
-  const [hh, mm] = h.split(":").map(Number);
-  return hh + (mm || 0) / 60;
-}
-
-function HoyWidget({ horarioData, malla }) {
-  const today = new Date();
-  const diaKey = DIA_MAP[today.getDay()];
-  if (diaKey === "D" || diaKey === "S") return null;
-  const claseHoy = (horarioData?.clases || [])
-    .filter(c => c.dia === diaKey)
-    .sort((a, b) => parseHora(a.horaInicio) - parseHora(b.horaInicio));
-  if (claseHoy.length === 0) return null;
-  const allMaterias = malla.flatMap(s => s.materias);
-  const materiaMap = Object.fromEntries(allMaterias.map(m => [m.id, m]));
-  const fechaStr = `${DIA_NAMES[diaKey]}, ${today.getDate()} de ${MESES[today.getMonth()]} ${today.getFullYear()}`;
-  return (
-    <div className={styles.hoyWidget}>
-      <p className={styles.hoyDate}>{fechaStr}</p>
-      <div className={styles.hoyCards}>
-        {claseHoy.map((clase, i) => {
-          const mat = materiaMap[clase.materiaId];
-          return (
-            <div key={i} className={styles.hoyCard}>
-              <div className={styles.hoyCardAccent} />
-              <div className={styles.hoyCardBody}>
-                <p className={styles.hoyCardTitle}>
-                  <span className={styles.hoyCardId}>{clase.materiaId}</span>
-                  {mat?.nombre || clase.materiaId}
-                </p>
-                <p className={styles.hoyCardLocation}>{clase.salonLabel || "Sin salón"}</p>
-                <p className={styles.hoyCardTime}>{clase.horaInicio} – {clase.horaFin}</p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+const MallaView = lazy(() => loadView(VIEW_LOADERS.malla));
+const CursandoView = lazy(() => loadView(VIEW_LOADERS.cursando));
+const HorarioView = lazy(() => loadView(VIEW_LOADERS.horario));
+const NotasView = lazy(() => loadView(VIEW_LOADERS.notas));
+const SettingsView = lazy(() => loadView(VIEW_LOADERS.config));
+const CalendarioView = lazy(() => loadView(VIEW_LOADERS.calendario));
+const AsignacionesView = lazy(() => loadView(VIEW_LOADERS.asignaciones));
+const ColaboracionView = lazy(() => loadView(VIEW_LOADERS.colaboracion));
 
 function autoApply(malla, currentSemester) {
   return malla.map((sem) => ({
@@ -137,9 +95,19 @@ async function saveUserData(patch) {
 }
 
 export default function Dashboard({ user, onLogout, onUpdateUser }) {
-  const [tab, setTab] = useState("horario");
-  const [loaded, setLoaded] = useState(false);
+  const [tab, setTab] = useState(() => {
+    try {
+      const key = `malla_tutorial_v2_${user.username}`;
+      if (!localStorage.getItem(key)) return "config";
+    } catch (_) {}
+    return "horario";
+  });
+  const cachedRef = useRef(null);
+  if (cachedRef.current === null) cachedRef.current = getSessionData();
+  const cached = cachedRef.current;
+  const [loaded, setLoaded] = useState(!!cached);
   const [toastMsg, setToastMsg] = useState("");
+  const [toastAction, setToastAction] = useState(null);
   const [isOffline, setIsOffline] = useState(typeof navigator !== "undefined" ? !navigator.onLine : false);
   const [pendingCount, setPendingCount] = useState(() =>
     typeof localStorage !== "undefined" && hasPendingSaves()
@@ -147,27 +115,68 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
       : 0
   );
   const toastTimerRef = useRef(null);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    try {
+      const key = `malla_onboarding_done_${user.username}`;
+      return !localStorage.getItem(key);
+    } catch (_) { return false; }
+  });
 
-  const notify = useCallback((msg) => {
+  const [onboardingChecked, setOnboardingChecked] = useState(() => {
+    try {
+      const raw = localStorage.getItem(`malla_onboarding_checks_${user.username}`);
+      return raw ? JSON.parse(raw) : { perfil: false, malla: false, horario: false };
+    } catch (_) { return { perfil: false, malla: false, horario: false }; }
+  });
+
+  const onboardingRef = useRef(null);
+  const toggleOnboardingCheck = useCallback((key) => {
+    setOnboardingChecked(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      try { localStorage.setItem(`malla_onboarding_checks_${user.username}`, JSON.stringify(next)); } catch (_) {}
+      return next;
+    });
+  }, [user.username]);
+
+  const allOnboardingDone = onboardingChecked.perfil && onboardingChecked.malla && onboardingChecked.horario;
+  const onboardingPercent = ((Object.values(onboardingChecked).filter(Boolean).length) / 3) * 100;
+
+  const dismissOnboarding = useCallback(() => {
+    setShowOnboarding(false);
+    try { localStorage.setItem(`malla_onboarding_done_${user.username}`, "1"); } catch (_) {}
+  }, [user.username]);
+
+  const ONBOARDING_STEPS = [
+    { key: "perfil",  label: "Completa tu perfil",          desc: "Universidad, carrera y semestre",    tab: "config",   icon: <IconSettings size={16} /> },
+    { key: "malla",   label: "Marca tus materias",           desc: "Estado de cada materia en la malla", tab: "malla",   icon: <IconMalla size={16} /> },
+    { key: "horario", label: "Arma tu primer horario",       desc: "Arrastra materias al horario",       tab: "horario",  icon: <IconSchedule size={16} /> },
+  ];
+
+  const notify = useCallback((msg, options) => {
     setToastMsg(msg);
+    setToastAction(options?.onUndo || null);
     window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => setToastMsg(""), 2200);
+    toastTimerRef.current = window.setTimeout(() => {
+      setToastMsg("");
+      setToastAction(null);
+    }, options?.duration || 4000);
   }, []);
 
   const baseMalla = useMemo(() => getMallaByCareer(user.career), [user.career]);
   const defaultMalla = useMemo(() => autoApply(baseMalla, user.semester || 1), [baseMalla, user.semester]);
 
-  const [malla, setMalla] = useState(defaultMalla);
-  const [notas, setNotas] = useState({});
-  const [cursandoData, setCursandoData] = useState({});
-  const [horarioData, setHorarioData] = useState({ dias: ["L", "M", "X", "J", "V"], clases: [] });
-  const [planData, setPlanData] = useState(null);
-  const [calendarioData, setCalendarioData] = useState({ eventos: [] });
-  const [asignacionesData, setAsignacionesData] = useState({ items: [] });
-  const [notasClaseData, setNotasClaseData] = useState({});
+  const [malla, setMalla] = useState(() => (cached?.malla ? mergeMallaWithBase(defaultMalla, cached.malla) : defaultMalla));
+  const [notas, setNotas] = useState(cached?.notas ?? {});
+  const [cursandoData, setCursandoData] = useState(cached?.cursando ?? {});
+  const [horarioData, setHorarioData] = useState(cached?.horario ?? { dias: ["L", "M", "X", "J", "V"], clases: [] });
+  const [planData, setPlanData] = useState(cached?.plan ?? null);
+  const [calendarioData, setCalendarioData] = useState(cached?.calendario ?? { eventos: [] });
+  const [asignacionesData, setAsignacionesData] = useState(cached?.asignaciones ?? { items: [] });
+  const [notasClaseData, setNotasClaseData] = useState(cached?.notasclase ?? {});
 
   const persistColumn = useCallback(async (column, data, applyLocal) => {
     applyLocal(data);
+    updateSessionData({ [column]: data });
     if (!navigator.onLine) {
       queueSave(column, data);
       setPendingCount(Object.keys(getPendingSaves()).length);
@@ -215,9 +224,26 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
   }, [user.username, notify]);
 
   useEffect(() => {
+    const schedule = window.requestIdleCallback || ((cb) => window.setTimeout(cb, 250));
+    schedule(() => {
+      Object.values(VIEW_LOADERS).forEach((loader) => loader().catch(() => {}));
+    });
+  }, []);
+
+  useEffect(() => {
     async function load() {
       const data = await loadUserData();
       if (data) {
+        updateSessionData({
+          ...(data.malla && { malla: data.malla }),
+          ...(data.notas && { notas: data.notas }),
+          ...(data.cursando && { cursando: data.cursando }),
+          ...(data.horario && { horario: data.horario }),
+          ...(data.plan && { plan: data.plan }),
+          ...(data.calendario && { calendario: data.calendario }),
+          ...(data.asignaciones && { asignaciones: data.asignaciones }),
+          ...(data.notasclase && { notasclase: data.notasclase }),
+        });
         if (data.malla) setMalla(mergeMallaWithBase(defaultMalla, data.malla));
         if (data.notas) setNotas(data.notas);
         if (data.cursando) setCursandoData(data.cursando);
@@ -277,15 +303,15 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
 
   const handleMallaReset = useCallback((newSemester) => {
     const reset = autoApply(baseMalla, newSemester);
-    setMalla(reset);
-    saveUserData({ malla: reset });
+    persistColumn("malla", reset, setMalla);
     notify("Semestre reiniciado");
-  }, [baseMalla, user.username, notify]);
+  }, [baseMalla, persistColumn, notify]);
 
   const enrollMateriasFromPlan = useCallback((materiaIds) => {
     const idSet = new Set(materiaIds);
+    let updated;
     setMalla(prev => {
-      const updated = prev.map((sem) => ({
+      updated = prev.map((sem) => ({
         ...sem,
         materias: sem.materias.map((m) => {
           if (idSet.has(m.id)) return { ...m, estado: "cursando" };
@@ -293,35 +319,21 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
           return m;
         }),
       }));
-      saveUserData({ malla: updated });
       return updated;
     });
-  }, [user.username]);
+    if (updated) persistColumn("malla", updated, setMalla);
+  }, [persistColumn, notify]);
 
   const tabs = useMemo(() => [
     { id: "horario", label: "Horario", icon: IconSchedule },
-    { id: "calendario", label: "Calendario", icon: IconCalendar },
     { id: "asignaciones", label: "Asignaciones", icon: IconClipboard },
     { id: "cursando", label: "Semestre", icon: IconSemester },
+    { id: "calendario", label: "Calendario", icon: IconCalendar },
     { id: "notas", label: "Notas", icon: IconGrades },
     { id: "malla", label: "Malla", icon: IconMalla },
-    { id: "perfil", label: "Mi Perfil", icon: IconUser },
-    { id: "colaboracion", label: "Colaboración", icon: IconUsers },
-    { id: "tema", label: "Personalizar", icon: IconPaint },
+    { id: "colaboracion", label: "Amigos", icon: IconUsers },
+    { id: "config", label: "Configuración", icon: IconSettings },
   ], []);
-
-  if (!loaded) {
-    return (
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "center",
-        height: "100vh", color: "var(--text-muted)", fontFamily: "var(--font-body)",
-        flexDirection: "column", gap: "12px",
-      }}>
-        <span style={{ fontSize: "28px", color: "var(--accent)" }}>✦</span>
-        <span>Cargando tu información...</span>
-      </div>
-    );
-  }
 
   return (
     <div className={styles.layout}>
@@ -335,6 +347,54 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
         bell={<NotificationBell {...reminders} />}
       />
       <main className={styles.main}>
+        {showOnboarding && (
+          <div className={styles.onboardingBar} ref={onboardingRef}>
+            <div className={styles.onboardingCard}>
+              <div className={styles.onboardingHeader}>
+                <div className={styles.onboardingHeaderLeft}>
+                  <span className={styles.onboardingTitle}>Primeros pasos</span>
+                  <span className={styles.onboardingSubtitle}>{Math.round(onboardingPercent)}% completado</span>
+                </div>
+                {allOnboardingDone ? (
+                  <button className={styles.onboardingDismiss} onClick={dismissOnboarding}>
+                    <IconCheck size={14} /> ¡Listo!
+                  </button>
+                ) : (
+                  <button className={styles.onboardingDismiss} onClick={dismissOnboarding}>Omitir</button>
+                )}
+              </div>
+              <div className={styles.onboardingProgress}>
+                <div className={styles.onboardingProgressBar} style={{ width: `${onboardingPercent}%` }} />
+              </div>
+              <div className={styles.onboardingSteps}>
+                {ONBOARDING_STEPS.map(step => {
+                  const done = onboardingChecked[step.key];
+                  return (
+                    <div key={step.key} className={styles.onboardingStep}>
+                      <button
+                        className={`${styles.onboardingCheck} ${done ? styles.onboardingCheckDone : ""}`}
+                        onClick={() => toggleOnboardingCheck(step.key)}
+                        aria-label={done ? `Marcar "${step.label}" como pendiente` : `Marcar "${step.label}" como hecho`}
+                      >
+                        {done && <IconCheck size={12} />}
+                      </button>
+                      <div className={styles.onboardingStepContent}>
+                        <button
+                          className={`${styles.onboardingStepLabel} ${done ? styles.onboardingStepDone : ""}`}
+                          onClick={() => setTab(step.tab)}
+                        >
+                          {step.icon}
+                          <span>{step.label}</span>
+                        </button>
+                        <span className={styles.onboardingStepDesc}>{step.desc}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
         <ErrorBoundary key={tab} view>
           <Suspense fallback={
             <div className={styles.tabLoading}>
@@ -343,9 +403,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
             </div>
           }>
             {tab === "horario" && (
-              <>
-                <HoyWidget horarioData={horarioData} malla={malla} />
-                <HorarioView
+              <HorarioView
                   malla={malla}
                   horarioData={horarioData}
                   planData={planData}
@@ -355,7 +413,6 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
                   user={user}
                   onEnrollMaterias={enrollMateriasFromPlan}
                 />
-              </>
             )}
             {tab === "calendario" && (
               <CalendarioView
@@ -405,8 +462,8 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
             {tab === "notas" && (
               <NotasView malla={malla} notas={notas} onSave={saveNotas} user={user} />
             )}
-            {tab === "perfil" && (
-              <PerfilView
+            {tab === "config" && (
+              <SettingsView
                 user={user}
                 onUpdate={onUpdateUser}
                 onMallaReset={handleMallaReset}
@@ -415,22 +472,42 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
                 onSaveSemestre={saveSemestre}
               />
             )}
-            {tab === "tema" && (
-              <TemaView user={user} onUpdate={onUpdateUser} />
-            )}
             {tab === "colaboracion" && (
               <ColaboracionView
                 user={user}
                 malla={malla}
                 horarioData={horarioData}
                 onNotify={notify}
+                notas={notas}
+                cursandoData={cursandoData}
+                notasClaseData={notasClaseData}
+                asignacionesData={asignacionesData}
+                semestre={semestre}
               />
             )}
           </Suspense>
         </ErrorBoundary>
       </main>
 
-      {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
+      {!loaded && (
+        <div className={styles.syncing}>
+          <span className={styles.syncingDot} />
+          Sincronizando tu información…
+        </div>
+      )}
+      {toastMsg && (
+        <div className={styles.toast}>
+          <span>{toastMsg}</span>
+          {toastAction && (
+            <button className={styles.toastUndo} onClick={() => {
+              toastAction();
+              window.clearTimeout(toastTimerRef.current);
+              setToastMsg("");
+              setToastAction(null);
+            }}>Deshacer</button>
+          )}
+        </div>
+      )}
       <SecuritySetupModal />
       {(isOffline || pendingCount > 0) && (
         <div className={styles.offlineBar}>

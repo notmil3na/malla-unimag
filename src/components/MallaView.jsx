@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { MALLA, ESTADOS } from "../data/malla.js";
 import { getSemesterCountdown, semesterCorteFor, semesterDatesFor } from "../utils/semesterCountdown.js";
 import { canEnrollMateria } from "../utils/gradeHelpers.js";
@@ -30,10 +30,27 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
   const [highlightedPrereqs, setHighlightedPrereqs] = useState([]);
   const [highlightedUnlocks, setHighlightedUnlocks] = useState([]);
   const [showMatriculables, setShowMatriculables] = useState(false);
+  const [confirm, setConfirm] = useState(null);
+  const confirmBtnRef = useRef(null);
+  const detailPanelRef = useRef(null);
 
   useEffect(() => {
-    if (initialMalla) setMalla(initialMalla);
-  }, [initialMalla]);
+    const handleEscape = (e) => {
+      if (e.key !== "Escape") return;
+      if (confirm) { setConfirm(null); return; }
+      if (selected) {
+        setSelected(null);
+        setHighlightedPrereqs([]);
+        setHighlightedUnlocks([]);
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [confirm, selected]);
+
+  useEffect(() => {
+    if (confirm && confirmBtnRef.current) confirmBtnRef.current.focus();
+  }, [confirm]);
 
   const colors = user.themeColors || {};
   const br     = user.borderRadius ?? 12;
@@ -46,8 +63,29 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
   const getColor = useCallback((estado) => {
     if (estado === "aprobada") return colors.aprobada || "#6ec88a";
     if (estado === "cursando") return colors.cursando || "#c8a96e";
-    return colors.faltante || "#3a3a52";
-  }, [colors.aprobada, colors.cursando, colors.faltante]);
+
+    const isDarkMode = typeof document !== "undefined"
+      ? document.documentElement.getAttribute("data-theme") !== "light"
+      : (user?.appMode || "light") === "dark";
+
+    const fallback = isDarkMode ? "#7c8cff" : "#5b6cdf";
+    const rawColor = colors.faltante || "#3a3a52";
+
+    if (!isDarkMode || typeof rawColor !== "string" || !rawColor.startsWith("#")) {
+      return rawColor;
+    }
+
+    const hex = rawColor.replace("#", "");
+    const normalized = hex.length === 3
+      ? hex.split("").map((ch) => ch + ch).join("")
+      : hex;
+    const r = parseInt(normalized.slice(0, 2), 16);
+    const g = parseInt(normalized.slice(2, 4), 16);
+    const b = parseInt(normalized.slice(4, 6), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+    return luminance < 0.34 ? fallback : rawColor;
+  }, [colors.aprobada, colors.cursando, colors.faltante, user?.appMode]);
 
   const handleSelect = useCallback((materia) => {
     if (selected?.id === materia.id) {
@@ -84,47 +122,88 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
     setHighlightedUnlocks(unlockTree);
   }, [selected, materiaById, allMaterias]);
 
-  const handleEstadoChange = useCallback((materiaId, newEstado) => {
-    const dependents = new Map();
-    malla.flatMap((s) => s.materias).forEach((m) => {
-      (m.prereqs || []).forEach((pid) => {
-        if (!dependents.has(pid)) dependents.set(pid, []);
-        dependents.get(pid).push(m.id);
-      });
-    });
-
-    const affected = new Set([materiaId]);
-    const toVisit = [materiaId];
-    while (toVisit.length > 0) {
-      const pid = toVisit.pop();
-      (dependents.get(pid) || []).forEach((depId) => {
-        if (!affected.has(depId)) {
-          affected.add(depId);
-          toVisit.push(depId);
-        }
-      });
-    }
-
-    let flipped = 0;
+  const applyEstadoChange = useCallback((materiaId, newEstado, { autoApprovePrereqs, extraChanges } = {}) => {
     const updated = malla.map((s) => ({
       ...s,
       materias: s.materias.map((m) => {
+        if (extraChanges?.has(m.id)) return { ...m, estado: extraChanges.get(m.id) };
         if (m.id === materiaId) return { ...m, estado: newEstado };
-        if (newEstado === "faltante" && affected.has(m.id) && (m.estado === "aprobada" || m.estado === "cursando")) {
-          flipped++;
-          return { ...m, estado: "faltante" };
+        if (autoApprovePrereqs && newEstado === "aprobada") {
+          const materia = materiaById.get(materiaId);
+          if (materia && materia.prereqs.includes(m.id) && m.estado !== "aprobada") {
+            return { ...m, estado: "aprobada" };
+          }
         }
         return m;
       }),
     }));
     setMalla(updated);
     onSave(updated);
-    if (flipped > 0) onNotify?.(`${flipped} materia(s) pasaron a faltante por prerequisitos`);
     if (selected) {
       const updatedSelected = updated.flatMap((s) => s.materias).find((m) => m.id === selected.id);
       if (updatedSelected) setSelected(updatedSelected);
     }
-  }, [malla, onSave, onNotify, selected]);
+  }, [malla, onSave, selected, materiaById]);
+
+  const handleEstadoChange = useCallback((materiaId, newEstado) => {
+    const materia = materiaById.get(materiaId);
+    if (!materia) return;
+
+    if (newEstado === "faltante") {
+      const dependents = new Map();
+      malla.flatMap((s) => s.materias).forEach((m) => {
+        (m.prereqs || []).forEach((pid) => {
+          if (!dependents.has(pid)) dependents.set(pid, []);
+          dependents.get(pid).push(m.id);
+        });
+      });
+      const affected = new Set();
+      const toVisit = [materiaId];
+      while (toVisit.length > 0) {
+        const pid = toVisit.pop();
+        (dependents.get(pid) || []).forEach((depId) => {
+          if (!affected.has(depId)) {
+            affected.add(depId);
+            toVisit.push(depId);
+          }
+        });
+      }
+      const affectedList = malla.flatMap((s) => s.materias).filter(
+        (m) => affected.has(m.id) && (m.estado === "aprobada" || m.estado === "cursando")
+      );
+      if (affectedList.length > 0) {
+        const extraChanges = new Map();
+        extraChanges.set(materiaId, newEstado);
+        affectedList.forEach((m) => extraChanges.set(m.id, "faltante"));
+        setConfirm({
+          title: "Cambiar a faltante",
+          message: `Si cambias "${materia.nombre}" a faltante, estas materias que dependen de ella también pasarán a faltante:`,
+          affected: affectedList,
+          buttonLabel: "Cambiar todo",
+          onConfirm: () => applyEstadoChange(materiaId, newEstado, { extraChanges }),
+        });
+        return;
+      }
+    }
+
+    if (newEstado === "aprobada") {
+      const missingPrereqs = (materia.prereqs || [])
+        .map((pid) => materiaById.get(pid))
+        .filter((pm) => pm && pm.estado !== "aprobada");
+      if (missingPrereqs.length > 0) {
+        setConfirm({
+          title: "Aprobar materia",
+          message: `Para aprobar "${materia.nombre}", primero debes aprobar sus prerequisitos. ¿Aprobar automáticamente?`,
+          affected: missingPrereqs,
+          buttonLabel: "Aprobar prerequisitos y continuar",
+          onConfirm: () => applyEstadoChange(materiaId, newEstado, { autoApprovePrereqs: true }),
+        });
+        return;
+      }
+    }
+
+    applyEstadoChange(materiaId, newEstado);
+  }, [malla, materiaById, applyEstadoChange]);
 
   const stats = useMemo(() => ({
     total:     obligatorias.length,
@@ -249,6 +328,7 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
       )}
 
       <div className={styles.semesterWidget}>
+        <div className={styles.semesterWidgetAccent} />
         <div className={styles.semesterWidgetTop}>
           <div>
             <p className={styles.semesterWidgetLabel}>
@@ -259,8 +339,10 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
           <span className={styles.semesterWidgetStatus}>{semester.status}</span>
         </div>
         <div className={styles.semesterWidgetMain}>
-          <span className={styles.semesterWidgetDays}>{semester.days}</span>
-          <span className={styles.semesterWidgetText}>{semester.daysText}</span>
+          <div className={styles.semesterWidgetCounter}>
+            <span className={styles.semesterWidgetDays}>{semester.days}</span>
+            <span className={styles.semesterWidgetText}>{semester.daysText}</span>
+          </div>
         </div>
         {semester.showProgress && (
           <>
@@ -404,7 +486,7 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
 
       {/* Detail panel */}
       {selected && (
-        <div className={styles.detailPanel}>
+        <div className={styles.detailPanel} ref={detailPanelRef} role="dialog" aria-modal="true" aria-label={`Detalle de ${selected.nombre}`}>
           <div className={styles.detailHeader}>
             <div>
               <span className={styles.detailEstado} style={{ background: getColor(selected.estado), color: "#0e0e14" }}>
@@ -413,7 +495,7 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
               <h3 className={styles.detailName}>{selected.nombre}</h3>
               <p className={styles.detailId}>{selected.id} · {selected.creditos} créditos</p>
             </div>
-            <button className={styles.detailClose} onClick={() => {
+            <button className={styles.detailClose} aria-label="Cerrar detalle" onClick={() => {
               setSelected(null);
               setHighlightedPrereqs([]);
               setHighlightedUnlocks([]);
@@ -481,6 +563,41 @@ export default function MallaView({ malla: initialMalla, notas, onSave, user, on
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {confirm && (
+        <div className={styles.confirmOverlay} role="dialog" aria-modal="true" aria-labelledby="confirm-title" onClick={() => setConfirm(null)}>
+          <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.confirmHeader}>
+              <IconWarning size={18} />
+              <h3 id="confirm-title" className={styles.confirmTitle}>{confirm.title}</h3>
+            </div>
+            <p className={styles.confirmMsg}>{confirm.message}</p>
+            <div className={styles.confirmList}>
+              {confirm.affected.map((m) => (
+                <div key={m.id} className={styles.confirmItem}>
+                  <span className={styles.confirmItemId}>{m.id}</span>
+                  <span className={styles.confirmItemName}>{m.nombre}</span>
+                  <span className={styles.confirmItemBadge} style={{ background: getColor(m.estado), color: "#0e0e14" }}>
+                    {ESTADOS[m.estado]?.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className={styles.confirmActions}>
+              <button className={styles.confirmCancel} onClick={() => setConfirm(null)}>
+                Cancelar
+              </button>
+              <button className={styles.confirmBtn} ref={confirmBtnRef} onClick={() => {
+                const action = confirm.onConfirm;
+                setConfirm(null);
+                action();
+              }}>
+                {confirm.buttonLabel}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { CORTES } from "../App";
+import { SEMESTER_CORTE } from "../utils/semesterCountdown";
 import { calcCareerTime, estimateGraduation } from "../utils/careerProgress.js";
 import { semesterDatesFor, semesterCorteFor } from "../utils/semesterCountdown.js";
+import { getPhoto, compressPhoto, setPhotoCache } from "../utils/photo";
 import styles from "./PerfilView.module.css";
 import { IconCamera, IconWarning, IconSemester, IconCalendar, IconCheck, IconChevronDown, IconChevronUp } from "./Icons";
 
@@ -13,6 +15,13 @@ function toISO(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function autoSemester(ingresoCorte) {
+  const idx = CORTES.indexOf(ingresoCorte);
+  const cur = CORTES.indexOf(SEMESTER_CORTE);
+  if (idx === -1 || cur === -1) return 1;
+  return Math.max(1, cur - idx + 1);
+}
+
 export default function PerfilView({ user, onUpdate, onMallaReset, malla, semestre, onSaveSemestre }) {
   const [form, setForm] = useState({
     name:         user.name         || "",
@@ -21,14 +30,65 @@ export default function PerfilView({ user, onUpdate, onMallaReset, malla, semest
     semester:     user.semester     || 1,
     ingresoCorte: user.ingresoCorte || "2023-2",
     birthdate:    user.birthdate    || "",
-    photo:        user.photo        || null,
+    photo:        null,
   });
   const [saved, setSaved] = useState(false);
+  const photoLoadedRef = useRef(false);
+  const autoSaveTimer = useRef(null);
+  const lastSavedRef = useRef(null);
+  const skipNextSave = useRef(true);
 
   const semDates = semesterDatesFor(semestre);
   const [semInicio, setSemInicio] = useState(() => toISO(semDates.start));
   const [semFin, setSemFin] = useState(() => toISO(semDates.end));
   const [semOpen, setSemOpen] = useState(false);
+
+  const doSave = useCallback(() => {
+    const newSem = Number(form.semester);
+    if (newSem < 1 || newSem > 12) return;
+    if (skipNextSave.current) {
+      lastSavedRef.current = JSON.stringify({ ...user, ...form, semester: newSem, photo: null });
+      skipNextSave.current = false;
+      return;
+    }
+    if (newSem !== user.semester) {
+      onMallaReset(newSem);
+    }
+    const payload = { ...user, ...form, semester: newSem };
+    if (!photoLoadedRef.current) {
+      delete payload.photo;
+    } else {
+      payload.hasPhoto = !!payload.photo;
+    }
+    const key = JSON.stringify({ ...payload, photo: null });
+    if (key === lastSavedRef.current) return;
+    lastSavedRef.current = key;
+    onUpdate(payload);
+    if (form.photo) setPhotoCache(user.username, form.photo);
+    if (semInicio && semFin && semInicio <= semFin) {
+      onSaveSemestre({ inicio: semInicio, fin: semFin });
+    }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }, [form, user, semInicio, semFin, onMallaReset, onUpdate, onSaveSemestre]);
+
+  useEffect(() => {
+    window.clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = window.setTimeout(doSave, 1000);
+    return () => window.clearTimeout(autoSaveTimer.current);
+  }, [doSave]);
+
+  useEffect(() => {
+    if (!user.hasPhoto) { photoLoadedRef.current = true; return; }
+    let on = true;
+    getPhoto(user.username).then((p) => {
+      if (on) {
+        photoLoadedRef.current = true;
+        setForm((f) => ({ ...f, photo: p }));
+      }
+    });
+    return () => { on = false; };
+  }, [user.username, user.hasPhoto]);
 
   // Materias cursando actualmente
   const materiasActuales = (malla || [])
@@ -48,7 +108,10 @@ export default function PerfilView({ user, onUpdate, onMallaReset, malla, semest
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setForm(f => ({ ...f, photo: reader.result }));
+    reader.onload = async () => {
+      const small = await compressPhoto(reader.result);
+      setForm(f => ({ ...f, photo: small }));
+    };
     reader.readAsDataURL(file);
   };
 
@@ -58,7 +121,14 @@ export default function PerfilView({ user, onUpdate, onMallaReset, malla, semest
     if (newSem !== user.semester) {
       onMallaReset(newSem);
     }
-    onUpdate({ ...user, ...form, semester: newSem });
+    const payload = { ...user, ...form, semester: newSem };
+    if (!photoLoadedRef.current) {
+      delete payload.photo;
+    } else {
+      payload.hasPhoto = !!payload.photo;
+    }
+    onUpdate(payload);
+    if (form.photo) setPhotoCache(user.username, form.photo);
     if (semInicio && semFin && semInicio <= semFin) {
       onSaveSemestre({ inicio: semInicio, fin: semFin });
     }
@@ -189,7 +259,11 @@ export default function PerfilView({ user, onUpdate, onMallaReset, malla, semest
               <label>Corte de ingreso</label>
               <select
                 value={form.ingresoCorte}
-                onChange={e => setForm({ ...form, ingresoCorte: e.target.value })}
+                onChange={e => {
+                  const newCorte = e.target.value;
+                  const newSem = autoSemester(newCorte);
+                  setForm({ ...form, ingresoCorte: newCorte, semester: newSem });
+                }}
                 className={styles.selectInput}
               >
                 {CORTES.map(c => (
@@ -205,6 +279,9 @@ export default function PerfilView({ user, onUpdate, onMallaReset, malla, semest
                 value={form.semester}
                 onChange={e => setForm({ ...form, semester: e.target.value })}
               />
+              <small className={styles.hint}>
+                Calculado desde corte {form.ingresoCorte} · {SEMESTER_CORTE}
+              </small>
               {Number(form.semester) !== user.semester && Number(form.semester) >= 1 && Number(form.semester) <= 12 && (
                 <p className={styles.semesterHint}>
                    <IconWarning size={13} /> Al guardar, los semestres anteriores al {form.semester} se marcarán como aprobados.
@@ -213,9 +290,10 @@ export default function PerfilView({ user, onUpdate, onMallaReset, malla, semest
             </div>
           </div>
 
-          <button className={`${styles.btn} ${saved ? styles.btnSaved : ""}`} onClick={handleSave}>
-             {saved ? <><IconCheck size={12} /> Guardado</> : "Guardar cambios"}
-          </button>
+          <div className={`${styles.autoSave} ${saved ? styles.autoSaveSaved : ""}`}>
+            <IconCheck size={12} />
+            {saved ? "Guardado automáticamente" : "Se guarda automáticamente"}
+          </div>
         </div>
 
         {/* ── Columna derecha: materias cursando ── */}

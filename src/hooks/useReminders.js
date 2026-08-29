@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { computeDueNotifications, formatDue } from "../utils/reminders.js";
-import { enablePush, disablePush, fetchPushState, markServerNotified, sendTestPush, isStandalone } from "../utils/push.js";
+import { enablePush, disablePush, fetchPushState, markServerNotified, sendTestPush, isStandalone, isIOS } from "../utils/push.js";
 
 const LS_NOTIFIED = "malla_notified_v1";
 const LS_DISMISSED = "malla_dismissed_v1";
@@ -25,7 +25,9 @@ export default function useReminders({ items, eventos }) {
     typeof Notification !== "undefined" ? Notification.permission : "unsupported"
   );
   const [pushEnabled, setPushEnabled] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
   const [pushError, setPushError] = useState(null);
+  const [pushFeedback, setPushFeedback] = useState(null);
   const [due, setDue] = useState([]);
   const notifiedRef = useRef(loadSet(LS_NOTIFIED));
   const dismissedRef = useRef(loadSet(LS_DISMISSED));
@@ -33,8 +35,10 @@ export default function useReminders({ items, eventos }) {
 
   const activatePush = useCallback(async () => {
     setPushError(null);
+    setPushFeedback(null);
     const r = await enablePush();
-    setPushEnabled(r.ok);
+    setPushEnabled(r.ok && isStandalone());
+    setSubscribed(r.ok);
     if (!r.ok) setPushError(r.error);
     return r.ok;
   }, []);
@@ -49,7 +53,9 @@ export default function useReminders({ items, eventos }) {
   const disablePushCb = useCallback(async () => {
     await disablePush();
     setPushEnabled(false);
+    setSubscribed(false);
     setPushError(null);
+    setPushFeedback(null);
   }, []);
 
   useEffect(() => {
@@ -62,6 +68,7 @@ export default function useReminders({ items, eventos }) {
         saveSet(LS_NOTIFIED, notifiedRef.current);
       }
       setPushEnabled(state.subscribed && isStandalone());
+      setSubscribed(state.subscribed);
       if (
         typeof Notification !== "undefined" &&
         Notification.permission === "granted" &&
@@ -69,7 +76,10 @@ export default function useReminders({ items, eventos }) {
         isStandalone()
       ) {
         const r = await enablePush();
-        if (mounted) setPushEnabled(r.ok);
+        if (mounted) {
+          setPushEnabled(r.ok && isStandalone());
+          setSubscribed(r.ok);
+        }
       }
     })();
     return () => {
@@ -117,17 +127,29 @@ export default function useReminders({ items, eventos }) {
 
   const sendTest = useCallback(async () => {
     if (permission !== "granted" || typeof Notification === "undefined") return;
-    if (pushEnabled) {
+    if (subscribed) {
+      setPushError(null);
+      setPushFeedback(null);
       const r = await sendTestPush();
-      if (r && r.ok) return;
+      if (r && r.ok) {
+        setPushFeedback("Notificación de prueba enviada a tus dispositivos.");
+        return;
+      }
+      setPushError((r && r.error) || "No se pudo enviar la notificación de prueba.");
+      return;
     }
     try {
       new Notification("MiMalla · Prueba", {
         body: "¡Las notificaciones funcionan! Esta es una prueba.",
         tag: "malla-test-" + Date.now(),
       });
+      setPushFeedback("Notificación mostrada.");
+      return;
     } catch (_) {}
-  }, [permission, pushEnabled]);
+    if (isIOS() && !isStandalone()) {
+      setPushError("En iPhone/iPad añade la app a la pantalla de inicio (Compartir → Añadir a pantalla de inicio) para recibir notificaciones.");
+    }
+  }, [permission, subscribed]);
 
-  return { due, permission, requestPermission, dismiss, sendTest, pushEnabled, pushError, activatePush, disablePush: disablePushCb };
+  return { due, permission, requestPermission, dismiss, sendTest, pushEnabled, subscribed, pushError, pushFeedback, activatePush, disablePush: disablePushCb };
 }

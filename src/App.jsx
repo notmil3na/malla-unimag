@@ -1,8 +1,11 @@
-import { useState, useEffect } from "react";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import UpdatePrompt from "./components/UpdatePrompt";
-import { api, saveSession, clearSession, getToken } from "./api";
+import { Suspense, lazy, useState, useEffect } from "react";
+const Login = lazy(() => import("./pages/Login"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const UpdatePrompt = lazy(() => import("./components/UpdatePrompt"));
+const CustomCursor = lazy(() => import("./components/CustomCursor"));
+import { api, saveSession, clearSession, getToken, prewarm } from "./api";
+import { ensureFont } from "./utils/fonts";
+import { getPhoto, setPhotoCache } from "./utils/photo";
 import "./App.css";
 
 // ── Theme definitions ──────────────────────────────────────────────────────
@@ -96,6 +99,7 @@ export function applyTheme(themeKey, mode, fontBody) {
   root.style.setProperty("--accent-rgb", t.accentRgb);
   if (fontBody) {
     root.style.setProperty("--font-body", `'${fontBody}', system-ui, sans-serif`);
+    ensureFont(fontBody);
   } else {
     root.style.removeProperty("--font-body");
   }
@@ -110,7 +114,6 @@ export async function saveUser(userData) {
     semester:     userData.semester,
     ingresoCorte: userData.ingresoCorte,
     birthdate:    userData.birthdate,
-    photo:        userData.photo ?? null,
     appMode:      userData.appMode,
     appTheme:     userData.appTheme,
     themeColors:  userData.themeColors,
@@ -118,12 +121,22 @@ export async function saveUser(userData) {
     fontScale:    userData.fontScale,
     fontBody:     userData.fontBody,
   };
-  try {
+  if ("photo" in userData) body.photo = userData.photo || null;
+  const attempt = async () => {
     await api("/users", { method: "POST", body });
+  };
+  try {
+    await attempt();
     return { ok: true };
   } catch (error) {
-    console.error("saveUser error:", error);
-    return { ok: false, error };
+    try {
+      await new Promise((r) => setTimeout(r, 1500));
+      await attempt();
+      return { ok: true };
+    } catch (error2) {
+      console.error("saveUser error:", error2);
+      return { ok: false, error: error2 };
+    }
   }
 }
 
@@ -133,27 +146,54 @@ export default function App() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("malla_session");
-      if (saved) {
-        const s = JSON.parse(saved);
-        if (s && s.token && s.user) {
-          setUser(s.user);
-          applyTheme(s.user.appTheme || "ambar", s.user.appMode || "dark", s.user.fontBody);
+    let cancelled = false;
+    prewarm();
+    (async () => {
+      try {
+        const saved = localStorage.getItem("malla_session");
+        if (saved) {
+          const s = JSON.parse(saved);
+          if (s?.token && s?.user) {
+            applyTheme(s.user.appTheme || "ambar", s.user.appMode || "light", s.user.fontBody);
+            if (!cancelled) setUser(s.user);
+            api("/auth/me", { soft401: true })
+              .then(({ user: serverUser }) => {
+                if (cancelled) return;
+                setUser((prev) => {
+                  if (!prev) return serverUser;
+                  if (prev.hasPhoto && !serverUser.hasPhoto) {
+                    getPhoto(prev.username).then((p) => {
+                      if (cancelled) return;
+                      if (p) {
+                        api("/users", { method: "POST", body: { photo: p } }).catch(() => {});
+                      }
+                    });
+                    return { ...serverUser, hasPhoto: true };
+                  }
+                  return serverUser;
+                });
+              })
+              .catch(() => { if (!cancelled) { clearSession(); setUser(null); } });
+          }
         }
-      }
-    } catch (_) {}
-    setReady(true);
+      } catch (_) {}
+      if (!cancelled) setReady(true);
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const handleLogin = (auth) => {
-    saveSession(auth.token, auth.user);
+    if (!auth || !auth.token || !auth.user) {
+      console.error("Respuesta de login inválida", auth);
+      return;
+    }
+    saveSession(auth.token, auth.user, auth.data);
     setUser(auth.user);
-    applyTheme(auth.user.appTheme || "ambar", auth.user.appMode || "dark", auth.user.fontBody);
+    applyTheme(auth.user.appTheme || "ambar", auth.user.appMode || "light", auth.user.fontBody);
   };
 
   const handleLogout = () => {
-    const currentMode  = user?.appMode  || "dark";
+    const currentMode  = user?.appMode  || "light";
     const currentTheme = user?.appTheme || "ambar";
     clearSession();
     setUser(null);
@@ -163,14 +203,34 @@ export default function App() {
   const handleUpdateUser = async (updated) => {
     saveSession(getToken(), updated);
     setUser(updated);
-    applyTheme(updated.appTheme || "ambar", updated.appMode || "dark", updated.fontBody);
+    applyTheme(updated.appTheme || "ambar", updated.appMode || "light", updated.fontBody);
     await saveUser(updated);
   };
 
-  if (!ready) return null;
+  if (!ready) {
+    return (
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        height: "100vh", color: "var(--text-muted)", fontFamily: "var(--font-body)",
+        flexDirection: "column", gap: "12px",
+      }}>
+        <span style={{ fontSize: "28px", color: "var(--accent)" }}>✦</span>
+        <span>Cargando aplicación...</span>
+      </div>
+    );
+  }
 
   return (
-    <>
+    <Suspense fallback={
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        height: "100vh", color: "var(--text-muted)", fontFamily: "var(--font-body)",
+        flexDirection: "column", gap: "12px",
+      }}>
+        <span style={{ fontSize: "28px", color: "var(--accent)" }}>✦</span>
+        <span>Cargando aplicación...</span>
+      </div>
+    }>
       {user ? (
         <Dashboard
           user={user}
@@ -180,7 +240,8 @@ export default function App() {
       ) : (
         <Login onLogin={handleLogin} />
       )}
-      <UpdatePrompt />
-    </>
+      {user && <UpdatePrompt />}
+      <CustomCursor />
+    </Suspense>
   );
 }

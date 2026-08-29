@@ -4,7 +4,7 @@ import { semesterDatesFor } from "../utils/semesterCountdown.js";
 import { REMINDER_OPTIONS } from "../utils/reminders";
 import useBodyScrollLock from "../hooks/useBodyScrollLock";
 import {
-  IconExamen, IconQuiz, IconTarea, IconProyecto, IconForo, IconLaboratorio, IconInforme, IconEvento,
+  IconExamen, IconQuiz, IconTarea, IconProyecto, IconForo, IconLaboratorio, IconInforme, IconTaller, IconEvento,
   IconInicio, IconFin, IconClose, IconEdit, IconChevronLeft, IconChevronRight, IconPlus
 } from "./Icons";
 
@@ -18,6 +18,7 @@ const TIPO_EVENTO = [
   { id: "foro",        label: "Foro",          Icon: IconForo, color: "#5CC8A5" },
   { id: "laboratorio", label: "Laboratorio",   Icon: IconLaboratorio, color: "#E8B86B" },
   { id: "informe",     label: "Informe",       Icon: IconInforme, color: "#6B8AE8" },
+  { id: "taller",      label: "Taller",        Icon: IconTaller, color: "#C87CE0" },
   { id: "evento",      label: "Evento",        Icon: IconEvento, color: "#6EC8A8" },
   { id: "inicio_semestre", label: "Inicio semestre", Icon: IconInicio, color: "#6EC88A" },
   { id: "fin_semestre", label: "Fin semestre",  Icon: IconFin, color: "#e07070" },
@@ -353,7 +354,7 @@ export default function CalendarioView({ malla, calendarioData, onSave, user, ho
   const handleSaveEvento = (ev) => {
     const exists = eventos.findIndex(e => e.id === ev.id);
     const prev = exists >= 0 ? eventos[exists] : null;
-    const isAsignacion = ev.tipo === "examen" || ev.tipo === "quiz" || ev.tipo === "tarea" || ev.tipo === "proyecto" || ev.tipo === "foro" || ev.tipo === "laboratorio" || ev.tipo === "informe";
+    const isAsignacion = ev.tipo === "examen" || ev.tipo === "quiz" || ev.tipo === "tarea" || ev.tipo === "proyecto" || ev.tipo === "foro" || ev.tipo === "laboratorio" || ev.tipo === "informe" || ev.tipo === "taller";
 
     const evFinal = { ...ev };
     let items = [...allAsignaciones];

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import {
   HORAS_FORM,
   LEGACY_HORAS,
@@ -16,9 +16,10 @@ import {
   IconSchedule, IconStar, IconCheck, IconWarning, IconDownload,
   IconChevronLeft, IconChevronRight
 } from "./Icons";
-import HorarioExport from "./HorarioExport";
-import HorarioWallpaper from "./HorarioWallpaper";
 import useBodyScrollLock from "../hooks/useBodyScrollLock";
+
+const HorarioExport = lazy(() => import("./HorarioExport"));
+const HorarioWallpaper = lazy(() => import("./HorarioWallpaper"));
 
 // ── Edificios y salones ───────────────────────────────────────────────────
 const EDIFICIOS = [
@@ -73,6 +74,22 @@ const TODOS_DIAS = [
   {id:"L",label:"Lunes"},{id:"M",label:"Martes"},{id:"X",label:"Miércoles"},
   {id:"J",label:"Jueves"},{id:"V",label:"Viernes"},{id:"S",label:"Sábado"},
 ];
+
+// ── Clases de hoy ─────────────────────────────────────────────────────────
+const HOY_DIA_MAP = { 0: "D", 1: "L", 2: "M", 3: "X", 4: "J", 5: "V", 6: "S" };
+
+function parseHoraNum(h) {
+  if (!h) return 0;
+  if (h.includes(":")) {
+    const [time, period] = h.split(" ");
+    let [hh, mm] = time.split(":").map(Number);
+    if (period && period.includes("p") && hh !== 12) hh += 12;
+    if (period && period.includes("a") && hh === 12) hh = 0;
+    return hh + mm / 60;
+  }
+  const [hh, mm] = h.split(":").map(Number);
+  return hh + (mm || 0) / 60;
+}
 
 // ── helpers ───────────────────────────────────────────────────────────────
 function buildSalonLabel(edificioId, lado, salon) {
@@ -933,6 +950,50 @@ function PlanificadorView({ malla, planData, onSavePlan, user, onNotify, mainDia
   );
 }
 
+// ── HoyWidget: clases de hoy ──────────────────────────────────────────────
+function HoyWidget({ horarioData, malla }) {
+  const today = new Date();
+  const diaKey = HOY_DIA_MAP[today.getDay()];
+  if (diaKey === "D" || diaKey === "S") return null;
+  const claseHoy = (horarioData?.clases || [])
+    .filter(c => c.dia === diaKey)
+    .sort((a, b) => parseHoraNum(a.horaInicio) - parseHoraNum(b.horaInicio));
+  if (claseHoy.length === 0) return null;
+  const allMaterias = malla.flatMap(s => s.materias);
+  const materiaMap = Object.fromEntries(allMaterias.map(m => [m.id, m]));
+  const materiasActuales = allMaterias.filter(m => m.estado === "cursando");
+  const colorMap = {};
+  materiasActuales.forEach((m, i) => { colorMap[m.id] = ACCENT_COLORS[i % ACCENT_COLORS.length]; });
+  return (
+    <div className={styles.hoyWidget}>
+      <div className={styles.hoyList}>
+        {claseHoy.map((clase, i) => {
+          const mat = materiaMap[clase.materiaId];
+          return (
+            <div key={i} className={styles.hoyItem}>
+              <span className={styles.hoyTime}
+                style={{ "--clase-color": colorMap[clase.materiaId] || "var(--accent)" }}>
+                {toViewHora(clase.horaInicio)}
+              </span>
+              <div className={styles.hoyInfo}>
+                <div className={styles.hoyTitleRow}>
+                  <span className={styles.hoyMateriaId}>{clase.materiaId}</span>
+                  {clase.grupo && <span className={styles.hoyGrupo}>{clase.grupo}</span>}
+                </div>
+                <span className={styles.hoyMateriaNombre}>{mat?.nombre || clase.materiaId}</span>
+                <span className={styles.hoyHora}>{toViewHora(clase.horaInicio)} – {toViewHora(clase.horaFin)}</span>
+                <span className={styles.hoySalon}>
+                  <IconLocation size={11} /> {clase.salonLabel || "Sin salón"}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Vista principal ───────────────────────────────────────────────────────
 export default function HorarioView({ malla, horarioData, planData, onSave, onSavePlan, user, onNotify, onEnrollMaterias }) {
   const [mode, setMode] = useState("horario");
@@ -1138,6 +1199,9 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
 
   return (
     <div className={styles.wrap}>
+      {/* Clases de hoy */}
+      <HoyWidget horarioData={data} malla={malla} />
+
       {/* Header */}
       <div className={styles.header}>
         <div>
@@ -1330,25 +1394,29 @@ export default function HorarioView({ malla, horarioData, planData, onSave, onSa
 
       {/* Exportación */}
       {showExport && (
-        <HorarioExport
-          user={user}
-          horarioData={data}
-          malla={malla}
-          onNotify={onNotify}
-          onOpenWallpaper={handleOpenWallpaper}
-          onClose={()=>setShowExport(false)}
-        />
+        <Suspense fallback={null}>
+          <HorarioExport
+            user={user}
+            horarioData={data}
+            malla={malla}
+            onNotify={onNotify}
+            onOpenWallpaper={handleOpenWallpaper}
+            onClose={()=>setShowExport(false)}
+          />
+        </Suspense>
       )}
 
       {/* Fondo de pantalla */}
       {showWallpaper && (
-        <HorarioWallpaper
-          user={user}
-          horarioData={data}
-          malla={malla}
-          onNotify={onNotify}
-          onClose={()=>setShowWallpaper(false)}
-        />
+        <Suspense fallback={null}>
+          <HorarioWallpaper
+            user={user}
+            horarioData={data}
+            malla={malla}
+            onNotify={onNotify}
+            onClose={()=>setShowWallpaper(false)}
+          />
+        </Suspense>
       )}
     </div>
   );

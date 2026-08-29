@@ -43,7 +43,7 @@
   border-radius: 22px;
   background: linear-gradient(145deg, #1b1633, #0e0a18);
   border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
-  color: var(--accent);
+  color: #ffffff;
   box-shadow:
     0 12px 34px rgba(0, 0, 0, 0.35),
     0 0 0 1px rgba(var(--accent-rgb), 0.08);
@@ -52,11 +52,25 @@
 }
 
 .logo svg {
-  animation: logoSpin 16s linear infinite;
+  animation: cupSway 4.5s ease-in-out infinite;
 }
 
-@keyframes logoSpin {
-  to { transform: rotate(360deg); }
+@keyframes cupSway {
+  0%, 100% { transform: rotate(-5deg); }
+  50%      { transform: rotate(5deg); }
+}
+
+.logo :global(.coffeeSteam) {
+  transform-origin: 50% 100%;
+  animation: steamRise 2.6s ease-in-out infinite;
+}
+.logo :global(.coffeeSteam:nth-child(2)) { animation-delay: 0.85s; }
+.logo :global(.coffeeSteam:nth-child(3)) { animation-delay: 1.7s; }
+@keyframes steamRise {
+  0%   { opacity: 0; transform: translateY(1px) scale(0.7); }
+  35%  { opacity: 0.9; }
+  70%  { opacity: 0.6; }
+  100% { opacity: 0; transform: translateY(-3.5px) scale(1.05); }
 }
 
 @keyframes float {

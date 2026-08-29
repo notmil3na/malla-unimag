@@ -35,7 +35,7 @@ export function labelFromTipo(tipo) {
   const map = {
     examen: "Examen", quiz: "Quiz", tarea: "Tarea",
     proyecto: "Proyecto", foro: "Foro", laboratorio: "Laboratorio",
-    informe: "Informe", inicio_semestre: "Inicio de semestre",
+    informe: "Informe", taller: "Taller", inicio_semestre: "Inicio de semestre",
     fin_semestre: "Fin de semestre",
   };
   return map[tipo] || "Evento";

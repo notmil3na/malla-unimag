@@ -13,8 +13,25 @@ export function getSession() {
   return readSession();
 }
 
-export function saveSession(token, user) {
-  localStorage.setItem("malla_session", JSON.stringify({ token, user }));
+export function saveSession(token, user, data) {
+  const prev = readSession();
+  const nextData = data !== undefined ? data : (prev && prev.data) || null;
+  localStorage.setItem("malla_session", JSON.stringify({ token, user, data: nextData }));
+}
+
+export function getSessionData() {
+  const s = readSession();
+  return s && s.data ? s.data : null;
+}
+
+export function updateSessionData(patch) {
+  if (!patch || typeof patch !== "object") return;
+  try {
+    const s = readSession();
+    if (!s) return;
+    const data = { ...(s.data || {}), ...patch };
+    localStorage.setItem("malla_session", JSON.stringify({ ...s, data }));
+  } catch (_) {}
 }
 
 export function clearSession() {
@@ -26,8 +43,10 @@ export function getToken() {
   return s && s.token ? s.token : null;
 }
 
-export async function api(path, { method = "GET", body } = {}) {
-  const token = getToken();
+const PUBLIC_AUTH_PATHS = new Set(["/auth/login", "/auth/register"]);
+
+export async function api(path, { method = "GET", body, skipAuth = false, soft401 = false } = {}) {
+  const token = skipAuth ? null : getToken();
   const res = await fetch(BASE + path, {
     method,
     headers: {
@@ -43,8 +62,10 @@ export async function api(path, { method = "GET", body } = {}) {
   } catch {}
 
   if (res.status === 401) {
-    clearSession();
-    window.location.reload();
+    if (!PUBLIC_AUTH_PATHS.has(path)) {
+      clearSession();
+      if (!soft401) window.location.reload();
+    }
     throw new Error((data && data.error) || "Sesión expirada");
   }
   if (!res.ok) {
@@ -56,5 +77,22 @@ export async function api(path, { method = "GET", body } = {}) {
     }
     throw err;
   }
+  if (data === null) {
+    throw new Error("El servidor no devolvió una respuesta válida");
+  }
   return data;
+}
+
+// Calienta las funciones serverless de Vercel para que el login y la carga de
+// datos no paguen el cold start en el momento en que el usuario más lo nota.
+const WARM_PATHS = ["/auth/login", "/auth/me", "/user_data", "/auth/security"];
+
+export function prewarm() {
+  if (typeof fetch === "undefined" || typeof document === "undefined") return;
+  if (document.visibilityState === "hidden") return;
+  WARM_PATHS.forEach((path) => {
+    try {
+      fetch(BASE + path, { method: "GET", keepalive: true }).catch(() => {});
+    } catch (_) {}
+  });
 }

@@ -1,12 +1,14 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import styles from "./ColaboracionView.module.css";
+import ChatView from "./ChatView";
 import {
   IconUsers, IconSearch, IconUserPlus, IconCheck, IconClose, IconWarning,
-  IconTrash, IconSchedule, IconStar, IconScale,
+  IconTrash, IconSchedule, IconStar, IconScale, IconSend,
 } from "./Icons";
 import { ACCENT_COLORS } from "../utils/horarioHelpers.js";
+import { usePhoto } from "../utils/photo";
 import {
-  fetchUsersBrief, fetchFriendships, sendFriendRequest,
+  fetchUsersBrief, searchUsers, fetchFriendships, sendFriendRequest,
   acceptFriendship, removeFriendship, fetchFriendData,
 } from "../utils/friendsApi.js";
 import {
@@ -17,30 +19,121 @@ import {
 } from "../utils/scheduleCompare.js";
 import { horaIdx, toViewHora } from "../utils/horarioHelpers.js";
 
-const MIGRATION_SQL = `create table if not exists public.friendships (
-  id              uuid primary key default gen_random_uuid(),
-  user_username   text not null references public.users(username) on delete cascade,
-  friend_username text not null references public.users(username) on delete cascade,
-  status          text not null default 'pendiente'
-                  check (status in ('pendiente', 'aceptado')),
-  requested_by    text not null,
-  created_at      timestamptz not null default now(),
-  updated_at      timestamptz not null default now(),
-  unique (user_username, friend_username)
-);
-
-create index if not exists friendships_user_idx   on public.friendships (user_username);
-create index if not exists friendships_friend_idx on public.friendships (friend_username);`;
-
 const STATUS_LABEL = { libre: "Libre en común", yo: "Solo tú", amigo: "Solo tu amigo", ambos: "Ambos ocupados" };
+
+// ── Disponibilidad en vivo ─────────────────────────────────────────────────
+const NOW_DIA = { 0: "D", 1: "L", 2: "M", 3: "X", 4: "J", 5: "V", 6: "S" };
+
+function currentHourIdx(now) {
+  const mins = now.getHours() * 60 + now.getMinutes();
+  const idx = Math.floor((mins - 360) / 60);
+  if (idx < WINDOW_START || idx >= WINDOW_END) return -1;
+  return idx;
+}
+
+function claseAhora(clases, diaKey, hourIdx) {
+  if (hourIdx < 0) return null;
+  return (clases || []).find(
+    (c) => c.dia === diaKey && horaIdx(c.horaInicio) <= hourIdx && horaIdx(c.horaFin) > hourIdx
+  );
+}
+
+const STATUS_RANK = { libre: 0, ocupado: 1, nodata: 2, fuera: 3 };
+
+function DisponiblesWidget({ amigos, horarios, loading }) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const diaKey = NOW_DIA[now.getDay()];
+  const hourIdx = currentHourIdx(now);
+  const timeStr = now.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+
+  const statusOf = (u) => {
+    const info = horarios[u];
+    const hayDatos = !!(info && (info.clases || []).length > 0);
+    if (hourIdx < 0) return { key: "fuera", hayDatos };
+    if (!hayDatos) return { key: "nodata" };
+    const ocupado = info.busy[diaKey] && info.busy[diaKey].some(([s, e]) => s <= hourIdx && hourIdx < e);
+    if (ocupado) return { key: "ocupado", clase: claseAhora(info.clases, diaKey, hourIdx) };
+    return { key: "libre" };
+  };
+
+  const sorted = [...amigos].sort((a, b) => {
+    const ra = STATUS_RANK[statusOf(a).key];
+    const rb = STATUS_RANK[statusOf(b).key];
+    if (ra !== rb) return ra - rb;
+    return (a.name || a.username).localeCompare(b.name || b.username);
+  });
+
+  const libres = amigos.filter((u) => statusOf(u).key === "libre").length;
+  const resumen = hourIdx < 0
+    ? "fuera de horario"
+    : amigos.length > 0
+      ? `${libres} de ${amigos.length} libres`
+      : "";
+
+  return (
+    <div className={styles.dispCard}>
+      <div className={styles.dispHeader}>
+        <div className={styles.dispHeaderMain}>
+          <span className={styles.dispIcon}><IconSchedule size={15} /></span>
+          <div>
+            <span className={styles.dispTitle}>¿Quién está disponible?</span>
+            <span className={styles.dispSub}>
+              Ahora · {timeStr}{resumen ? ` · ${resumen}` : ""}
+            </span>
+          </div>
+        </div>
+        <span className={styles.dispLive}><span className={styles.dispLiveDot} /> En vivo</span>
+      </div>
+      <div className={styles.dispWall}>
+        {amigos.length === 0 ? (
+          <p className={styles.dispEmpty}>Agrega amigos para ver quién está disponible.</p>
+        ) : loading ? (
+          <p className={styles.dispEmpty}><span className={styles.loadingSpinner} /> Consultando horarios…</p>
+        ) : (
+          sorted.map((u) => {
+            const st = statusOf(u.username);
+            const clase = st.clase;
+            const key = st.key;
+            return (
+              <div
+                key={u.username}
+                className={`${styles.dispChip} ${styles["dispChip" + key.charAt(0).toUpperCase() + key.slice(1)]}`}
+                title={clase
+                  ? `${clase.materiaId} · ${formatHourIdx(horaIdx(clase.horaInicio))}–${formatHourIdx(horaIdx(clase.horaFin))}`
+                  : key === "nodata" ? "Sin horario guardado" : key === "fuera" ? "Fuera de la ventana de clases" : "Disponible ahora"}
+              >
+                <span className={styles.dispRing}>
+                  <Avatar u={u} size={42} />
+                </span>
+                <span className={styles.dispChipName}>{u.name || u.username}</span>
+                <span className={styles.dispChipStatus}>
+                  {key === "libre" && (<><IconCheck size={9} /> Disponible</>)}
+                  {key === "ocupado" && <span className={styles.dispChipMateria}>{clase.materiaId}</span>}
+                  {key === "nodata" && "Sin horario"}
+                  {key === "fuera" && "Fuera de horario"}
+                </span>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ── Avatar ────────────────────────────────────────────────────────────────
 function Avatar({ u, size = 40 }) {
   const initial = ((u?.name || u?.username || "?").trim()[0] || "?").toUpperCase();
-  if (u?.photo) {
+  const photo = usePhoto(u?.username, !!u?.hasPhoto);
+  if (photo) {
     return (
       <div className={styles.avatar} style={{ width: size, height: size }}>
-        <img src={u.photo} alt="" className={styles.avatarImg} />
+        <img src={photo} alt="" className={styles.avatarImg} />
       </div>
     );
   }
@@ -429,7 +522,10 @@ function ComparisonSection({ me, perfil, data, myHorario, myMalla, myName, onClo
 }
 
 // ── Vista principal ───────────────────────────────────────────────────────
-export default function ColaboracionView({ user, malla, horarioData, onNotify }) {
+export default function ColaboracionView({
+  user, malla, horarioData, onNotify,
+  notas, cursandoData, notasClaseData, asignacionesData, semestre,
+}) {
   const [users, setUsers] = useState(null);
   const [friendships, setFriendships] = useState({});
   const [loading, setLoading] = useState(true);
@@ -439,6 +535,10 @@ export default function ColaboracionView({ user, malla, horarioData, onNotify })
   const [selectedUser, setSelectedUser] = useState(null);
   const [friendData, setFriendData] = useState(null);
   const [comparing, setComparing] = useState(false);
+  const [friendHorarios, setFriendHorarios] = useState({});
+  const [dispLoading, setDispLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [showChat, setShowChat] = useState(false);
 
   const reloadFriendships = useCallback(async () => {
     const res = await fetchFriendships(user.username);
@@ -459,12 +559,6 @@ export default function ColaboracionView({ user, malla, horarioData, onNotify })
 
   useEffect(() => {
     let active = true;
-    const loadUsers = async () => {
-      const usersRes = await fetchUsersBrief();
-      if (!active) return;
-      if (usersRes.error) setLoadError(true);
-      else setUsers(usersRes.data);
-    };
     const loadFriendships = async () => {
       const friendshipsRes = await fetchFriendships(user.username);
       if (!active) return;
@@ -482,9 +576,32 @@ export default function ColaboracionView({ user, malla, horarioData, onNotify })
       setLoading(false);
     };
     loadFriendships();
-    loadUsers();
+    fetchUsersBrief().then((res) => {
+      if (active && !res.error) setUsers(res.data);
+    }).catch(() => {});
     return () => { active = false; };
   }, [user.username]);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) {
+      setSearching(false);
+      fetchUsersBrief().then((res) => {
+        if (!res.error) setUsers(res.data);
+      }).catch(() => {});
+      return;
+    }
+    let active = true;
+    setSearching(true);
+    const timer = setTimeout(async () => {
+      const res = await searchUsers(q);
+      if (!active) return;
+      setSearching(false);
+      if (res.error) setLoadError(true);
+      else setUsers(res.data);
+    }, 350);
+    return () => { active = false; clearTimeout(timer); };
+  }, [query]);
 
   const handleSend = async (u) => {
     const res = await sendFriendRequest(user.username, u);
@@ -538,33 +655,45 @@ export default function ColaboracionView({ user, malla, horarioData, onNotify })
   const incoming = userList.filter((u) => isIncoming(u.username));
   const outgoing = userList.filter((u) => isOutgoing(u.username));
 
-  const q = query.trim().toLowerCase();
+  const q = query.trim();
   const searchResults = q
-    ? userList.filter(
-        (u) =>
-          u.username !== user.username &&
-          ((u.name || "").toLowerCase().includes(q) || (u.username || "").toLowerCase().includes(q))
-      )
+    ? (users || []).filter((u) => u.username !== user.username)
     : [];
+
+  const amigosKey = amigos.map((u) => u.username).join(",");
+
+  useEffect(() => {
+    if (!amigos.length) {
+      setFriendHorarios({});
+      setDispLoading(false);
+      return;
+    }
+    let active = true;
+    setDispLoading(true);
+    Promise.all(
+      amigos.map(async (u) => {
+        const res = await fetchFriendData(u.username);
+        if (res.error) return { u: u.username, horario: null };
+        return { u: u.username, horario: res.data?.horario || null };
+      })
+    )
+      .then((results) => {
+        if (!active) return;
+        const map = {};
+        for (const r of results) {
+          map[r.u] = r.horario
+            ? { busy: buildBusyByDay(r.horario.clases || []), clases: r.horario.clases || [] }
+            : { busy: {}, clases: [] };
+        }
+        setFriendHorarios(map);
+        setDispLoading(false);
+      })
+      .catch(() => { if (active) setDispLoading(false); });
+    return () => { active = false; };
+  }, [amigosKey, amigos.length, user.username]);
 
   const selectedProfile = userList.find((u) => u.username === selectedUser);
   const selectedRel = selectedUser ? rel(selectedUser) : null;
-
-  const copyMigration = () => {
-    const doCopy = () => {
-      onNotify("Script copiado al portapapeles");
-    };
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(MIGRATION_SQL).then(doCopy).catch(() => doCopy());
-    } else {
-      const ta = document.createElement("textarea");
-      ta.value = MIGRATION_SQL;
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand("copy"); doCopy(); } catch (_) {}
-      document.body.removeChild(ta);
-    }
-  };
 
   if (loading) {
     return (
@@ -578,7 +707,7 @@ export default function ColaboracionView({ user, malla, horarioData, onNotify })
     <div className={`${styles.wrap} view-fade`}>
       <div className={styles.header}>
         <div>
-          <h2 className={styles.title}>Colaboración</h2>
+          <h2 className={styles.title}>Amigos</h2>
           <p className={styles.subtitle}>Agrega amigos, compara horarios y busca huecos libres para estudiar juntos</p>
         </div>
         <div className={styles.headerBadge}>
@@ -590,12 +719,10 @@ export default function ColaboracionView({ user, malla, horarioData, onNotify })
         <div className={styles.migrationCard}>
           <div className={styles.migrationIcon}><IconWarning size={18} /></div>
           <div className={styles.migrationBody}>
-            <h3 className={styles.migrationTitle}>Falta la tabla de amistades</h3>
+            <h3 className={styles.migrationTitle}>Colaboración no disponible</h3>
             <p className={styles.migrationText}>
-              Para activar la colaboración, pega este script en el <strong>SQL Editor</strong> del dashboard de Supabase y presiona <strong>Run</strong>. Luego recarga la página.
+              Esta funcionalidad aún no está activada. Pronto estará disponible.
             </p>
-            <pre className={styles.migrationPre}>{MIGRATION_SQL}</pre>
-            <button className={styles.btnPrimary} onClick={copyMigration}>Copiar script</button>
           </div>
         </div>
       )}
@@ -605,6 +732,11 @@ export default function ColaboracionView({ user, malla, horarioData, onNotify })
       )}
 
       {!tableMissing && (<>
+        {/* Disponibilidad en vivo */}
+        <div className={styles.section}>
+          <DisponiblesWidget amigos={amigos} horarios={friendHorarios} loading={dispLoading} />
+        </div>
+
         {/* Buscar personas */}
         <section className={styles.section}>
           <div className={styles.sectionTitleRow}>
@@ -621,8 +753,8 @@ export default function ColaboracionView({ user, malla, horarioData, onNotify })
             />
           </div>
 
-          {!users && (
-            <p className={styles.usersLoading}><span className={styles.loadingSpinner} /> Cargando lista de usuarios…</p>
+          {query && searching && (
+            <p className={styles.usersLoading}><span className={styles.loadingSpinner} /> Buscando usuarios…</p>
           )}
 
           {query && searchResults.length === 0 && (
@@ -739,6 +871,12 @@ export default function ColaboracionView({ user, malla, horarioData, onNotify })
                       <IconSchedule size={12} /> Comparar
                     </button>
                     <button
+                      className={styles.btnGhost}
+                      onClick={() => setShowChat(true)}
+                    >
+                      <IconSend size={12} /> Chat
+                    </button>
+                    <button
                       className={styles.btnIconDanger}
                       title="Quitar amigo"
                       onClick={() => handleRemove(u.username)}
@@ -773,6 +911,24 @@ export default function ColaboracionView({ user, malla, horarioData, onNotify })
 
         {selectedUser && !comparing && !friendData && !selectedRel && (
           <p className={styles.errorBanner}><IconWarning size={13} /> No se pudo cargar la comparación.</p>
+        )}
+
+        {/* Chat entre amigos */}
+        {showChat && (
+          <ChatView
+            user={user}
+            amigos={amigos}
+            onBack={() => setShowChat(false)}
+            onNotify={onNotify}
+            shareData={{
+              malla,
+              notas: notas || {},
+              cursandoData: cursandoData || {},
+              notasClaseData: notasClaseData || {},
+              asignacionesData: asignacionesData || { items: [] },
+              semestre: semestre ?? null,
+            }}
+          />
         )}
       </>)}
     </div>

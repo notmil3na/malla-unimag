@@ -25,6 +25,14 @@ function swCacheVersion() {
 
 export default defineConfig({
   plugins: [react(), swCacheVersion()],
+  server: {
+    proxy: {
+      "/api": {
+        target: "https://malla-unimag.vercel.app",
+        changeOrigin: true,
+      },
+    },
+  },
   build: {
     target: 'es2020',
     rollupOptions: {

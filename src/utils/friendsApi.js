@@ -56,6 +56,11 @@ export function fetchUsersBrief() {
   return cached("users", () => wrap(api("/users")));
 }
 
+export function searchUsers(q) {
+  if (!q || !q.trim()) return fetchUsersBrief();
+  return wrap(api(`/users?q=${encodeURIComponent(q.trim())}`));
+}
+
 // ── Datos del amigo (horario + malla para progreso) ───────────────────────
 export function fetchFriendData(username) {
   return wrap(api(`/user_data/${encodeURIComponent(username)}`));
