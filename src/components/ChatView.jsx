@@ -545,7 +545,7 @@ function ThreadView({ user, friend, onBack, onNotify, onToggleInfo, infoOpen, sh
         open={shareOpen}
         onClose={() => setShareOpen(false)}
         myName={friend.name || other}
-        shareData={{ malla, notasClaseData, asignacionesData }}
+        shareData={shareData}
         onSendShare={(p) => { setShareOpen(false); sendShare(p); }}
         onPickImage={() => { setShareOpen(false); const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.onchange = (e) => { const f = e.target.files && e.target.files[0]; if (f) uploadAndSend(f); }; inp.click(); }}
         onPickFile={() => { setShareOpen(false); const inp = document.createElement("input"); inp.type = "file"; inp.onchange = (e) => { const f = e.target.files && e.target.files[0]; if (f) uploadAndSend(f); }; inp.click(); }}
