@@ -10,7 +10,7 @@ import { getPendingSaves, hasPendingSaves, queueSave, clearPendingSave } from ".
 import styles from "./Dashboard.module.css";
 import {
   IconSchedule, IconCalendar, IconClipboard, IconSemester,
-  IconGrades, IconMalla, IconSettings, IconUsers,
+  IconGrades, IconMalla, IconSettings, IconUsers, IconChat,
   IconCheck
 } from "../components/Icons";
 
@@ -32,6 +32,7 @@ const VIEW_LOADERS = {
   calendario:   () => import("../components/CalendarioView"),
   asignaciones: () => import("../components/AsignacionesView"),
   colaboracion: () => import("../components/ColaboracionView"),
+  chat:         () => import("../components/ChatView"),
 };
 
 const MallaView = lazy(() => loadView(VIEW_LOADERS.malla));
@@ -42,6 +43,7 @@ const SettingsView = lazy(() => loadView(VIEW_LOADERS.config));
 const CalendarioView = lazy(() => loadView(VIEW_LOADERS.calendario));
 const AsignacionesView = lazy(() => loadView(VIEW_LOADERS.asignaciones));
 const ColaboracionView = lazy(() => loadView(VIEW_LOADERS.colaboracion));
+const ChatView = lazy(() => loadView(VIEW_LOADERS.chat));
 
 function autoApply(malla, currentSemester) {
   return malla.map((sem) => ({
@@ -332,6 +334,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
     { id: "notas", label: "Notas", icon: IconGrades },
     { id: "malla", label: "Malla", icon: IconMalla },
     { id: "colaboracion", label: "Amigos", icon: IconUsers },
+    { id: "chat", label: "Chats", icon: IconChat },
     { id: "config", label: "Configuración", icon: IconSettings },
   ], []);
 
@@ -483,6 +486,17 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
                 notasClaseData={notasClaseData}
                 asignacionesData={asignacionesData}
                 semestre={semestre}
+              />
+            )}
+            {tab === "chat" && (
+              <ChatView
+                user={user}
+                malla={malla}
+                notasClaseData={notasClaseData}
+                asignacionesData={asignacionesData}
+                onSaveAsignaciones={saveAsignaciones}
+                onSaveNotasClase={saveNotasClase}
+                onNotify={notify}
               />
             )}
           </Suspense>
