@@ -911,7 +911,7 @@
   .chatWrap.hasActive .chatSidebar { display: none; }
   .chatWrap:not(.hasActive) .chatMain { display: none; }
 
-  /* En teléfono el hilo cubre toda la pantalla */
+  /* En teléfono el hilo cubre toda la pantalla, sin transparencias */
   .chatWrap.hasActive {
     position: fixed;
     inset: 0;
@@ -920,7 +920,10 @@
     height: 100vh;
     height: 100dvh;
     border-radius: 0;
+    background: var(--bg);
+    animation: none;
   }
+  .chatWrap.hasActive .chatMain { background: transparent; }
 
   .chatInfo {
     position: absolute;
