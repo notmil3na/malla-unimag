@@ -765,6 +765,31 @@ export default function ChatView({ user, malla, notasClaseData, asignacionesData
   const vpH = useVisualViewportHeight(!!activeOther);
   const overlayStyle = isNarrow && vpH ? { height: vpH } : undefined;
 
+  // Con el teclado abierto iOS intenta "subir" y desplazar la página para
+  // enfocar el input (y se pierde el encabezado). Fijamos el body y detenemos
+  // el scroll mientras el hilo a pantalla completa está activo; el alto del
+  // overlay ya se ajusta solo con el visualViewport.
+  useEffect(() => {
+    if (!isNarrow || !activeOther) return undefined;
+    const { body } = document;
+    const prevOverflow = body.style.overflow;
+    const prevPosition = body.style.position;
+    const prevTop = body.style.top;
+    const prevWidth = body.style.width;
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+    body.style.overflow = "hidden";
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.width = "100%";
+    return () => {
+      body.style.overflow = prevOverflow;
+      body.style.position = prevPosition;
+      body.style.top = prevTop;
+      body.style.width = prevWidth;
+      if (scrollY) window.scrollTo(0, scrollY);
+    };
+  }, [isNarrow, activeOther]);
+
   const previewOf = (row) => {
     if (!row.last) return "Inicia una conversación";
     const last = row.last;
