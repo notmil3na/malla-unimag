@@ -1,7 +1,11 @@
 ﻿.layout {
   display: flex;
+  flex: 1;
+  min-height: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   gap: 0;
 }
@@ -144,8 +148,8 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  height: 100%;
-  min-height: 50dvh;
+  flex: 1;
+  min-height: 0;
   padding: 40px 16px;
   color: var(--text-muted);
   font-family: var(--font-body);
@@ -315,17 +319,41 @@
 @media (max-width: 900px) {
   .layout {
     flex-direction: column;
-    height: auto;
-    min-height: 100vh;
-    min-height: 100dvh;
-    overflow: visible;
-    padding-bottom: env(safe-area-inset-bottom);
+    height: 100%;
+    max-height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+    padding: 0;
+    gap: 0;
+    background: var(--bg);
   }
 
   .main {
-    overflow: visible;
-    margin: 0 12px 12px;
-    border-radius: var(--radius-lg);
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    border-top: 1px solid var(--border);
+    box-shadow: none;
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .mainChat {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    overscroll-behavior: none;
+  }
+
+  .mainChat > * {
+    flex: 1;
+    min-height: 0;
   }
 
   .onboardingBar { padding: 12px 10px 0; }
@@ -334,11 +362,7 @@
 }
 
 @media (max-width: 480px) {
-  .main {
-    margin: 0 8px 8px;
-    border-radius: var(--radius-md);
-  }
-  .onboardingBar { padding: 10px 6px 0; }
+  .onboardingBar { padding: 10px 8px 0; }
   .onboardingCard { padding: 12px; gap: 10px; }
   .onboardingTitle { font-size: 14px; }
   .onboardingStep { padding: 8px 10px; }

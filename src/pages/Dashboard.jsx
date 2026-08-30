@@ -349,7 +349,7 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
         onUpdateUser={onUpdateUser}
         bell={<NotificationBell {...reminders} />}
       />
-      <main className={styles.main}>
+      <main className={`${styles.main}${tab === "chat" ? ` ${styles.mainChat}` : ""}`}>
         {showOnboarding && (
           <div className={styles.onboardingBar} ref={onboardingRef}>
             <div className={styles.onboardingCard}>

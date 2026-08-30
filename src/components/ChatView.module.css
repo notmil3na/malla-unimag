@@ -128,6 +128,7 @@
 .convList {
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
 }
@@ -327,7 +328,10 @@
 /* ══ Cuerpo de mensajes ════════════════════════════════════════════════════ */
 .threadBody {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 16px 14px;
   display: flex;
   flex-direction: column;
@@ -344,6 +348,8 @@
 .bubble {
   position: relative;
   max-width: 74%;
+  min-width: 0;
+  overflow-wrap: anywhere;
   border-radius: 18px;
   padding: 8px 13px;
   font-size: 13.5px;
@@ -900,35 +906,58 @@
 }
 
 @media (max-width: 800px) {
-  .chatWrap { flex-direction: column; }
+  .wrap {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+  }
+
+  .chatWrap { flex-direction: column; flex: 1; min-height: 0; }
   .chatSidebar {
     width: 100%;
+    flex: 1;
+    min-height: 0;
     border-right: none;
     border-bottom: 1px solid var(--border);
   }
-  .chatMain { flex: 1; min-height: 0; }
+  .chatMain { flex: 1; min-height: 0; overflow: hidden; }
 
   /* Solo se muestra una de las dos columnas en estrecho */
   .chatWrap.hasActive .chatSidebar { display: none; }
   .chatWrap:not(.hasActive) .chatMain { display: none; }
 
-  /* En teléfono el hilo cubre toda la pantalla, sin transparencias ni cortes */
+  /* Hilo a pantalla completa: borde a borde bajo notch; alto ajustado al teclado */
   .chatWrap.hasActive {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    bottom: 0;
+    width: 100%;
+    height: var(--vp-height, 100dvh);
+    bottom: auto;
     z-index: 60;
     border-radius: 0;
-    background: var(--bg);
+    background: var(--surface);
     box-sizing: border-box;
-    padding-top: max(0px, env(safe-area-inset-top));
-    padding-bottom: max(0px, env(safe-area-inset-bottom));
     animation: none;
     touch-action: manipulation;
+    overflow: hidden;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
-  .chatWrap.hasActive .chatMain { background: transparent; }
+  .chatWrap.hasActive .chatMain {
+    background: transparent;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .chatWrap.hasActive .threadHeader {
+    padding-top: calc(10px + env(safe-area-inset-top));
+  }
+  .chatWrap.hasActive .composer {
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
 
   /* iOS no hace zoom ni pierde el encabezado si la fuente del input es ≥ 16px */
   .composerInput, .searchInput { font-size: 16px; }

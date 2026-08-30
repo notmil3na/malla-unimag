@@ -17,6 +17,7 @@ import {
   subjectName,
 } from "../utils/chatShare";
 import { uuid } from "../utils/notasClase";
+import useVisualViewportRect from "../hooks/useVisualViewportRect";
 
 const POLL_MS = 15000;
 
@@ -35,26 +36,6 @@ function useIsNarrow() {
     return () => mq.removeEventListener("change", onChange);
   }, []);
   return narrow;
-}
-
-function useVisualViewportHeight(active) {
-  const [h, setH] = useState(null);
-  useEffect(() => {
-    if (!active || typeof window === "undefined" || !window.visualViewport) return undefined;
-    const vv = window.visualViewport;
-    const update = () => {
-      const next = Math.max(0, Math.round(vv.height));
-      setH((prev) => (prev === next ? prev : next));
-    };
-    update();
-    vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
-    return () => {
-      vv.removeEventListener("resize", update);
-      vv.removeEventListener("scroll", update);
-    };
-  }, [active]);
-  return h;
 }
 
 // ── Avatar ─────────────────────────────────────────────────────────────────
@@ -329,6 +310,13 @@ function ThreadView({ user, friend, onBack, onNotify, onToggleInfo, infoOpen, sh
   const streamRef = useRef(null);
   const readGuardRef = useRef("");
 
+  const scrollToBottom = useCallback(() => {
+    requestAnimationFrame(() => {
+      const el = scrollRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
+  }, []);
+
   const messages = (data && data.messages) || [];
   const channelToken = (data && data.channel_token) || "";
 
@@ -372,11 +360,22 @@ function ThreadView({ user, friend, onBack, onNotify, onToggleInfo, infoOpen, sh
     return () => { stream.close(); streamRef.current = null; };
   }, [channelToken, refresh]);
 
-  // Autoscroll al final.
+  // Autoscroll al final (mensajes nuevos o teclado abierto).
   useEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages.length]);
+    scrollToBottom();
+  }, [messages.length, scrollToBottom]);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return undefined;
+    const onVpChange = () => scrollToBottom();
+    vv.addEventListener("resize", onVpChange);
+    vv.addEventListener("scroll", onVpChange);
+    return () => {
+      vv.removeEventListener("resize", onVpChange);
+      vv.removeEventListener("scroll", onVpChange);
+    };
+  }, [scrollToBottom]);
 
   // Marcar como leídos los mensajes del amigo (una vez por lote).
   useEffect(() => {
@@ -582,6 +581,7 @@ function ThreadView({ user, friend, onBack, onNotify, onToggleInfo, infoOpen, sh
           placeholder="Mensaje…"
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKey}
+          onFocus={scrollToBottom}
         />
         <button
           className={styles.sendBtn}
@@ -762,33 +762,45 @@ export default function ChatView({ user, malla, notasClaseData, asignacionesData
   const totalUnread = list.reduce((a, r) => a + r.unread, 0);
 
   const isNarrow = useIsNarrow();
-  const vpH = useVisualViewportHeight(!!activeOther);
-  const overlayStyle = isNarrow && vpH ? { height: vpH } : undefined;
+  const chatFullscreen = isNarrow && !!activeOther;
+  const vpRect = useVisualViewportRect(chatFullscreen);
+  const overlayStyle = chatFullscreen && vpRect
+    ? { "--vp-height": `${vpRect.height}px` }
+    : undefined;
 
-  // Con el teclado abierto iOS intenta "subir" y desplazar la página para
-  // enfocar el input (y se pierde el encabezado). Fijamos el body y detenemos
-  // el scroll mientras el hilo a pantalla completa está activo; el alto del
-  // overlay ya se ajusta solo con el visualViewport.
+  // Evita que iOS desplace la página al abrir el teclado (pierde el header).
   useEffect(() => {
-    if (!isNarrow || !activeOther) return undefined;
+    if (!chatFullscreen) return undefined;
+    const html = document.documentElement;
     const { body } = document;
-    const prevOverflow = body.style.overflow;
-    const prevPosition = body.style.position;
-    const prevTop = body.style.top;
-    const prevWidth = body.style.width;
     const scrollY = window.scrollY || window.pageYOffset || 0;
+    const prev = {
+      htmlOverflow: html.style.overflow,
+      bodyOverflow: body.style.overflow,
+      bodyPosition: body.style.position,
+      bodyTop: body.style.top,
+      bodyLeft: body.style.left,
+      bodyRight: body.style.right,
+      bodyWidth: body.style.width,
+    };
+    html.style.overflow = "hidden";
     body.style.overflow = "hidden";
     body.style.position = "fixed";
     body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
     body.style.width = "100%";
     return () => {
-      body.style.overflow = prevOverflow;
-      body.style.position = prevPosition;
-      body.style.top = prevTop;
-      body.style.width = prevWidth;
+      html.style.overflow = prev.htmlOverflow;
+      body.style.overflow = prev.bodyOverflow;
+      body.style.position = prev.bodyPosition;
+      body.style.top = prev.bodyTop;
+      body.style.left = prev.bodyLeft;
+      body.style.right = prev.bodyRight;
+      body.style.width = prev.bodyWidth;
       if (scrollY) window.scrollTo(0, scrollY);
     };
-  }, [isNarrow, activeOther]);
+  }, [chatFullscreen]);
 
   const previewOf = (row) => {
     if (!row.last) return "Inicia una conversación";

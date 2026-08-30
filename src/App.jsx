@@ -211,7 +211,7 @@ export default function App() {
     return (
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "center",
-        height: "100vh", color: "var(--text-muted)", fontFamily: "var(--font-body)",
+        minHeight: "100dvh", color: "var(--text-muted)", fontFamily: "var(--font-body)",
         flexDirection: "column", gap: "12px",
       }}>
         <span style={{ fontSize: "28px", color: "var(--accent)" }}>✦</span>
@@ -224,7 +224,7 @@ export default function App() {
     <Suspense fallback={
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "center",
-        height: "100vh", color: "var(--text-muted)", fontFamily: "var(--font-body)",
+        minHeight: "100dvh", color: "var(--text-muted)", fontFamily: "var(--font-body)",
         flexDirection: "column", gap: "12px",
       }}>
         <span style={{ fontSize: "28px", color: "var(--accent)" }}>✦</span>
