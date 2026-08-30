@@ -6,6 +6,7 @@ const CustomCursor = lazy(() => import("./components/CustomCursor"));
 import { api, saveSession, clearSession, getToken, prewarm } from "./api";
 import { ensureFont } from "./utils/fonts";
 import { getPhoto, setPhotoCache } from "./utils/photo";
+import useAppHeightFix from "./hooks/useAppHeightFix";
 import "./App.css";
 
 // ── Theme definitions ──────────────────────────────────────────────────────
@@ -89,6 +90,8 @@ export function corteForSemester(ingresoCorte, semNum) {
 }
 
 // ── CSS variable injection ─────────────────────────────────────────────────
+const BG_BY_MODE = { dark: "#0e0a18", light: "#f8f4fc" };
+
 export function applyTheme(themeKey, mode, fontBody) {
   const t = APP_THEMES[themeKey] || APP_THEMES.ambar;
   const m = mode || "dark";
@@ -103,6 +106,8 @@ export function applyTheme(themeKey, mode, fontBody) {
   } else {
     root.style.removeProperty("--font-body");
   }
+  const themeColorMeta = document.getElementById("theme-color-meta") || document.querySelector('meta[name="theme-color"]');
+  if (themeColorMeta) themeColorMeta.setAttribute("content", BG_BY_MODE[m] || BG_BY_MODE.dark);
 }
 
 // ── Backend (Vercel Functions) ─────────────────────────────────────────────
@@ -144,6 +149,8 @@ export async function saveUser(userData) {
 export default function App() {
   const [user, setUser]   = useState(null);
   const [ready, setReady] = useState(false);
+
+  useAppHeightFix();
 
   useEffect(() => {
     let cancelled = false;

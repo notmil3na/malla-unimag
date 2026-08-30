@@ -934,6 +934,7 @@
     right: 0;
     width: 100%;
     height: 100dvh;
+    height: var(--app-height, 100dvh);
     bottom: auto;
     z-index: 60;
     border-radius: 0;
