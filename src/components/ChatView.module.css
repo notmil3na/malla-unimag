@@ -1,31 +1,75 @@
 /* ══ Chats (estética iMessage, 3 columnas desktop) ══════════════════════════ */
 
 .wrap {
-  padding: 28px 32px;
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
   box-sizing: border-box;
-}
-
-.header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 18px;
+  flex-direction: column;
 }
 
-.title {
+/* Cabecera del sidebar (estilo WhatsApp): "Chats" + búsqueda */
+.sidebarHeader {
+  flex-shrink: 0;
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface2) 45%, transparent);
+}
+
+.sidebarTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.sidebarTitle {
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 400;
   color: var(--text);
+  margin: 0;
 }
 
-.subtitle {
-  font-size: 13px;
+.searchRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 12px;
   color: var(--text-muted);
-  margin-top: 3px;
 }
+.searchRow:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+.searchInput::placeholder { color: var(--text-muted); }
+
+.searchClear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface2);
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.12s;
+}
+.searchClear:hover { color: var(--text); }
 
 .headerBadge {
   font-family: var(--font-body);
@@ -44,22 +88,18 @@
   position: relative;
   display: flex;
   flex-direction: row;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  height: calc(100dvh - 178px);
-  min-height: 460px;
 }
 
 .chatSidebar {
   display: flex;
   flex-direction: column;
-  width: 320px;
+  width: 330px;
   flex-shrink: 0;
   min-width: 0;
+  min-height: 0;
   border-right: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface2) 45%, transparent);
 }
@@ -855,12 +895,11 @@
 
 /* ══ Responsive ════════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
-  .chatWrap { height: calc(100dvh - 160px); border-radius: var(--radius-md); }
-  .chatSidebar { width: 280px; }
+  .chatSidebar { width: 290px; }
 }
 
 @media (max-width: 800px) {
-  .chatWrap { flex-direction: column; height: calc(100dvh - 148px); }
+  .chatWrap { flex-direction: column; }
   .chatSidebar {
     width: 100%;
     border-right: none;
@@ -872,6 +911,17 @@
   .chatWrap.hasActive .chatSidebar { display: none; }
   .chatWrap:not(.hasActive) .chatMain { display: none; }
 
+  /* En teléfono el hilo cubre toda la pantalla */
+  .chatWrap.hasActive {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    border-radius: 0;
+  }
+
   .chatInfo {
     position: absolute;
     inset: 0;
@@ -882,13 +932,11 @@
 }
 
 @media (max-width: 600px) {
-  .wrap { padding: 20px 16px; }
-  .chatWrap { height: calc(100dvh - 132px); border-radius: 16px; min-height: 400px; }
   .bubble { max-width: 82%; }
   .threadBody { padding: 12px 10px; }
   .composer { padding: 8px 10px; }
-  .chatSidebar { width: 100%; }
   .sharePopover { left: 8px; right: 8px; width: auto; }
+  .sidebarTitle { font-size: 20px; }
 }
 
 @media (max-width: 360px) {

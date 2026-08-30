@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import styles from "./ChatView.module.css";
 import {
   IconSend, IconPaperclip, IconArrowLeft, IconDownload,
-  IconClipboard, IconImage, IconUser, IconSparkle, IconCheck, IconClose,
+  IconClipboard, IconImage, IconUser, IconSparkle, IconCheck, IconClose, IconSearch,
 } from "./Icons";
 import { usePhoto } from "../utils/photo";
 import { fetchFriendships, fetchUsersBrief } from "../utils/friendsApi";
@@ -641,6 +641,7 @@ export default function ChatView({ user, malla, notasClaseData, asignacionesData
   const [activeOther, setActiveOther] = useState(null);
   const [infoOpen, setInfoOpen] = useState(false);
   const [threadMessages, setThreadMessages] = useState([]);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -695,6 +696,16 @@ export default function ChatView({ user, malla, notasClaseData, asignacionesData
     return rows;
   }, [amigos, overviewByPartner]);
 
+  const filteredList = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter(
+      (row) =>
+        (row.partner.name || "").toLowerCase().includes(q) ||
+        (row.partner.username || "").toLowerCase().includes(q)
+    );
+  }, [list, search]);
+
   const activeFriend = amigos.find((u) => u.username === activeOther) || null;
   const totalUnread = list.reduce((a, r) => a + r.unread, 0);
 
@@ -711,19 +722,31 @@ export default function ChatView({ user, malla, notasClaseData, asignacionesData
 
   return (
     <div className={`${styles.wrap} view-fade`}>
-      <div className={styles.header}>
-        <div>
-          <h2 className={styles.title}>Chats</h2>
-          <p className={styles.subtitle}>Conversa con tus amigos y comparte asignaciones y apuntes</p>
-        </div>
-        {totalUnread > 0 && (
-          <span className={styles.headerBadge}>{totalUnread} sin leer</span>
-        )}
-      </div>
-
       <div className={`${styles.chatWrap} ${activeOther ? styles.hasActive : ""} ${infoOpen ? styles.hasInfo : ""}`}>
         {/* Lista de conversaciones */}
         <div className={styles.chatSidebar}>
+          <div className={styles.sidebarHeader}>
+            <div className={styles.sidebarTitleRow}>
+              <h2 className={styles.sidebarTitle}>Chats</h2>
+              {totalUnread > 0 && (
+                <span className={styles.headerBadge}>{totalUnread} sin leer</span>
+              )}
+            </div>
+            <div className={styles.searchRow}>
+              <IconSearch size={15} />
+              <input
+                className={styles.searchInput}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Busca un chat…"
+              />
+              {search && (
+                <button className={styles.searchClear} onClick={() => setSearch("")} title="Limpiar">
+                  <IconClose size={12} />
+                </button>
+              )}
+            </div>
+          </div>
           {needsMig ? (
             <div className={styles.chatEmpty}>
               <span className={styles.threadEmptyIcon}><IconSparkle size={26} /></span>
@@ -738,9 +761,14 @@ export default function ChatView({ user, malla, notasClaseData, asignacionesData
               <p>Agrega amigos para chatear.</p>
               <p className={styles.threadEmptySub}>Solo puedes conversar con personas que ya son tus amigos.</p>
             </div>
+          ) : filteredList.length === 0 ? (
+            <div className={styles.chatEmpty}>
+              <span className={styles.threadEmptyIcon}><IconSearch size={22} /></span>
+              <p>Sin resultados para "{search.trim()}"</p>
+            </div>
           ) : (
             <div className={styles.convList}>
-              {list.map((row) => (
+              {filteredList.map((row) => (
                 <button
                   key={row.key}
                   className={`${styles.convRow} ${activeOther === row.key ? styles.convRowActive : ""}`}
