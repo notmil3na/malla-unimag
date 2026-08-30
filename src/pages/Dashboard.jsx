@@ -145,8 +145,15 @@ export default function Dashboard({ user, onLogout, onUpdateUser }) {
 
   const dismissOnboarding = useCallback(() => {
     setShowOnboarding(false);
-    try { localStorage.setItem(`malla_onboarding_done_${user.username}`, "1"); } catch (_) {}
+    try {
+      localStorage.setItem(`malla_onboarding_done_${user.username}`, "1");
+      localStorage.setItem(`malla_tutorial_v2_${user.username}`, "1");
+    } catch (_) {}
   }, [user.username]);
+
+  useEffect(() => {
+    if (showOnboarding && allOnboardingDone) dismissOnboarding();
+  }, [showOnboarding, allOnboardingDone, dismissOnboarding]);
 
   const ONBOARDING_STEPS = [
     { key: "perfil",  label: "Completa tu perfil",          desc: "Universidad, carrera y semestre",    tab: "config",   icon: <IconSettings size={16} /> },

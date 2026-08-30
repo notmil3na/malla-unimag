@@ -4,10 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="description" content="MiMalla – Plan de estudios, horarios, notas, asignaciones y colaboración de tu semestre." />
+    <meta name="theme-color" id="theme-color-meta" content="#0e0a18" />
     <title>MiMalla</title>
     <script>
       (function () {
         try {
+          var BG = { dark: "#0e0a18", light: "#f8f4fc" };
           var THEMES = {
             rojo:      ["#FF3B4D", "#D1212F", "255,59,77"],
             naranja:   ["#FF7A1A", "#E35E00", "255,122,26"],
@@ -29,6 +31,8 @@
           r.style.setProperty("--accent2", c[1]);
           r.style.setProperty("--accent-rgb", c[2]);
           if (u && u.fontBody) r.style.setProperty("--font-body", "'" + u.fontBody + "', system-ui, sans-serif");
+          var tc = document.getElementById("theme-color-meta");
+          if (tc) tc.setAttribute("content", BG[mode] || BG.dark);
         } catch (e) {}
       })();
     </script>

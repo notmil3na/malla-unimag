@@ -7,8 +7,6 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
   overflow: hidden;
   background: #070b16;
 }
@@ -25,7 +23,7 @@
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
-  padding: 44px 40px 36px;
+  padding: calc(44px + env(safe-area-inset-top)) 40px calc(36px + env(safe-area-inset-bottom));
   width: 100%;
   max-width: 500px;
   box-shadow: 0 0 80px rgba(var(--accent-rgb), 0.1), var(--shadow-lg);

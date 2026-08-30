@@ -933,7 +933,7 @@
     left: 0;
     right: 0;
     width: 100%;
-    height: var(--vp-height, 100dvh);
+    height: 100dvh;
     bottom: auto;
     z-index: 60;
     border-radius: 0;

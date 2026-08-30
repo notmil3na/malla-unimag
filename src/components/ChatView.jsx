@@ -17,7 +17,6 @@ import {
   subjectName,
 } from "../utils/chatShare";
 import { uuid } from "../utils/notasClase";
-import useVisualViewportRect from "../hooks/useVisualViewportRect";
 
 const POLL_MS = 15000;
 
@@ -107,7 +106,7 @@ function NoteCard({ msg, mine, onAdd }) {
 }
 
 // ── Burbuja de mensaje ─────────────────────────────────────────────────────
-function MessageBubble({ msg, mine, onAddAssignment, onAddNote }) {
+function MessageBubble({ msg, mine, sender, onAddAssignment, onAddNote }) {
   const t = msg.message_type;
   const att = msg.attachment || {};
   const openAtt = () => {
@@ -118,7 +117,7 @@ function MessageBubble({ msg, mine, onAddAssignment, onAddNote }) {
     <div className={`${styles.bubbleRow} ${mine ? styles.bubbleRowMine : ""}`}>
       {!mine && (
         <div className={styles.bubbleAvatar}>
-          <Avatar u={{ username: msg.sender }} size={26} />
+          <Avatar u={sender} size={26} />
         </div>
       )}
       <div className={`${styles.bubble} ${mine ? styles.bubbleMine : ""}`}>
@@ -155,6 +154,11 @@ function MessageBubble({ msg, mine, onAddAssignment, onAddNote }) {
           {mine && <span className={`${styles.check} ${msg.read ? styles.checkRead : ""}`}>✓✓</span>}
         </div>
       </div>
+      {mine && (
+        <div className={styles.bubbleAvatar}>
+          <Avatar u={sender} size={26} />
+        </div>
+      )}
     </div>
   );
 }
@@ -294,6 +298,7 @@ function SharePopover({ open, onClose, myName, shareData, onSendShare, onPickIma
 
 // ── Hilo (conversación activa) ─────────────────────────────────────────────
 function ThreadView({ user, friend, onBack, onNotify, onToggleInfo, infoOpen, shareData, onSaveAsignaciones, onSaveNotasClase, onMessages }) {
+  const { malla, notasClaseData, asignacionesData } = shareData;
   const me = user.username;
   const other = friend.username;
 
@@ -556,6 +561,7 @@ function ThreadView({ user, friend, onBack, onNotify, onToggleInfo, infoOpen, sh
               key={msg.id}
               msg={msg}
               mine={msg.sender === me}
+              sender={msg.sender === me ? user : friend}
               onAddAssignment={addAssignment}
               onAddNote={addNote}
             />
@@ -763,44 +769,6 @@ export default function ChatView({ user, malla, notasClaseData, asignacionesData
 
   const isNarrow = useIsNarrow();
   const chatFullscreen = isNarrow && !!activeOther;
-  const vpRect = useVisualViewportRect(chatFullscreen);
-  const overlayStyle = chatFullscreen && vpRect
-    ? { "--vp-height": `${vpRect.height}px` }
-    : undefined;
-
-  // Evita que iOS desplace la página al abrir el teclado (pierde el header).
-  useEffect(() => {
-    if (!chatFullscreen) return undefined;
-    const html = document.documentElement;
-    const { body } = document;
-    const scrollY = window.scrollY || window.pageYOffset || 0;
-    const prev = {
-      htmlOverflow: html.style.overflow,
-      bodyOverflow: body.style.overflow,
-      bodyPosition: body.style.position,
-      bodyTop: body.style.top,
-      bodyLeft: body.style.left,
-      bodyRight: body.style.right,
-      bodyWidth: body.style.width,
-    };
-    html.style.overflow = "hidden";
-    body.style.overflow = "hidden";
-    body.style.position = "fixed";
-    body.style.top = `-${scrollY}px`;
-    body.style.left = "0";
-    body.style.right = "0";
-    body.style.width = "100%";
-    return () => {
-      html.style.overflow = prev.htmlOverflow;
-      body.style.overflow = prev.bodyOverflow;
-      body.style.position = prev.bodyPosition;
-      body.style.top = prev.bodyTop;
-      body.style.left = prev.bodyLeft;
-      body.style.right = prev.bodyRight;
-      body.style.width = prev.bodyWidth;
-      if (scrollY) window.scrollTo(0, scrollY);
-    };
-  }, [chatFullscreen]);
 
   const previewOf = (row) => {
     if (!row.last) return "Inicia una conversación";
@@ -817,7 +785,6 @@ export default function ChatView({ user, malla, notasClaseData, asignacionesData
     <div className={`${styles.wrap} view-fade`}>
       <div
         className={`${styles.chatWrap} ${activeOther ? styles.hasActive : ""} ${infoOpen ? styles.hasInfo : ""}`}
-        style={overlayStyle}
       >
         {/* Lista de conversaciones */}
         <div className={styles.chatSidebar}>

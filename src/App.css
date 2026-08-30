@@ -111,6 +111,8 @@ body {
     radial-gradient(ellipse 50% 45% at 86% 5%, var(--aurora-2), transparent 60%),
     radial-gradient(ellipse 55% 50% at 80% 88%, var(--aurora-3), transparent 60%),
     radial-gradient(ellipse 50% 45% at 15% 90%, var(--aurora-4), transparent 60%);
+  mask-image: linear-gradient(to bottom, transparent 0, var(--bg) calc(env(safe-area-inset-top) + 26px), var(--bg) calc(100% - env(safe-area-inset-bottom) - 26px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, var(--bg) calc(env(safe-area-inset-top) + 26px), var(--bg) calc(100% - env(safe-area-inset-bottom) - 26px), transparent 100%);
 }
 
 body::before {

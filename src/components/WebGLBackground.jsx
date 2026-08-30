@@ -439,6 +439,10 @@ export default function WebGLBackground({ color, style }) {
         height: "100%",
         pointerEvents: "none",
         zIndex: 0,
+        maskImage:
+          "linear-gradient(to bottom, transparent 0, black calc(env(safe-area-inset-top) + 26px), black calc(100% - env(safe-area-inset-bottom) - 26px), transparent 100%)",
+        WebkitMaskImage:
+          "linear-gradient(to bottom, transparent 0, black calc(env(safe-area-inset-top) + 26px), black calc(100% - env(safe-area-inset-bottom) - 26px), transparent 100%)",
         ...style,
       }}
     />
