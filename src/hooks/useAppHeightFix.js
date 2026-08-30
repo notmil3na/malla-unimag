@@ -4,52 +4,39 @@ import { useEffect } from "react";
  * Corrige un bug conocido de WebKit/iOS: al usar interactive-widget=resizes-content,
  * a veces 100dvh queda "pegado" en el alto reducido (el que tenía con el teclado
  * abierto) incluso después de cerrar el teclado, dejando un hueco en la parte
- * inferior de TODA la app (no solo donde se usó el teclado), hasta que algo fuerza
- * un recálculo (rotar el teléfono, refrescar, etc).
+ * inferior de TODA la app hasta que algo fuerza un recálculo.
  *
- * Este hook mantiene la variable --app-height sincronizada con el alto real del
- * viewport, con reintentos después de que el foco sale de un campo de texto
- * (momento típico en que WebKit no dispara el evento final a tiempo).
- * Vive en la raíz de la app y siempre está activo: normalmente es un no-op
- * (el valor ya es correcto), y solo corrige algo cuando WebKit se equivocó.
+ * IMPORTANTE: no le inyectamos a la página un alto medido por nosotros
+ * (window.visualViewport.height puede no incluir el área del home indicator
+ * incluso sin teclado, lo que dejaría el hueco de forma permanente). En vez de
+ * eso, le damos a Safari un empujoncito (un scroll de 1px que overflow:hidden
+ * cancela visualmente) para que él mismo vuelva a calcular su propio valor de
+ * dvh, que sí es correcto.
  */
 export default function useAppHeightFix() {
   useEffect(() => {
-    const root = document.documentElement;
-    const vv = window.visualViewport;
+    let raf1 = null;
+    let timer = null;
 
-    const setHeight = () => {
-      const h = Math.round((vv && vv.height) || window.innerHeight);
-      if (h > 0) root.style.setProperty("--app-height", `${h}px`);
+    const nudge = () => {
+      window.scrollTo(0, 1);
+      raf1 = requestAnimationFrame(() => {
+        window.scrollTo(0, 0);
+      });
     };
 
-    setHeight();
-
-    if (vv) {
-      vv.addEventListener("resize", setHeight);
-      vv.addEventListener("scroll", setHeight);
-    }
-    window.addEventListener("resize", setHeight);
-    window.addEventListener("orientationchange", setHeight);
-
-    // Al cerrar el teclado (foco sale de un input/textarea), WebKit a veces
-    // no recalcula dvh a tiempo. Reintentamos un par de veces con pequeños
-    // retrasos para agarrar el valor correcto una vez que el sistema asienta.
+    // Al salir el foco de un input/textarea (teclado cerrándose), esperamos
+    // a que la animación del teclado termine y recién ahí empujamos.
     const onFocusOut = () => {
-      setTimeout(setHeight, 50);
-      setTimeout(setHeight, 250);
-      setTimeout(setHeight, 500);
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(nudge, 350);
     };
     document.addEventListener("focusout", onFocusOut, true);
 
     return () => {
-      if (vv) {
-        vv.removeEventListener("resize", setHeight);
-        vv.removeEventListener("scroll", setHeight);
-      }
-      window.removeEventListener("resize", setHeight);
-      window.removeEventListener("orientationchange", setHeight);
       document.removeEventListener("focusout", onFocusOut, true);
+      if (raf1) cancelAnimationFrame(raf1);
+      if (timer) clearTimeout(timer);
     };
   }, []);
 }
