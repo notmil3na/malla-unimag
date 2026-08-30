@@ -20,6 +20,43 @@ import { uuid } from "../utils/notasClase";
 
 const POLL_MS = 15000;
 
+// En dispositivos estrechos el chat a pantalla completa mide exactamente el
+// área visible (visualViewport): si el teclado se abre o la barra del navegador
+// se contrae, el alto se ajusta sin acortar el header ni esconderlo.
+function useIsNarrow() {
+  const [narrow, setNarrow] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(max-width: 800px)").matches;
+  });
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 800px)");
+    const onChange = (e) => setNarrow(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return narrow;
+}
+
+function useVisualViewportHeight(active) {
+  const [h, setH] = useState(null);
+  useEffect(() => {
+    if (!active || typeof window === "undefined" || !window.visualViewport) return undefined;
+    const vv = window.visualViewport;
+    const update = () => {
+      const next = Math.max(0, Math.round(vv.height));
+      setH((prev) => (prev === next ? prev : next));
+    };
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, [active]);
+  return h;
+}
+
 // ── Avatar ─────────────────────────────────────────────────────────────────
 function Avatar({ u, size = 40 }) {
   const username = (u && u.username) || "";
@@ -163,6 +200,21 @@ function SharePopover({ open, onClose, myName, shareData, onSendShare, onPickIma
     setSubjectId(assignmentSubjects[0] || "");
   }, [open, assignmentSubjects]);
 
+  // El subjectId siempre debe ser válido para la pestaña activa; si el popover
+  // arranca con la materia de Asignaciones (o la cambian de tab), resincroniza
+  // para que el select y el listado muestren los mismos apuntes.
+  const subjectsForTab = useMemo(
+    () => (tab === "asignacion" ? assignmentSubjects : noteSubjects),
+    [tab, assignmentSubjects, noteSubjects]
+  );
+  useEffect(() => {
+    if (!open) return;
+    if (!subjectsForTab.includes(subjectId)) {
+      setSubjectId(subjectsForTab[0] || "");
+      setSelected(null);
+    }
+  }, [open, tab, subjectId, subjectsForTab]);
+
   const currentItems = useMemo(() => {
     if (tab === "asignacion") return assignmentItems.filter((i) => !subjectId || i.materiaId === subjectId);
     return (notasClaseData && notasClaseData[subjectId]) || [];
@@ -178,7 +230,7 @@ function SharePopover({ open, onClose, myName, shareData, onSendShare, onPickIma
     onSendShare(payload);
   };
 
-  const subjects = tab === "asignacion" ? assignmentSubjects : noteSubjects;
+  const subjects = subjectsForTab;
 
   return (
     <>
@@ -709,6 +761,10 @@ export default function ChatView({ user, malla, notasClaseData, asignacionesData
   const activeFriend = amigos.find((u) => u.username === activeOther) || null;
   const totalUnread = list.reduce((a, r) => a + r.unread, 0);
 
+  const isNarrow = useIsNarrow();
+  const vpH = useVisualViewportHeight(!!activeOther);
+  const overlayStyle = isNarrow && vpH ? { height: vpH } : undefined;
+
   const previewOf = (row) => {
     if (!row.last) return "Inicia una conversación";
     const last = row.last;
@@ -722,7 +778,10 @@ export default function ChatView({ user, malla, notasClaseData, asignacionesData
 
   return (
     <div className={`${styles.wrap} view-fade`}>
-      <div className={`${styles.chatWrap} ${activeOther ? styles.hasActive : ""} ${infoOpen ? styles.hasInfo : ""}`}>
+      <div
+        className={`${styles.chatWrap} ${activeOther ? styles.hasActive : ""} ${infoOpen ? styles.hasInfo : ""}`}
+        style={overlayStyle}
+      >
         {/* Lista de conversaciones */}
         <div className={styles.chatSidebar}>
           <div className={styles.sidebarHeader}>

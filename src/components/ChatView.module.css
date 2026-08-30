@@ -91,12 +91,13 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 .chatSidebar {
   display: flex;
   flex-direction: column;
-  width: 330px;
+  width: clamp(300px, 26vw, 420px);
   flex-shrink: 0;
   min-width: 0;
   min-height: 0;
@@ -114,7 +115,7 @@
 
 .chatInfo {
   display: none;
-  width: 300px;
+  width: clamp(260px, 22vw, 340px);
   flex-shrink: 0;
   min-width: 0;
   border-left: 1px solid var(--border);
@@ -925,8 +926,12 @@
     padding-top: max(0px, env(safe-area-inset-top));
     padding-bottom: max(0px, env(safe-area-inset-bottom));
     animation: none;
+    touch-action: manipulation;
   }
   .chatWrap.hasActive .chatMain { background: transparent; }
+
+  /* iOS no hace zoom ni pierde el encabezado si la fuente del input es ≥ 16px */
+  .composerInput, .searchInput { font-size: 16px; }
 
   .chatInfo {
     position: absolute;
